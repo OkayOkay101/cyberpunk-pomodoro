@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBERPUNK FOCUS // POMODORO STATION</title>
+  <style>
+    :root {
+      --bg: #070913;
+      --panel: #0d1224;
+      --border: #1f294d;
+      --cyan: #00f0ff;
+      --pink: #ff0055;
+      --yellow: #ffe600;
+      --green: #00ff66;
+      --text: #e2edff;
+      --text-dim: #6c7d9b;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.12), transparent 60%),
+        linear-gradient(rgba(31, 41, 77, 0.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(31, 41, 77, 0.25) 1px, transparent 1px);
+      background-size: 100% 100%, 30px 30px, 30px 30px;
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Cyberpunk HUD Frame */
+    .station-container {
+      width: 100%;
+      max-width: 640px;
+      background: rgba(13, 18, 36, 0.85);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--cyan);
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 240, 255, 0.15);
+      backdrop-filter: blur(12px);
+      position: relative;
+    }
+    .station-container::before {
+      content: "SYS_VER // 2.0.77 // FOCUS_MATRIX";
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: var(--bg);
+      padding: 2px 10px;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--cyan);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 12px;
+    }
+    .glitch-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: var(--text);
+      text-transform: uppercase;
+      text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+    }
+    .status-badge {
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(0, 255, 102, 0.1);
+      color: var(--green);
+      border: 1px solid rgba(0, 255, 102, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* Mode Selector Tabs */
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: rgba(7, 9, 19, 0.6);
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .mode-tab.active {
+      background: var(--cyan);
+      color: #070913;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+    }
+
+    /* Timer Display */
+    .timer-circle-wrapper {
+      position: relative;
+      width: 250px;
+      height: 250px;
+      margin: 0 auto 24px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+      width: 250px;
+      height: 250px;
+    }
+    .progress-ring-bg {
+      fill: none;
+      stroke: rgba(31, 41, 77, 0.5);
+      stroke-width: 8;
+    }
+    .progress-ring-fill {
+      fill: none;
+      stroke: var(--cyan);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 691;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.5s linear, stroke 0.3s ease;
+      filter: drop-shadow(0 0 8px var(--cyan));
+    }
+    .timer-content {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .time-digits {
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: var(--text);
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+      font-variant-numeric: tabular-nums;
+    }
+    .session-info {
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Action Buttons */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .btn {
+      padding: 12px 28px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: var(--cyan);
+      color: #070913;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+    .btn-primary:hover {
+      background: #33f3ff;
+      box-shadow: 0 0 22px rgba(0, 240, 255, 0.7);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text-dim);
+    }
+    .btn-secondary:hover {
+      border-color: var(--cyan);
+      color: var(--text);
+    }
+
+    /* Ambient Sound Deck */
+    .deck-section {
+      background: rgba(7, 9, 19, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .deck-title {
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: var(--cyan);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sound-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .sound-btn {
+      background: #10162a;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .sound-btn span { font-size: 16px; }
+    .sound-btn.playing {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+    }
+
+    /* Target Mission / Task Input */
+    .mission-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .mission-input {
+      flex: 1;
+      background: #090d1a;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+    .mission-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+    }
+    .mission-btn {
+      background: #17213d;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="station-container">
+    <div class="header-row">
+      <div class="glitch-title">⚡ CYBERPUNK FOCUS</div>
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span id="systemStatus">ONLINE // READY</span>
+      </div>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="focus" data-time="1500">FOCUS (25M)</button>
+      <button class="mode-tab" data-mode="shortBreak" data-time="300">SHORT (5M)</button>
+      <button class="mode-tab" data-mode="longBreak" data-time="900">LONG (15M)</button>
+    </div>
+
+    <!-- Timer Ring -->
+    <div class="timer-circle-wrapper">
+      <svg class="progress-ring">
+        <circle class="progress-ring-bg" cx="125" cy="125" r="110" />
+        <circle class="progress-ring-fill" id="progressFill" cx="125" cy="125" r="110" />
+      </svg>
+      <div class="timer-content">
+        <div class="time-digits" id="timeDisplay">25:00</div>
+        <div class="session-info" id="sessionLabel">SESSION 01 // DEEP WORK</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="resetBtn">RESET</button>
+      <button class="btn btn-primary" id="toggleBtn">START</button>
+      <button class="btn btn-secondary" id="skipBtn">SKIP &gt;&gt;</button>
+    </div>
+
+    <!-- Ambient Sound Deck (Synthetic Web Audio) -->
+    <div class="deck-section">
+      <div class="deck-title">
+        <span>🎧 NEURAL AMBIENT GENERATOR</span>
+        <span style="font-size: 10px; color: var(--text-dim);">WEB AUDIO SYNTH</span>
+      </div>
+      <div class="sound-grid">
+        <button class="sound-btn" data-sound="rain">
+          <span>🌧️</span>
+          <b>Cyber Rain</b>
+        </button>
+        <button class="sound-btn" data-sound="engine">
+          <span>🚀</span>
+          <b>Deep Space Hum</b>
+        </button>
+        <button class="sound-btn" data-sound="binaural">
+          <span>⚡</span>
+          <b>40Hz Focus Wave</b>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mission Focus Bar -->
+    <div class="deck-section">
+      <div class="deck-title">🎯 CURRENT MISSION OBJECTIVE</div>
+      <div class="mission-input-row">
+        <input type="text" class="mission-input" id="missionInput" placeholder="ระบุภารกิจหรือเป้าหมายที่ต้องการโฟกัส..." value="สร้างสรรค์โปรเจกต์ระดับเทพ">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Web Audio Synthesizer Engine (Zero external dependencies)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    let activeNodes = { rain: null, engine: null, binaural: null };
+
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function toggleSound(type, btn) {
+      ensureAudio();
+      if (activeNodes[type]) {
+        // Stop
+        activeNodes[type].stop();
+        activeNodes[type] = null;
+        btn.classList.remove('playing');
+        return;
+      }
+
+      // Start Sound
+      btn.classList.add('playing');
+      if (type === 'rain') {
+        // Pink / White Noise Generator for Rain
+        const bufferSize = audioCtx.sampleRate * 2;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = buffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99 * b0 + white * 0.05;
+          b1 = 0.95 * b1 + white * 0.1;
+          output[i] = (b0 + b1) * 0.8;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 1000;
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.25;
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start();
+        activeNodes.rain = { stop: () => { noise.stop(); } };
+      } else if (type === 'engine') {
+        // Low Frequency Sci-Fi Space Hum
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        osc1.type = 'sawtooth';
+        osc1.frequency.value = 55; // A1
+        osc2.type = 'sine';
+        osc2.frequency.value = 110;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 180;
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.3;
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start();
+        osc2.start();
+        activeNodes.engine = { stop: () => { osc1.stop(); osc2.stop(); } };
+      } else if (type === 'binaural') {
+        // 40Hz Gamma Focus Frequency
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 216;
+
+        const mod = audioCtx.createOscillator();
+        mod.type = 'sine';
+        mod.frequency.value = 40; // 40Hz modulation
+        const modGain = audioCtx.createGain();
+        modGain.gain.value = 10;
+        mod.connect(modGain);
+        modGain.connect(osc.frequency);
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.2;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        mod.start();
+        activeNodes.binaural = { stop: () => { osc.stop(); mod.stop(); } };
+      }
+    }
+
+    function playBeep(success = false) {
+      ensureAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(success ? 880 : 440, audioCtx.currentTime);
+        if (success) {
+          osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.3);
+        }
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {}
+    }
+
+    // Pomodoro Timer Logic
+    const CIRCUMFERENCE = 2 * Math.PI * 110; // r=110 -> 691.15
+    const progressFill = document.getElementById('progressFill');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const sessionLabel = document.getElementById('sessionLabel');
+    const systemStatus = document.getElementById('systemStatus');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const skipBtn = document.getElementById('skipBtn');
+    const modeTabs = document.querySelectorAll('.mode-tab');
+    const soundBtns = document.querySelectorAll('.sound-btn');
+
+    progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
+
+    let currentDuration = 1500;
+    let timeLeft = 1500;
+    let isRunning = false;
+    let timerId = null;
+    let currentMode = 'focus';
+    let cycleCount = 1;
+
+    function updateDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      const offset = CIRCUMFERENCE - (timeLeft / currentDuration) * CIRCUMFERENCE;
+      progressFill.style.strokeDashoffset = offset;
+
+      document.title = `(${timeDisplay.textContent}) CYBERPUNK FOCUS`;
+    }
+
+    function setMode(mode, duration) {
+      currentMode = mode;
+      currentDuration = duration;
+      timeLeft = duration;
+      isRunning = false;
+      clearInterval(timerId);
+      toggleBtn.textContent = 'START';
+      systemStatus.textContent = isRunning ? 'SYSTEM // ACTIVE' : 'ONLINE // READY';
+
+      modeTabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+
+      if (mode === 'focus') {
+        progressFill.style.stroke = 'var(--cyan)';
+        sessionLabel.textContent = `SESSION 0${cycleCount} // DEEP WORK`;
+      } else if (mode === 'shortBreak') {
+        progressFill.style.stroke = 'var(--green)';
+        sessionLabel.textContent = 'RECHARGE // SHORT BREAK';
+      } else {
+        progressFill.style.stroke = 'var(--pink)';
+        sessionLabel.textContent = 'REST // LONG BREAK';
+      }
+      updateDisplay();
+    }
+
+    function toggleTimer() {
+      ensureAudio();
+      if (isRunning) {
+        // Pause
+        isRunning = false;
+        clearInterval(timerId);
+        toggleBtn.textContent = 'RESUME';
+        systemStatus.textContent = 'SYSTEM // PAUSED';
+      } else {
+        // Start
+        isRunning = true;
+        toggleBtn.textContent = 'PAUSE';
+        systemStatus.textContent = 'SYSTEM // RUNNING';
+        timerId = setInterval(() => {
+          if (timeLeft > 0) {
+            timeLeft--;
+            updateDisplay();
+          } else {
+            // Completed
+            clearInterval(timerId);
+            isRunning = false;
+            toggleBtn.textContent = 'START';
+            playBeep(true);
+            if (currentMode === 'focus') {
+              cycleCount++;
+              setMode('shortBreak', 300);
+            } else {
+              setMode('focus', 1500);
+            }
+          }
+        }, 1000);
+      }
+    }
+
+    modeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        setMode(tab.dataset.mode, parseInt(tab.dataset.time, 10));
+      });
+    });
+
+    toggleBtn.addEventListener('click', toggleTimer);
+    resetBtn.addEventListener('click', () => {
+      setMode(currentMode, currentDuration);
+    });
+    skipBtn.addEventListener('click', () => {
+      if (currentMode === 'focus') setMode('shortBreak', 300);
+      else setMode('focus', 1500);
+    });
+
+    soundBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        toggleSound(btn.dataset.sound, btn);
+      });
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>
