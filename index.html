@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070913">
   <title>CYBERPUNK FOCUS // POMODORO STATION</title>
   <style>
     :root {
@@ -54,7 +55,7 @@
       position: relative;
     }
     .station-container::before {
-      content: "SYS_VER // 2.1.00 // FOCUS_MATRIX";
+      content: "SYS_VER // 2.2.00 // FOCUS_MATRIX";
       position: absolute;
       top: -12px;
       left: 20px;
@@ -171,6 +172,9 @@
       transition: stroke-dashoffset 0.5s linear, stroke 0.3s ease;
       filter: drop-shadow(0 0 8px var(--cyan));
     }
+    .progress-ring-fill.no-anim {
+      transition: none !important;
+    }
     .timer-content {
       position: absolute;
       display: flex;
@@ -186,13 +190,32 @@
       text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
       font-variant-numeric: tabular-nums;
     }
+    .session-info-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
     .session-info {
       font-size: clamp(10px, 2.5vw, 12px);
       letter-spacing: 2px;
       color: var(--text-dim);
-      margin-top: 4px;
       text-transform: uppercase;
       text-align: center;
+    }
+    .reset-cycle-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .reset-cycle-btn:hover {
+      border-color: var(--pink);
+      color: var(--pink);
     }
 
     /* Action Buttons */
@@ -200,7 +223,7 @@
       display: flex;
       gap: 12px;
       justify-content: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
     .btn {
@@ -234,6 +257,23 @@
     .btn-secondary:hover {
       border-color: var(--cyan);
       color: var(--text);
+    }
+
+    /* Hotkey Bar */
+    .hotkey-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+    .hotkey-tag {
+      background: #10162a;
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--cyan);
+      font-weight: bold;
     }
 
     /* Ambient Sound Deck */
@@ -343,7 +383,10 @@
       </svg>
       <div class="timer-content">
         <div class="time-digits" id="timeDisplay" role="timer" aria-live="polite" aria-atomic="true">25:00</div>
-        <div class="session-info" id="sessionLabel">SESSION 01 // DEEP WORK</div>
+        <div class="session-info-row">
+          <div class="session-info" id="sessionLabel">SESSION 01 // DEEP WORK</div>
+          <button class="reset-cycle-btn" id="resetCycleBtn" title="รีเซ็ตรอบกลับเป็น 01" aria-label="รีเซ็ตรอบกลับเป็น 01">↺ 01</button>
+        </div>
       </div>
     </div>
 
@@ -352,6 +395,14 @@
       <button class="btn btn-secondary" id="resetBtn" aria-label="รีเซ็ตเวลา">RESET</button>
       <button class="btn btn-primary" id="toggleBtn" aria-label="เริ่มหรือหยุดตัวจับเวลา">START</button>
       <button class="btn btn-secondary" id="skipBtn" aria-label="ข้ามไปยังรอบถัดไป">SKIP &gt;&gt;</button>
+    </div>
+
+    <!-- Hotkey Info -->
+    <div class="hotkey-hint">
+      <span class="hotkey-tag">Space</span> Start/Pause &nbsp;•&nbsp; 
+      <span class="hotkey-tag">R</span> Reset &nbsp;•&nbsp; 
+      <span class="hotkey-tag">S</span> Skip &nbsp;•&nbsp; 
+      <span class="hotkey-tag">M</span> Mute
     </div>
 
     <!-- Ambient Sound Deck (Synthetic Web Audio) -->
@@ -395,8 +446,10 @@
     let masterGain = null;
     let masterCompressor = null;
     let activeNodes = { rain: null, engine: null, binaural: null };
+    let savedVol = parseFloat(localStorage.getItem('cp_volume') || '0.5');
+    if (isNaN(savedVol) || savedVol < 0 || savedVol > 1) savedVol = 0.5;
 
-    function ensureAudio() {
+    async function ensureAudio() {
       if (!audioCtx) {
         audioCtx = new AudioContextClass();
         masterCompressor = audioCtx.createDynamicsCompressor();
@@ -407,139 +460,148 @@
         masterCompressor.release.setValueAtTime(0.25, audioCtx.currentTime);
 
         masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        masterGain.gain.setValueAtTime(savedVol, audioCtx.currentTime);
 
         masterCompressor.connect(masterGain);
         masterGain.connect(audioCtx.destination);
       }
       if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        try {
+          await audioCtx.resume();
+        } catch (e) {}
       }
     }
 
     const volumeSlider = document.getElementById('volumeSlider');
     if (volumeSlider) {
-      volumeSlider.addEventListener('input', (e) => {
-        ensureAudio();
+      volumeSlider.value = savedVol;
+      volumeSlider.addEventListener('input', async (e) => {
+        await ensureAudio();
         const vol = parseFloat(e.target.value);
+        savedVol = vol;
+        localStorage.setItem('cp_volume', String(vol));
         if (masterGain) masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
       });
     }
 
-    function toggleSound(type, btn) {
-      ensureAudio();
+    async function toggleSound(type, btn) {
+      await ensureAudio();
       if (activeNodes[type]) {
         // Stop and disconnect nodes
-        activeNodes[type].stop();
+        try { activeNodes[type].stop(); } catch (e) {}
         activeNodes[type] = null;
         btn.classList.remove('playing');
         return;
       }
 
-      // Start Sound
-      btn.classList.add('playing');
-      if (type === 'rain') {
-        // Pink / White Noise Generator for Rain
-        const bufferSize = audioCtx.sampleRate * 2;
-        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const output = buffer.getChannelData(0);
-        let b0 = 0, b1 = 0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          b0 = 0.99 * b0 + white * 0.05;
-          b1 = 0.95 * b1 + white * 0.1;
-          output[i] = (b0 + b1) * 0.8;
+      try {
+        btn.classList.add('playing');
+        if (type === 'rain') {
+          // Pink / White Noise Generator for Rain
+          const bufferSize = audioCtx.sampleRate * 2;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const output = buffer.getChannelData(0);
+          let b0 = 0, b1 = 0;
+          for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            b0 = 0.99 * b0 + white * 0.05;
+            b1 = 0.95 * b1 + white * 0.1;
+            output[i] = (b0 + b1) * 0.8;
+          }
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = buffer;
+          noise.loop = true;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 1000;
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.25;
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(masterCompressor);
+          noise.start();
+          activeNodes.rain = {
+            stop: () => {
+              try { noise.stop(); } catch (e) {}
+              noise.disconnect();
+              filter.disconnect();
+              gain.disconnect();
+            }
+          };
+        } else if (type === 'engine') {
+          // Low Frequency Sci-Fi Space Hum
+          const osc1 = audioCtx.createOscillator();
+          const osc2 = audioCtx.createOscillator();
+          osc1.type = 'sawtooth';
+          osc1.frequency.value = 55; // A1
+          osc2.type = 'sine';
+          osc2.frequency.value = 110;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 180;
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.3;
+
+          osc1.connect(filter);
+          osc2.connect(filter);
+          filter.connect(gain);
+          gain.connect(masterCompressor);
+
+          osc1.start();
+          osc2.start();
+          activeNodes.engine = {
+            stop: () => {
+              try { osc1.stop(); osc2.stop(); } catch (e) {}
+              osc1.disconnect();
+              osc2.disconnect();
+              filter.disconnect();
+              gain.disconnect();
+            }
+          };
+        } else if (type === 'binaural') {
+          // 40Hz Gamma Focus Frequency
+          const osc = audioCtx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = 216;
+
+          const mod = audioCtx.createOscillator();
+          mod.type = 'sine';
+          mod.frequency.value = 40; // 40Hz modulation
+          const modGain = audioCtx.createGain();
+          modGain.gain.value = 10;
+          mod.connect(modGain);
+          modGain.connect(osc.frequency);
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.2;
+          osc.connect(gain);
+          gain.connect(masterCompressor);
+
+          osc.start();
+          mod.start();
+          activeNodes.binaural = {
+            stop: () => {
+              try { osc.stop(); mod.stop(); } catch (e) {}
+              osc.disconnect();
+              mod.disconnect();
+              modGain.disconnect();
+              gain.disconnect();
+            }
+          };
         }
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = buffer;
-        noise.loop = true;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 1000;
-
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.25;
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(masterCompressor);
-        noise.start();
-        activeNodes.rain = {
-          stop: () => {
-            try { noise.stop(); } catch (e) {}
-            noise.disconnect();
-            filter.disconnect();
-            gain.disconnect();
-          }
-        };
-      } else if (type === 'engine') {
-        // Low Frequency Sci-Fi Space Hum
-        const osc1 = audioCtx.createOscillator();
-        const osc2 = audioCtx.createOscillator();
-        osc1.type = 'sawtooth';
-        osc1.frequency.value = 55; // A1
-        osc2.type = 'sine';
-        osc2.frequency.value = 110;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 180;
-
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.3;
-
-        osc1.connect(filter);
-        osc2.connect(filter);
-        filter.connect(gain);
-        gain.connect(masterCompressor);
-
-        osc1.start();
-        osc2.start();
-        activeNodes.engine = {
-          stop: () => {
-            try { osc1.stop(); osc2.stop(); } catch (e) {}
-            osc1.disconnect();
-            osc2.disconnect();
-            filter.disconnect();
-            gain.disconnect();
-          }
-        };
-      } else if (type === 'binaural') {
-        // 40Hz Gamma Focus Frequency
-        const osc = audioCtx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = 216;
-
-        const mod = audioCtx.createOscillator();
-        mod.type = 'sine';
-        mod.frequency.value = 40; // 40Hz modulation
-        const modGain = audioCtx.createGain();
-        modGain.gain.value = 10;
-        mod.connect(modGain);
-        modGain.connect(osc.frequency);
-
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.2;
-        osc.connect(gain);
-        gain.connect(masterCompressor);
-
-        osc.start();
-        mod.start();
-        activeNodes.binaural = {
-          stop: () => {
-            try { osc.stop(); mod.stop(); } catch (e) {}
-            osc.disconnect();
-            mod.disconnect();
-            modGain.disconnect();
-            gain.disconnect();
-          }
-        };
+      } catch (err) {
+        btn.classList.remove('playing');
+        activeNodes[type] = null;
       }
     }
 
-    function playBeep(success = false) {
-      ensureAudio();
+    async function playBeep(success = false) {
+      await ensureAudio();
       try {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -551,7 +613,7 @@
         gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
         gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(masterCompressor || audioCtx.destination);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.3);
       } catch (e) {}
@@ -571,6 +633,7 @@
     const progressFill = document.getElementById('progressFill');
     const timeDisplay = document.getElementById('timeDisplay');
     const sessionLabel = document.getElementById('sessionLabel');
+    const resetCycleBtn = document.getElementById('resetCycleBtn');
     const systemStatus = document.getElementById('systemStatus');
     const toggleBtn = document.getElementById('toggleBtn');
     const resetBtn = document.getElementById('resetBtn');
@@ -602,18 +665,31 @@
     let cycleCount = parseInt(localStorage.getItem('cp_cycle') || '1', 10);
     if (isNaN(cycleCount) || cycleCount < 1) cycleCount = 1;
 
-    function updateDisplay() {
+    function updateDisplay(withAnim = true) {
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
       timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
       
+      if (!withAnim) {
+        progressFill.classList.add('no-anim');
+      } else {
+        progressFill.classList.remove('no-anim');
+      }
+
       const offset = CIRCUMFERENCE - (timeLeft / currentDuration) * CIRCUMFERENCE;
       progressFill.style.strokeDashoffset = offset;
+
+      if (!withAnim) {
+        // Re-enable animation on next frame
+        requestAnimationFrame(() => {
+          progressFill.classList.remove('no-anim');
+        });
+      }
 
       document.title = `(${timeDisplay.textContent}) CYBERPUNK FOCUS`;
     }
 
-    function setMode(mode, duration) {
+    function setMode(mode, duration, preserveCycle = true) {
       currentMode = mode;
       currentDuration = duration;
       timeLeft = duration;
@@ -622,6 +698,12 @@
       timerId = null;
       toggleBtn.textContent = 'START';
       systemStatus.textContent = 'ONLINE // READY';
+
+      // Auto mute 40Hz focus wave if entering break
+      if (mode !== 'focus' && activeNodes.binaural) {
+        const binauralBtn = document.querySelector('.sound-btn[data-sound="binaural"]');
+        if (binauralBtn) toggleSound('binaural', binauralBtn);
+      }
 
       modeTabs.forEach(t => {
         const isActive = t.dataset.mode === mode;
@@ -640,7 +722,7 @@
         progressFill.style.stroke = 'var(--pink)';
         sessionLabel.textContent = 'REST // LONG BREAK';
       }
-      updateDisplay();
+      updateDisplay(false); // No animation glitch when resetting/changing mode
     }
 
     function handleTimerComplete() {
@@ -667,8 +749,8 @@
       }
     }
 
-    function toggleTimer() {
-      ensureAudio();
+    async function toggleTimer() {
+      await ensureAudio();
       if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
       }
@@ -690,7 +772,7 @@
         timerId = setInterval(() => {
           const remaining = Math.max(0, Math.round((targetEndTime - Date.now()) / 1000));
           timeLeft = remaining;
-          updateDisplay();
+          updateDisplay(true);
           if (timeLeft <= 0) {
             handleTimerComplete();
           }
@@ -708,20 +790,25 @@
     resetBtn.addEventListener('click', () => {
       setMode(currentMode, currentDuration);
     });
+
+    // Skip handler (Fix: Skipping focus mode does NOT increment cycle)
     skipBtn.addEventListener('click', () => {
       if (currentMode === 'focus') {
-        if (cycleCount % 4 === 0) {
-          cycleCount++;
-          localStorage.setItem('cp_cycle', String(cycleCount));
-          setMode('longBreak', 900);
-        } else {
-          cycleCount++;
-          localStorage.setItem('cp_cycle', String(cycleCount));
-          setMode('shortBreak', 300);
-        }
+        setMode('shortBreak', 300);
       } else {
         setMode('focus', 1500);
       }
+    });
+
+    // Reset Cycle Count Button
+    resetCycleBtn.addEventListener('click', () => {
+      cycleCount = 1;
+      localStorage.setItem('cp_cycle', '1');
+      const formattedCycle = String(cycleCount).padStart(2, '0');
+      if (currentMode === 'focus') {
+        sessionLabel.textContent = `SESSION ${formattedCycle} // DEEP WORK`;
+      }
+      playBeep(false);
     });
 
     soundBtns.forEach(btn => {
@@ -730,7 +817,32 @@
       });
     });
 
-    updateDisplay();
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      // Ignore if user is currently typing in input field
+      if (document.activeElement === missionInput) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        toggleTimer();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        setMode(currentMode, currentDuration);
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        skipBtn.click();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        if (masterGain) {
+          const currentGain = masterGain.gain.value;
+          const newVol = currentGain > 0 ? 0 : savedVol || 0.5;
+          masterGain.gain.setValueAtTime(newVol, audioCtx ? audioCtx.currentTime : 0);
+          if (volumeSlider) volumeSlider.value = newVol;
+        }
+      }
+    });
+
+    updateDisplay(false);
   </script>
 </body>
 </html>
