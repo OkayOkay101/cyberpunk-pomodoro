@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070913">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <title>CYBERPUNK FOCUS // POMODORO STATION</title>
   <style>
     :root {
@@ -14,12 +16,17 @@
       --yellow: #ffe600;
       --green: #00ff66;
       --text: #e2edff;
-      --text-dim: #6c7d9b;
+      --text-dim: #8fa2c4; /* WCAG AA compliant contrast (>4.5:1 on dark background) */
+      --accent: var(--cyan);
     }
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
     body {
       background-color: var(--bg);
@@ -35,18 +42,23 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 16px;
       position: relative;
       overflow-x: hidden;
+      transition: background-color 0.3s;
+    }
+
+    button, .btn, .mode-tab, .sound-btn, .volume-slider {
+      touch-action: manipulation;
     }
 
     /* Cyberpunk HUD Frame */
     .station-container {
       width: 100%;
-      max-width: 640px;
-      background: rgba(13, 18, 36, 0.85);
+      max-width: 680px;
+      background: rgba(13, 18, 36, 0.90);
       border: 1px solid var(--border);
-      border-top: 3px solid var(--cyan);
+      border-top: 3px solid var(--accent);
       border-radius: 8px;
       padding: 24px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 240, 255, 0.15);
@@ -54,7 +66,7 @@
       position: relative;
     }
     .station-container::before {
-      content: "SYS_VER // 2.0.77 // FOCUS_MATRIX";
+      content: "SYS_VER // 3.0.00 // APEX_MATRIX";
       position: absolute;
       top: -12px;
       left: 20px;
@@ -62,9 +74,54 @@
       padding: 2px 10px;
       font-size: 10px;
       letter-spacing: 2px;
-      color: var(--cyan);
+      color: var(--accent);
       border: 1px solid var(--border);
       border-radius: 2px;
+    }
+
+    .top-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-size: 11px;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stats-streak {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    .stat-badge {
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    .hud-tools {
+      display: flex;
+      gap: 6px;
+    }
+    .tool-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .tool-btn:hover, .tool-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0, 240, 255, 0.1);
     }
 
     .header-row {
@@ -74,6 +131,8 @@
       margin-bottom: 20px;
       border-bottom: 1px dashed var(--border);
       padding-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
     }
     .glitch-title {
       font-size: 20px;
@@ -120,38 +179,39 @@
     }
     .mode-tab {
       flex: 1;
-      padding: 8px 12px;
+      padding: 8px 10px;
       background: transparent;
       border: none;
       color: var(--text-dim);
-      font-size: 13px;
+      font-size: clamp(11px, 2.8vw, 13px);
       font-weight: bold;
       letter-spacing: 1px;
       cursor: pointer;
       border-radius: 4px;
       transition: all 0.2s ease;
       text-align: center;
+      font-family: inherit;
     }
     .mode-tab.active {
-      background: var(--cyan);
+      background: var(--accent);
       color: #070913;
       box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
     }
 
-    /* Timer Display */
+    /* Timer Display (Responsive) */
     .timer-circle-wrapper {
       position: relative;
-      width: 250px;
-      height: 250px;
-      margin: 0 auto 24px auto;
+      width: min(250px, 70vw);
+      height: min(250px, 70vw);
+      margin: 0 auto 20px auto;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .progress-ring {
       transform: rotate(-90deg);
-      width: 250px;
-      height: 250px;
+      width: 100%;
+      height: 100%;
     }
     .progress-ring-bg {
       fill: none;
@@ -160,13 +220,16 @@
     }
     .progress-ring-fill {
       fill: none;
-      stroke: var(--cyan);
+      stroke: var(--accent);
       stroke-width: 8;
       stroke-linecap: round;
-      stroke-dasharray: 691;
+      stroke-dasharray: 691.15;
       stroke-dashoffset: 0;
-      transition: stroke-dashoffset 0.5s linear, stroke 0.3s ease;
-      filter: drop-shadow(0 0 8px var(--cyan));
+      transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+      filter: drop-shadow(0 0 8px var(--accent));
+    }
+    .progress-ring-fill.no-anim {
+      transition: none !important;
     }
     .timer-content {
       position: absolute;
@@ -176,19 +239,41 @@
       justify-content: center;
     }
     .time-digits {
-      font-size: 52px;
+      font-size: clamp(36px, 12vw, 52px);
       font-weight: 900;
       letter-spacing: 2px;
       color: var(--text);
       text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
       font-variant-numeric: tabular-nums;
     }
+    .session-info-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
     .session-info {
-      font-size: 12px;
+      font-size: clamp(10px, 2.5vw, 12px);
       letter-spacing: 2px;
       color: var(--text-dim);
-      margin-top: 4px;
       text-transform: uppercase;
+      text-align: center;
+    }
+    .reset-cycle-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .reset-cycle-btn:hover {
+      border-color: var(--pink);
+      color: var(--pink);
     }
 
     /* Action Buttons */
@@ -196,10 +281,11 @@
       display: flex;
       gap: 12px;
       justify-content: center;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
     }
     .btn {
-      padding: 12px 28px;
+      padding: 12px 24px;
       border-radius: 4px;
       font-size: 14px;
       font-weight: 800;
@@ -209,14 +295,15 @@
       transition: all 0.2s;
       text-transform: uppercase;
       font-family: inherit;
+      min-width: 90px;
     }
     .btn-primary {
-      background: var(--cyan);
+      background: var(--accent);
       color: #070913;
       box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
     }
     .btn-primary:hover {
-      background: #33f3ff;
+      filter: brightness(1.15);
       box-shadow: 0 0 22px rgba(0, 240, 255, 0.7);
       transform: translateY(-1px);
     }
@@ -226,8 +313,41 @@
       color: var(--text-dim);
     }
     .btn-secondary:hover {
-      border-color: var(--cyan);
+      border-color: var(--accent);
       color: var(--text);
+    }
+    .btn-secondary.confirming {
+      border-color: var(--pink);
+      color: var(--pink);
+      box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
+    }
+
+    /* Hotkey Bar */
+    .hotkey-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+    }
+    .hotkey-tag {
+      background: #10162a;
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* Audio Spectrum Visualizer */
+    .visualizer-canvas {
+      width: 100%;
+      height: 36px;
+      background: rgba(7, 9, 19, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 16px;
+      display: block;
     }
 
     /* Ambient Sound Deck */
@@ -241,15 +361,50 @@
     .deck-title {
       font-size: 12px;
       letter-spacing: 1.5px;
-      color: var(--cyan);
+      color: var(--accent);
       margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+    .mute-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      transition: color 0.2s;
+    }
+    .mute-btn:hover {
+      color: var(--accent);
+    }
+    .volume-slider {
+      width: 80px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .vol-num {
+      font-size: 10px;
+      width: 32px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
     }
     .sound-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
       gap: 8px;
     }
     .sound-btn {
@@ -258,7 +413,7 @@
       color: var(--text-dim);
       padding: 10px 8px;
       border-radius: 4px;
-      font-size: 12px;
+      font-size: 11px;
       font-family: inherit;
       cursor: pointer;
       display: flex;
@@ -270,258 +425,767 @@
     .sound-btn span { font-size: 16px; }
     .sound-btn.playing {
       background: rgba(0, 240, 255, 0.15);
-      border-color: var(--cyan);
-      color: var(--cyan);
+      border-color: var(--accent);
+      color: var(--accent);
       box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
     }
 
-    /* Target Mission / Task Input */
+    /* Target Mission / Task Input & Checklist */
     .mission-input-row {
       display: flex;
       gap: 8px;
+      position: relative;
+      margin-bottom: 10px;
     }
     .mission-input {
       flex: 1;
       background: #090d1a;
       border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 8px 12px;
+      padding: 8px 32px 8px 12px;
       color: var(--text);
       font-size: 13px;
       font-family: inherit;
       outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
     }
     .mission-input:focus {
-      border-color: var(--cyan);
+      border-color: var(--accent);
       box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
     }
-    .mission-btn {
-      background: #17213d;
+    .mission-input.saved {
+      border-color: var(--green);
+      box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+    }
+    .clear-mission-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+    }
+    .clear-mission-btn:hover {
+      color: var(--accent);
+    }
+
+    /* Task Checklist */
+    .task-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      background: rgba(9, 13, 26, 0.8);
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    .task-item input[type="checkbox"] {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .task-item.done {
+      text-decoration: line-through;
+      color: var(--text-dim);
+      opacity: 0.6;
+    }
+
+    /* Modal / Settings Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(7, 9, 19, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      width: 100%;
+      max-width: 440px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 25px rgba(0, 240, 255, 0.2);
+    }
+    .modal-title {
+      font-size: 16px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-size: 13px;
+    }
+    .settings-input {
+      width: 70px;
+      background: #090d1a;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 8px 16px;
+      padding: 6px 8px;
       border-radius: 4px;
+      font-family: inherit;
+      text-align: center;
+    }
+    .theme-swatches {
+      display: flex;
+      gap: 8px;
+    }
+    .theme-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid transparent;
       cursor: pointer;
-      font-size: 13px;
+    }
+    .theme-btn.active {
+      border-color: #fff;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
   <div class="station-container">
+    <!-- Top HUD Toolbar -->
+    <div class="top-toolbar">
+      <div class="stats-streak">
+        <span class="stat-badge" id="streakBadge">⚡ STREAK: 1 DAY</span>
+        <span class="stat-badge" id="focusTimeBadge">🎯 0 MINS TODAY</span>
+      </div>
+      <div class="hud-tools">
+        <button class="tool-btn" id="tickToggleBtn" title="เปิด/ปิดเสียงเดินของเวลา (Tick)">⏱️ TICK: OFF</button>
+        <button class="tool-btn" id="autoStartBtn" title="สลับโหมดเริ่มรอบถัดไปอัตโนมัติ">⚡ AUTO: OFF</button>
+        <button class="tool-btn" id="settingsBtn" title="การตั้งค่า">⚙️ SETTINGS</button>
+        <button class="tool-btn" id="fullscreenBtn" title="โหมดเต็มจอ">⛶</button>
+        <a href="test.html" class="tool-btn" style="text-decoration: none;" title="เปิดดูผล Unit Tests">🧪 TESTS</a>
+      </div>
+    </div>
+
+    <!-- Header Row -->
     <div class="header-row">
       <div class="glitch-title">⚡ CYBERPUNK FOCUS</div>
       <div class="status-badge">
         <span class="status-dot"></span>
-        <span id="systemStatus">ONLINE // READY</span>
+        <span id="systemStatus" aria-live="polite">ONLINE // READY</span>
       </div>
     </div>
 
     <!-- Mode Selector Tabs -->
-    <div class="mode-tabs">
-      <button class="mode-tab active" data-mode="focus" data-time="1500">FOCUS (25M)</button>
-      <button class="mode-tab" data-mode="shortBreak" data-time="300">SHORT (5M)</button>
-      <button class="mode-tab" data-mode="longBreak" data-time="900">LONG (15M)</button>
+    <div class="mode-tabs" role="tablist" aria-label="โหมดจับเวลา">
+      <button class="mode-tab active" data-mode="focus" id="tabFocus" role="tab" aria-selected="true" aria-label="โฟกัส">FOCUS (25M)</button>
+      <button class="mode-tab" data-mode="shortBreak" id="tabShort" role="tab" aria-selected="false" aria-label="พักสั้น">SHORT (5M)</button>
+      <button class="mode-tab" data-mode="longBreak" id="tabLong" role="tab" aria-selected="false" aria-label="พักยาว">LONG (15M)</button>
     </div>
 
     <!-- Timer Ring -->
     <div class="timer-circle-wrapper">
-      <svg class="progress-ring">
+      <svg class="progress-ring" viewBox="0 0 250 250" aria-hidden="true">
         <circle class="progress-ring-bg" cx="125" cy="125" r="110" />
         <circle class="progress-ring-fill" id="progressFill" cx="125" cy="125" r="110" />
       </svg>
       <div class="timer-content">
-        <div class="time-digits" id="timeDisplay">25:00</div>
-        <div class="session-info" id="sessionLabel">SESSION 01 // DEEP WORK</div>
+        <div class="time-digits" id="timeDisplay" role="timer" aria-live="polite" aria-atomic="true">25:00</div>
+        <div class="session-info-row">
+          <div class="session-info" id="sessionLabel">SESSION 01 // DEEP WORK</div>
+          <button class="reset-cycle-btn" id="resetCycleBtn" title="รีเซ็ตรอบกลับเป็น 01" aria-label="รีเซ็ตรอบกลับเป็น 01">↺ 01</button>
+        </div>
       </div>
     </div>
 
     <!-- Controls -->
     <div class="btn-row">
-      <button class="btn btn-secondary" id="resetBtn">RESET</button>
-      <button class="btn btn-primary" id="toggleBtn">START</button>
-      <button class="btn btn-secondary" id="skipBtn">SKIP &gt;&gt;</button>
+      <button class="btn btn-secondary" id="resetBtn" aria-label="รีเซ็ตเวลา">RESET</button>
+      <button class="btn btn-primary" id="toggleBtn" aria-label="เริ่มหรือหยุดตัวจับเวลา">START</button>
+      <button class="btn btn-secondary" id="skipBtn" aria-label="ข้ามไปยังรอบถัดไป">SKIP &gt;&gt;</button>
     </div>
+
+    <!-- Hotkey Info -->
+    <div class="hotkey-hint">
+      <span class="hotkey-tag">Space</span> Start/Pause &nbsp;•&nbsp; 
+      <span class="hotkey-tag">R</span> Reset &nbsp;•&nbsp; 
+      <span class="hotkey-tag">S</span> Skip &nbsp;•&nbsp; 
+      <span class="hotkey-tag">M</span> Mute &nbsp;•&nbsp; 
+      <span class="hotkey-tag">F</span> Fullscreen
+    </div>
+
+    <!-- Real-time Audio Visualizer -->
+    <canvas class="visualizer-canvas" id="audioVisualizer" width="600" height="36" aria-label="เส้นคลื่นเสียง"></canvas>
 
     <!-- Ambient Sound Deck (Synthetic Web Audio) -->
     <div class="deck-section">
       <div class="deck-title">
         <span>🎧 NEURAL AMBIENT GENERATOR</span>
-        <span style="font-size: 10px; color: var(--text-dim);">WEB AUDIO SYNTH</span>
+        <div class="volume-control">
+          <button class="mute-btn" id="muteBtn" title="เปิด/ปิดเสียง (M)" aria-label="เปิดหรือปิดเสียง">🔊</button>
+          <span>VOL</span>
+          <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="0.5" aria-label="ระดับเสียงบรรยากาศ">
+          <span class="vol-num" id="volumePercent">50%</span>
+        </div>
       </div>
       <div class="sound-grid">
-        <button class="sound-btn" data-sound="rain">
+        <button class="sound-btn" data-sound="rain" aria-label="เปิดเสียง Cyber Rain" aria-pressed="false">
           <span>🌧️</span>
           <b>Cyber Rain</b>
         </button>
-        <button class="sound-btn" data-sound="engine">
+        <button class="sound-btn" data-sound="engine" aria-label="เปิดเสียง Deep Space Hum" aria-pressed="false">
           <span>🚀</span>
           <b>Deep Space Hum</b>
         </button>
-        <button class="sound-btn" data-sound="binaural">
+        <button class="sound-btn" data-sound="binaural" aria-label="เปิดเสียง 40Hz Focus Wave" aria-pressed="false">
           <span>⚡</span>
           <b>40Hz Focus Wave</b>
+        </button>
+        <button class="sound-btn" data-sound="fan" aria-label="เปิดเสียง Server Cooling Fan" aria-pressed="false">
+          <span>🌀</span>
+          <b>Server Fan</b>
+        </button>
+        <button class="sound-btn" data-sound="storm" aria-label="เปิดเสียง Neon Rainstorm" aria-pressed="false">
+          <span>⛈️</span>
+          <b>Cyber Storm</b>
         </button>
       </div>
     </div>
 
-    <!-- Mission Focus Bar -->
+    <!-- Mission Focus Bar & Checklist -->
     <div class="deck-section">
-      <div class="deck-title">🎯 CURRENT MISSION OBJECTIVE</div>
+      <div class="deck-title">
+        <span>🎯 MISSION OBJECTIVES & TASKS</span>
+        <span style="font-size: 10px; color: var(--text-dim);">CHECKLIST PERSISTED</span>
+      </div>
       <div class="mission-input-row">
-        <input type="text" class="mission-input" id="missionInput" placeholder="ระบุภารกิจหรือเป้าหมายที่ต้องการโฟกัส..." value="สร้างสรรค์โปรเจกต์ระดับเทพ">
+        <input type="text" class="mission-input" id="missionInput" maxlength="80" placeholder="ระบุภารกิจหรือเป้าหมายที่ต้องการโฟกัส... (กด Enter เพื่อเพิ่มรายการ)" value="สร้างสรรค์โปรเจกต์ระดับเทพ" autocomplete="off" aria-label="ระบุภารกิจที่กำลังโฟกัส">
+        <button class="clear-mission-btn" id="clearMissionBtn" title="ล้างข้อความ" aria-label="ล้างข้อความภารกิจ">✕</button>
+      </div>
+      <div class="task-checklist" id="taskChecklist"></div>
+    </div>
+  </div>
+
+  <!-- HUD Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-box">
+      <div class="modal-title">⚙️ SYSTEM CONFIGURATION</div>
+      <div class="settings-row">
+        <span>Focus Duration (นาที):</span>
+        <input type="number" class="settings-input" id="cfgFocusMin" min="1" max="90" value="25">
+      </div>
+      <div class="settings-row">
+        <span>Short Break (นาที):</span>
+        <input type="number" class="settings-input" id="cfgShortMin" min="1" max="30" value="5">
+      </div>
+      <div class="settings-row">
+        <span>Long Break (นาที):</span>
+        <input type="number" class="settings-input" id="cfgLongMin" min="1" max="60" value="15">
+      </div>
+      <div class="settings-row">
+        <span>HUD Neon Theme:</span>
+        <div class="theme-swatches">
+          <button class="theme-btn active" data-theme="cyan" style="background: #00f0ff;" title="Cyan Matrix"></button>
+          <button class="theme-btn" data-theme="pink" style="background: #ff007f;" title="Neon Pink / Outrun"></button>
+          <button class="theme-btn" data-theme="yellow" style="background: #ffe600;" title="Night City Yellow"></button>
+          <button class="theme-btn" data-theme="green" style="background: #00ff66;" title="Emerald Hacker"></button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeSettingsBtn">CANCEL</button>
+        <button class="btn btn-primary" id="saveSettingsBtn">SAVE</button>
       </div>
     </div>
   </div>
 
+  <script src="test-runner.js"></script>
   <script>
-    // Web Audio Synthesizer Engine (Zero external dependencies)
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    // Audio Engine State
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
-    let activeNodes = { rain: null, engine: null, binaural: null };
+    let masterGain = null;
+    let masterCompressor = null;
+    let analyser = null;
+    let cachedRainBuffer = null;
+    let cachedFanBuffer = null;
+    let activeNodes = { rain: null, engine: null, binaural: null, fan: null, storm: null };
+    let savedVol = PomodoroCore.clampVolume(localStorage.getItem('cp_volume') || '0.5');
+    let isMuted = localStorage.getItem('cp_muted') === 'true';
+    let isProcessingToggle = false;
+    let isTickEnabled = localStorage.getItem('cp_tick') === 'true';
+    let isAutoStart = localStorage.getItem('cp_autostart') === 'true';
+    let audioInitLock = false;
+    let resetConfirmTimer = null;
 
-    function ensureAudio() {
-      if (!audioCtx) audioCtx = new AudioContext();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+    // Durations Config (minutes -> seconds)
+    let configDurations = {
+      focus: PomodoroCore.validateCustomDuration(localStorage.getItem('cp_cfg_focus') || '25', 1, 90, 25) * 60,
+      shortBreak: PomodoroCore.validateCustomDuration(localStorage.getItem('cp_cfg_short') || '5', 1, 30, 5) * 60,
+      longBreak: PomodoroCore.validateCustomDuration(localStorage.getItem('cp_cfg_long') || '15', 1, 60, 15) * 60
+    };
+
+    function safeDisconnect(node) {
+      if (!node) return;
+      try { node.disconnect(); } catch (e) {}
     }
 
-    function toggleSound(type, btn) {
-      ensureAudio();
+    async function ensureAudio() {
+      if (audioInitLock) return;
+      if (!audioCtx) {
+        audioInitLock = true;
+        try {
+          audioCtx = new AudioContextClass();
+          masterCompressor = audioCtx.createDynamicsCompressor();
+          masterCompressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
+          masterCompressor.knee.setValueAtTime(30, audioCtx.currentTime);
+          masterCompressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+          masterCompressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+          masterCompressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 64;
+
+          masterGain = audioCtx.createGain();
+          masterGain.gain.setValueAtTime(isMuted ? 0 : savedVol, audioCtx.currentTime);
+
+          masterCompressor.connect(analyser);
+          analyser.connect(masterGain);
+          masterGain.connect(audioCtx.destination);
+          startVisualizer();
+        } finally {
+          audioInitLock = false;
+        }
+      }
+      if (audioCtx.state === 'suspended') {
+        try { await audioCtx.resume(); } catch (e) {}
+      }
+    }
+
+    // Audio Spectrum Visualizer
+    function startVisualizer() {
+      const canvas = document.getElementById('audioVisualizer');
+      if (!canvas || !analyser) return;
+      const ctx = canvas.getContext('2d');
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function renderFrame() {
+        requestAnimationFrame(renderFrame);
+        analyser.getByteFrequencyData(dataArray);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const barWidth = (canvas.width / bufferLength) * 1.5;
+        let x = 0;
+        const currentTheme = localStorage.getItem('cp_theme') || 'cyan';
+        const primaryColor = PomodoroCore.getThemeVariables(currentTheme).primary;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * canvas.height;
+          ctx.fillStyle = primaryColor;
+          ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+          x += barWidth;
+        }
+      }
+      renderFrame();
+    }
+
+    // Tick Sound Engine
+    async function playTick() {
+      if (!isTickEnabled) return;
+      await ensureAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(masterCompressor || audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.04);
+      } catch (e) {}
+    }
+
+    const volumeSlider = document.getElementById('volumeSlider');
+    const muteBtn = document.getElementById('muteBtn');
+    const volumePercent = document.getElementById('volumePercent');
+
+    function updateVolumeDisplay(vol) {
+      if (volumePercent) {
+        const pct = isMuted ? 0 : Math.round(vol * 100);
+        volumePercent.textContent = `${pct}%`;
+      }
+      if (muteBtn) {
+        muteBtn.textContent = (isMuted || vol === 0) ? '🔇' : '🔊';
+      }
+    }
+    updateVolumeDisplay(savedVol);
+
+    if (volumeSlider) {
+      volumeSlider.value = isMuted ? 0 : savedVol;
+      volumeSlider.addEventListener('input', async (e) => {
+        await ensureAudio();
+        const vol = parseFloat(e.target.value);
+        savedVol = vol;
+        isMuted = (vol === 0);
+        localStorage.setItem('cp_muted', String(isMuted));
+        localStorage.setItem('cp_volume', String(vol));
+        updateVolumeDisplay(vol);
+        if (masterGain) {
+          masterGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.03);
+        }
+      });
+    }
+
+    async function toggleMute() {
+      await ensureAudio();
+      isMuted = !isMuted;
+      localStorage.setItem('cp_muted', String(isMuted));
+      const targetVol = isMuted ? 0 : (savedVol > 0 ? savedVol : 0.5);
+      if (!isMuted && savedVol === 0) savedVol = 0.5;
+      if (masterGain) {
+        masterGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.03);
+      }
+      if (volumeSlider) volumeSlider.value = targetVol;
+      updateVolumeDisplay(targetVol);
+    }
+
+    if (muteBtn) muteBtn.addEventListener('click', toggleMute);
+
+    // Synthetic Ambient Audio Generator
+    async function toggleSound(type, btn) {
+      await ensureAudio();
       if (activeNodes[type]) {
-        // Stop
-        activeNodes[type].stop();
+        try { activeNodes[type].stop(); } catch (e) {}
         activeNodes[type] = null;
         btn.classList.remove('playing');
+        btn.setAttribute('aria-pressed', 'false');
         return;
       }
 
-      // Start Sound
-      btn.classList.add('playing');
-      if (type === 'rain') {
-        // Pink / White Noise Generator for Rain
-        const bufferSize = audioCtx.sampleRate * 2;
-        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const output = buffer.getChannelData(0);
-        let b0 = 0, b1 = 0, b2 = 0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          b0 = 0.99 * b0 + white * 0.05;
-          b1 = 0.95 * b1 + white * 0.1;
-          output[i] = (b0 + b1) * 0.8;
+      try {
+        btn.classList.add('playing');
+        btn.setAttribute('aria-pressed', 'true');
+        if (type === 'rain') {
+          if (!cachedRainBuffer) {
+            const bufferSize = audioCtx.sampleRate * 2;
+            cachedRainBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = cachedRainBuffer.getChannelData(0);
+            let b0 = 0, b1 = 0;
+            for (let i = 0; i < bufferSize; i++) {
+              const white = Math.random() * 2 - 1;
+              b0 = 0.99 * b0 + white * 0.05;
+              b1 = 0.95 * b1 + white * 0.1;
+              output[i] = (b0 + b1) * 0.8;
+            }
+          }
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = cachedRainBuffer;
+          noise.loop = true;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 1000;
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.25;
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(masterCompressor);
+          noise.start();
+          activeNodes.rain = {
+            stop: () => {
+              try { noise.stop(); } catch (e) {}
+              safeDisconnect(noise); safeDisconnect(filter); safeDisconnect(gain);
+            }
+          };
+        } else if (type === 'engine') {
+          const osc1 = audioCtx.createOscillator();
+          const osc2 = audioCtx.createOscillator();
+          osc1.type = 'sawtooth';
+          osc1.frequency.value = 55;
+          osc2.type = 'sine';
+          osc2.frequency.value = 110;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 180;
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.3;
+
+          osc1.connect(filter); osc2.connect(filter);
+          filter.connect(gain); gain.connect(masterCompressor);
+          osc1.start(); osc2.start();
+          activeNodes.engine = {
+            stop: () => {
+              try { osc1.stop(); osc2.stop(); } catch (e) {}
+              safeDisconnect(osc1); safeDisconnect(osc2); safeDisconnect(filter); safeDisconnect(gain);
+            }
+          };
+        } else if (type === 'binaural') {
+          const osc = audioCtx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = 216;
+
+          const mod = audioCtx.createOscillator();
+          mod.type = 'sine';
+          mod.frequency.value = 40;
+          const modGain = audioCtx.createGain();
+          modGain.gain.value = 10;
+          mod.connect(modGain);
+          modGain.connect(osc.frequency);
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.2;
+          osc.connect(gain);
+          gain.connect(masterCompressor);
+          osc.start(); mod.start();
+          activeNodes.binaural = {
+            stop: () => {
+              try { osc.stop(); mod.stop(); } catch (e) {}
+              safeDisconnect(osc); safeDisconnect(mod); safeDisconnect(modGain); safeDisconnect(gain);
+            }
+          };
+        } else if (type === 'fan') {
+          if (!cachedFanBuffer) {
+            const bufferSize = audioCtx.sampleRate * 2;
+            cachedFanBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = cachedFanBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+              output[i] = (Math.random() * 2 - 1) * 0.4;
+            }
+          }
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = cachedFanBuffer;
+          noise.loop = true;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 450;
+          filter.Q.value = 1.2;
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.22;
+
+          noise.connect(filter); filter.connect(gain); gain.connect(masterCompressor);
+          noise.start();
+          activeNodes.fan = {
+            stop: () => {
+              try { noise.stop(); } catch (e) {}
+              safeDisconnect(noise); safeDisconnect(filter); safeDisconnect(gain);
+            }
+          };
+        } else if (type === 'storm') {
+          const osc = audioCtx.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.value = 42;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 120;
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.28;
+
+          osc.connect(filter); filter.connect(gain); gain.connect(masterCompressor);
+          osc.start();
+          activeNodes.storm = {
+            stop: () => {
+              try { osc.stop(); } catch (e) {}
+              safeDisconnect(osc); safeDisconnect(filter); safeDisconnect(gain);
+            }
+          };
         }
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = buffer;
-        noise.loop = true;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 1000;
-
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.25;
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-        noise.start();
-        activeNodes.rain = { stop: () => { noise.stop(); } };
-      } else if (type === 'engine') {
-        // Low Frequency Sci-Fi Space Hum
-        const osc1 = audioCtx.createOscillator();
-        const osc2 = audioCtx.createOscillator();
-        osc1.type = 'sawtooth';
-        osc1.frequency.value = 55; // A1
-        osc2.type = 'sine';
-        osc2.frequency.value = 110;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 180;
-
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.3;
-
-        osc1.connect(filter);
-        osc2.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc1.start();
-        osc2.start();
-        activeNodes.engine = { stop: () => { osc1.stop(); osc2.stop(); } };
-      } else if (type === 'binaural') {
-        // 40Hz Gamma Focus Frequency
-        const osc = audioCtx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = 216;
-
-        const mod = audioCtx.createOscillator();
-        mod.type = 'sine';
-        mod.frequency.value = 40; // 40Hz modulation
-        const modGain = audioCtx.createGain();
-        modGain.gain.value = 10;
-        mod.connect(modGain);
-        modGain.connect(osc.frequency);
-
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.2;
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start();
-        mod.start();
-        activeNodes.binaural = { stop: () => { osc.stop(); mod.stop(); } };
+      } catch (err) {
+        btn.classList.remove('playing');
+        btn.setAttribute('aria-pressed', 'false');
+        activeNodes[type] = null;
       }
     }
 
-    function playBeep(success = false) {
-      ensureAudio();
+    async function playBeep(modeType = 'focus_end') {
+      await ensureAudio();
       try {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(success ? 880 : 440, audioCtx.currentTime);
-        if (success) {
-          osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.3);
+
+        if (modeType === 'focus_end') {
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.35);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(masterCompressor || audioCtx.destination);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+        } else {
+          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(masterCompressor || audioCtx.destination);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.35);
         }
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {}
+    }
+
+    function notifySessionComplete(title, bodyText) {
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, {
+            body: bodyText,
+            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>",
+            tag: 'cyberpunk-pomodoro'
+          });
+        }
       } catch (e) {}
     }
 
     // Pomodoro Timer Logic
-    const CIRCUMFERENCE = 2 * Math.PI * 110; // r=110 -> 691.15
+    const CIRCUMFERENCE = 2 * Math.PI * 110;
     const progressFill = document.getElementById('progressFill');
     const timeDisplay = document.getElementById('timeDisplay');
     const sessionLabel = document.getElementById('sessionLabel');
+    const resetCycleBtn = document.getElementById('resetCycleBtn');
     const systemStatus = document.getElementById('systemStatus');
     const toggleBtn = document.getElementById('toggleBtn');
     const resetBtn = document.getElementById('resetBtn');
     const skipBtn = document.getElementById('skipBtn');
     const modeTabs = document.querySelectorAll('.mode-tab');
     const soundBtns = document.querySelectorAll('.sound-btn');
+    const missionInput = document.getElementById('missionInput');
+    const clearMissionBtn = document.getElementById('clearMissionBtn');
+    const streakBadge = document.getElementById('streakBadge');
+    const focusTimeBadge = document.getElementById('focusTimeBadge');
+    const tickToggleBtn = document.getElementById('tickToggleBtn');
+    const autoStartBtn = document.getElementById('autoStartBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const taskChecklist = document.getElementById('taskChecklist');
 
     progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
 
-    let currentDuration = 1500;
-    let timeLeft = 1500;
+    let totalFocusMinsToday = parseInt(localStorage.getItem('cp_focus_mins_today') || '0', 10);
+    let lastActiveDate = localStorage.getItem('cp_last_date');
+    const todayStr = new Date().toISOString().split('T')[0];
+    let currentStreak = PomodoroCore.calculateStreak(lastActiveDate, todayStr, parseInt(localStorage.getItem('cp_streak') || '1', 10));
+
+    function updateStatsBadges() {
+      if (streakBadge) streakBadge.textContent = `⚡ STREAK: ${currentStreak} DAY${currentStreak > 1 ? 'S' : ''}`;
+      if (focusTimeBadge) focusTimeBadge.textContent = `🎯 ${totalFocusMinsToday} MINS TODAY`;
+    }
+    updateStatsBadges();
+
+    let tasks = PomodoroCore.deserializeConfig(localStorage.getItem('cp_tasks'), [
+      { id: 1, text: 'เข้าสู่ Matrix & กำหนดเป้าหมายแรก', done: true },
+      { id: 2, text: 'โฟกัส 25 นาทีแบบ Deep Work', done: false }
+    ]);
+
+    function renderTasks() {
+      if (!taskChecklist) return;
+      taskChecklist.innerHTML = tasks.map(t => `
+        <div class="task-item ${t.done ? 'done' : ''}" data-id="${t.id}">
+          <input type="checkbox" ${t.done ? 'checked' : ''} aria-label="${t.text}">
+          <span>${t.text}</span>
+        </div>
+      `).join('');
+
+      taskChecklist.querySelectorAll('input[type="checkbox"]').forEach(box => {
+        box.addEventListener('change', (e) => {
+          const id = parseInt(e.target.closest('.task-item').dataset.id, 10);
+          const target = tasks.find(item => item.id === id);
+          if (target) {
+            target.done = e.target.checked;
+            localStorage.setItem('cp_tasks', JSON.stringify(tasks));
+            renderTasks();
+          }
+        });
+      });
+    }
+    renderTasks();
+
+    let savedMission = localStorage.getItem('cp_mission');
+    if (savedMission !== null) missionInput.value = savedMission;
+    missionInput.addEventListener('input', (e) => {
+      localStorage.setItem('cp_mission', e.target.value);
+    });
+    missionInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = PomodoroCore.sanitizeMission(missionInput.value);
+        if (val) {
+          tasks.unshift({ id: Date.now(), text: val, done: false });
+          localStorage.setItem('cp_tasks', JSON.stringify(tasks));
+          renderTasks();
+        }
+        missionInput.blur();
+        missionInput.classList.add('saved');
+        setTimeout(() => { missionInput.classList.remove('saved'); }, 600);
+      }
+    });
+
+    if (clearMissionBtn) {
+      clearMissionBtn.addEventListener('click', () => {
+        missionInput.value = '';
+        localStorage.removeItem('cp_mission');
+        missionInput.focus();
+      });
+    }
+
+    let currentDuration = configDurations.focus;
+    let timeLeft = currentDuration;
     let isRunning = false;
     let timerId = null;
+    let targetEndTime = null;
     let currentMode = 'focus';
-    let cycleCount = 1;
+    let cycleCount = parseInt(localStorage.getItem('cp_cycle') || '1', 10);
+    if (isNaN(cycleCount) || cycleCount < 1) cycleCount = 1;
 
-    function updateDisplay() {
-      const minutes = Math.floor(timeLeft / 60);
-      const seconds = timeLeft % 60;
-      timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-      
-      const offset = CIRCUMFERENCE - (timeLeft / currentDuration) * CIRCUMFERENCE;
-      progressFill.style.strokeDashoffset = offset;
+    function refreshTabLabels() {
+      document.getElementById('tabFocus').textContent = `FOCUS (${Math.round(configDurations.focus / 60)}M)`;
+      document.getElementById('tabShort').textContent = `SHORT (${Math.round(configDurations.shortBreak / 60)}M)`;
+      document.getElementById('tabLong').textContent = `LONG (${Math.round(configDurations.longBreak / 60)}M)`;
+    }
+    refreshTabLabels();
 
-      document.title = `(${timeDisplay.textContent}) CYBERPUNK FOCUS`;
+    function updateDisplay(withAnim = true) {
+      timeDisplay.textContent = PomodoroCore.formatTime(timeLeft);
+      if (!withAnim) progressFill.classList.add('no-anim');
+      else progressFill.classList.remove('no-anim');
+
+      progressFill.style.strokeDashoffset = PomodoroCore.calculateProgressOffset(timeLeft, currentDuration, CIRCUMFERENCE);
+      progressFill.style.opacity = (timeLeft === currentDuration) ? '0' : '1';
+
+      if (!withAnim) {
+        requestAnimationFrame(() => { progressFill.classList.remove('no-anim'); });
+      }
+
+      const statePrefix = isRunning ? '' : '[PAUSED] ';
+      document.title = `${statePrefix}(${timeDisplay.textContent}) CYBERPUNK FOCUS`;
     }
 
     function setMode(mode, duration) {
@@ -530,14 +1194,31 @@
       timeLeft = duration;
       isRunning = false;
       clearInterval(timerId);
+      timerId = null;
       toggleBtn.textContent = 'START';
-      systemStatus.textContent = isRunning ? 'SYSTEM // ACTIVE' : 'ONLINE // READY';
+      systemStatus.textContent = 'ONLINE // READY';
 
-      modeTabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+      if (resetConfirmTimer) {
+        clearTimeout(resetConfirmTimer);
+        resetConfirmTimer = null;
+        resetBtn.textContent = 'RESET';
+        resetBtn.classList.remove('confirming');
+      }
+
+      if (mode !== 'focus' && activeNodes.binaural) {
+        const binauralBtn = document.querySelector('.sound-btn[data-sound="binaural"]');
+        if (binauralBtn) toggleSound('binaural', binauralBtn);
+      }
+
+      modeTabs.forEach(t => {
+        const isActive = t.dataset.mode === mode;
+        t.classList.toggle('active', isActive);
+        t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
 
       if (mode === 'focus') {
-        progressFill.style.stroke = 'var(--cyan)';
-        sessionLabel.textContent = `SESSION 0${cycleCount} // DEEP WORK`;
+        progressFill.style.stroke = 'var(--accent)';
+        sessionLabel.textContent = PomodoroCore.formatSessionLabel(cycleCount);
       } else if (mode === 'shortBreak') {
         progressFill.style.stroke = 'var(--green)';
         sessionLabel.textContent = 'RECHARGE // SHORT BREAK';
@@ -545,56 +1226,129 @@
         progressFill.style.stroke = 'var(--pink)';
         sessionLabel.textContent = 'REST // LONG BREAK';
       }
-      updateDisplay();
+      updateDisplay(false);
     }
 
-    function toggleTimer() {
-      ensureAudio();
-      if (isRunning) {
-        // Pause
-        isRunning = false;
-        clearInterval(timerId);
-        toggleBtn.textContent = 'RESUME';
-        systemStatus.textContent = 'SYSTEM // PAUSED';
+    function handleTimerComplete() {
+      clearInterval(timerId);
+      timerId = null;
+      isRunning = false;
+      toggleBtn.textContent = 'START';
+
+      if (currentMode === 'focus') {
+        playBeep('focus_end');
+        notifySessionComplete('FOCUS COMPLETE // CYBERPUNK POMODORO', `จบ Session ${cycleCount} เรียบร้อยแล้ว ได้เวลาพักผ่อน!`);
+        totalFocusMinsToday += Math.round(configDurations.focus / 60);
+        localStorage.setItem('cp_focus_mins_today', String(totalFocusMinsToday));
+        localStorage.setItem('cp_last_date', todayStr);
+        localStorage.setItem('cp_streak', String(currentStreak));
+        updateStatsBadges();
+
+        const next = PomodoroCore.getNextMode('focus', cycleCount);
+        cycleCount++;
+        localStorage.setItem('cp_cycle', String(cycleCount));
+        setMode(next, configDurations[next]);
       } else {
-        // Start
-        isRunning = true;
-        toggleBtn.textContent = 'PAUSE';
-        systemStatus.textContent = 'SYSTEM // RUNNING';
-        timerId = setInterval(() => {
-          if (timeLeft > 0) {
-            timeLeft--;
-            updateDisplay();
-          } else {
-            // Completed
-            clearInterval(timerId);
-            isRunning = false;
-            toggleBtn.textContent = 'START';
-            playBeep(true);
-            if (currentMode === 'focus') {
-              cycleCount++;
-              setMode('shortBreak', 300);
-            } else {
-              setMode('focus', 1500);
+        playBeep('break_end');
+        notifySessionComplete('BREAK FINISHED // BACK TO MATRIX', 'หมดเวลาพักแล้ว พร้อมกลับมาลุยภารกิจต่อหรือยัง?');
+        setMode('focus', configDurations.focus);
+      }
+
+      if (isAutoStart) {
+        toggleTimer();
+      }
+    }
+
+    async function toggleTimer() {
+      if (isProcessingToggle) return;
+      isProcessingToggle = true;
+
+      try {
+        await ensureAudio();
+        if ('Notification' in window && Notification.permission === 'default') {
+          try { Notification.requestPermission(); } catch (e) {}
+        }
+
+        if (isRunning) {
+          isRunning = false;
+          clearInterval(timerId);
+          timerId = null;
+          toggleBtn.textContent = 'RESUME';
+          systemStatus.textContent = 'SYSTEM // PAUSED';
+          updateDisplay(false);
+        } else {
+          isRunning = true;
+          toggleBtn.textContent = 'PAUSE';
+          systemStatus.textContent = 'SYSTEM // RUNNING';
+          targetEndTime = Date.now() + timeLeft * 1000;
+          updateDisplay(true);
+
+          timerId = setInterval(() => {
+            const remaining = Math.max(0, Math.round((targetEndTime - Date.now()) / 1000));
+            if (remaining !== timeLeft || remaining === 0) {
+              timeLeft = remaining;
+              playTick();
+              updateDisplay(true);
+              if (timeLeft <= 0) {
+                handleTimerComplete();
+              }
             }
-          }
-        }, 1000);
+          }, 250);
+        }
+      } finally {
+        isProcessingToggle = false;
       }
     }
 
     modeTabs.forEach(tab => {
       tab.addEventListener('click', () => {
-        setMode(tab.dataset.mode, parseInt(tab.dataset.time, 10));
+        const mode = tab.dataset.mode;
+        setMode(mode, configDurations[mode]);
       });
     });
 
     toggleBtn.addEventListener('click', toggleTimer);
-    resetBtn.addEventListener('click', () => {
+
+    function handleResetAction() {
+      if (isRunning && !resetConfirmTimer) {
+        resetBtn.textContent = 'CONFIRM?';
+        resetBtn.classList.add('confirming');
+        resetConfirmTimer = setTimeout(() => {
+          resetBtn.textContent = 'RESET';
+          resetBtn.classList.remove('confirming');
+          resetConfirmTimer = null;
+        }, 2500);
+        return;
+      }
+      if (resetConfirmTimer) {
+        clearTimeout(resetConfirmTimer);
+        resetConfirmTimer = null;
+        resetBtn.textContent = 'RESET';
+        resetBtn.classList.remove('confirming');
+      }
       setMode(currentMode, currentDuration);
-    });
+    }
+    resetBtn.addEventListener('click', handleResetAction);
+
     skipBtn.addEventListener('click', () => {
-      if (currentMode === 'focus') setMode('shortBreak', 300);
-      else setMode('focus', 1500);
+      if (currentMode === 'focus') {
+        const next = PomodoroCore.getNextMode('focus', cycleCount);
+        setMode(next, configDurations[next]);
+      } else {
+        setMode('focus', configDurations.focus);
+      }
+    });
+
+    resetCycleBtn.addEventListener('click', () => {
+      cycleCount = 1;
+      localStorage.setItem('cp_cycle', '1');
+      if (currentMode === 'focus') {
+        sessionLabel.textContent = PomodoroCore.formatSessionLabel(cycleCount);
+      }
+      playBeep('break_end');
+      const origText = resetCycleBtn.textContent;
+      resetCycleBtn.textContent = 'DONE!';
+      setTimeout(() => { resetCycleBtn.textContent = origText; }, 1200);
     });
 
     soundBtns.forEach(btn => {
@@ -603,7 +1357,109 @@
       });
     });
 
-    updateDisplay();
+    // Toolbar Tool Handlers
+    if (tickToggleBtn) {
+      tickToggleBtn.textContent = `⏱️ TICK: ${isTickEnabled ? 'ON' : 'OFF'}`;
+      tickToggleBtn.classList.toggle('active', isTickEnabled);
+      tickToggleBtn.addEventListener('click', () => {
+        isTickEnabled = !isTickEnabled;
+        localStorage.setItem('cp_tick', String(isTickEnabled));
+        tickToggleBtn.textContent = `⏱️ TICK: ${isTickEnabled ? 'ON' : 'OFF'}`;
+        tickToggleBtn.classList.toggle('active', isTickEnabled);
+      });
+    }
+
+    if (autoStartBtn) {
+      autoStartBtn.textContent = `⚡ AUTO: ${isAutoStart ? 'ON' : 'OFF'}`;
+      autoStartBtn.classList.toggle('active', isAutoStart);
+      autoStartBtn.addEventListener('click', () => {
+        isAutoStart = !isAutoStart;
+        localStorage.setItem('cp_autostart', String(isAutoStart));
+        autoStartBtn.textContent = `⚡ AUTO: ${isAutoStart ? 'ON' : 'OFF'}`;
+        autoStartBtn.classList.toggle('active', isAutoStart);
+      });
+    }
+
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+    }
+
+    // Settings Modal & Theme Switching
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const cfgFocusMin = document.getElementById('cfgFocusMin');
+    const cfgShortMin = document.getElementById('cfgShortMin');
+    const cfgLongMin = document.getElementById('cfgLongMin');
+    const themeBtns = document.querySelectorAll('.theme-btn');
+
+    function applyTheme(theme) {
+      const vars = PomodoroCore.getThemeVariables(theme);
+      document.documentElement.style.setProperty('--accent', vars.primary);
+      document.documentElement.style.setProperty('--border', vars.border);
+      localStorage.setItem('cp_theme', theme);
+      themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+      if (currentMode === 'focus') progressFill.style.stroke = vars.primary;
+    }
+    applyTheme(localStorage.getItem('cp_theme') || 'cyan');
+
+    themeBtns.forEach(b => {
+      b.addEventListener('click', () => applyTheme(b.dataset.theme));
+    });
+
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        cfgFocusMin.value = Math.round(configDurations.focus / 60);
+        cfgShortMin.value = Math.round(configDurations.shortBreak / 60);
+        cfgLongMin.value = Math.round(configDurations.longBreak / 60);
+        settingsModal.classList.add('open');
+      });
+    }
+    if (closeSettingsBtn) {
+      closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('open'));
+    }
+    if (saveSettingsBtn) {
+      saveSettingsBtn.addEventListener('click', () => {
+        const f = PomodoroCore.validateCustomDuration(cfgFocusMin.value, 1, 90, 25);
+        const s = PomodoroCore.validateCustomDuration(cfgShortMin.value, 1, 30, 5);
+        const l = PomodoroCore.validateCustomDuration(cfgLongMin.value, 1, 60, 15);
+        configDurations.focus = f * 60;
+        configDurations.shortBreak = s * 60;
+        configDurations.longBreak = l * 60;
+        localStorage.setItem('cp_cfg_focus', String(f));
+        localStorage.setItem('cp_cfg_short', String(s));
+        localStorage.setItem('cp_cfg_long', String(l));
+        refreshTabLabels();
+        setMode(currentMode, configDurations[currentMode]);
+        settingsModal.classList.remove('open');
+      });
+    }
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (document.activeElement === missionInput || document.activeElement.tagName === 'INPUT') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault(); toggleTimer();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault(); handleResetAction();
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault(); skipBtn.click();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault(); toggleMute();
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault(); fullscreenBtn.click();
+      }
+    });
+
+    updateDisplay(false);
   </script>
 </body>
 </html>
