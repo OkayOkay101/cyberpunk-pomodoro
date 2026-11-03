@@ -8,12 +8,11 @@
 
 ---
 
-## 📑 Table of Contents / สารบัญ / 目次
+## 📑 Table of Contents / สารบัญ
 1. [English Documentation](#-english-documentation)
 2. [คู่มือภาษาไทย (Thai Documentation)](#-คู่มือภาษาไทย-thai-documentation)
-3. [日本語ドキュメント (Japanese Documentation)](#-日本語ドキュメント-japanese-documentation)
-4. [Unit Testing Suite](#-unit-testing-suite)
-5. [Tech Stack](#-tech-stack)
+3. [Unit Testing Suite](#-unit-testing-suite)
+4. [Tech Stack](#-tech-stack)
 
 ---
 
@@ -80,38 +79,6 @@
    - <kbd>S</kbd> ข้ามรอบ
    - <kbd>M</kbd> เปิด/ปิดเสียง
    - <kbd>F</kbd> เข้าสู่โหมดเต็มจอ
-
----
-
-## 🇯🇵 日本語ドキュメント (Japanese Documentation)
-
-### 🚀 概要 (About)
-**Cyberpunk Focus** は、深層集中（ディープワーク）と学習効率を極限まで高めるために設計されたサイバーパンクHUD風のポモドーロ・タイマー＆環境音シンセサイザーです。外部の音声ファイルを一切読み込まず、ブラウザ標準の **Web Audio API** のみを使用してリアルタイムに環境音を合成・出力します。
-
-### ✨ 主な機能
-1. **高機能ポモドーロタイマー:**
-   - フォーカス、小休憩、長休憩の時間を自由にカスタム設定可能（1〜90分）。
-   - 4サイクルごとの長休憩自動移行、および自動開始機能。
-2. **5種類のニューラル環境音シンセサイザー:**
-   - 🌧️ **Cyber Rain (サイバーレイン):** ピンクノイズで周囲の雑音を遮断。
-   - 🚀 **Deep Space Hum (ディープスペースハム):** 宇宙船内部のような低周波音で緊張を緩和。
-   - ⚡ **40Hz Focus Wave (40Hz ガンマ波):** 脳波を刺激し、認知機能と集中力を向上。
-   - 🌀 **Server Fan (サーバーファン):** 安定した空冷ノイズで集中環境を構築。
-   - ⛈️ **Cyber Storm (サイバーストーム):** 雨音と低周波の雷鳴をシミュレート。
-3. **リアルタイム・オーディオビジュアライザー:**
-   - 再生中の環境音の周波数スペクトルをCanvas上にネオン調で描画。
-4. **デイリーストリーク＆集中時間トラッカー:**
-   - 本日の集中時間合計（分）と連続達成日数（Streak）を自動記録。
-5. **タスクチェックリスト:**
-   - ミッションやサブタスクを追加し、完了時にチェックして進捗を保存。
-6. **4色のサイバーパンク・ネオンテーマ:**
-   - Cyan Matrix、Neon Pink、Night City Yellow、Emerald Hacker をワンクリック切替。
-7. **キーボードショートカット:**
-   - <kbd>Space</kbd> 開始 / 一時停止
-   - <kbd>R</kbd> リセット（誤操作防止ガード付き）
-   - <kbd>S</kbd> スキップ
-   - <kbd>M</kbd> ミュート切替
-   - <kbd>F</kbd> フルスクリーン没入モード
 
 ---
 
