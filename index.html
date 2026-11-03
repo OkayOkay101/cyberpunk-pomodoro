@@ -64,7 +64,7 @@
       position: relative;
     }
     .station-container::before {
-      content: "SYS_VER // 2.4.00 // FOCUS_MATRIX";
+      content: "SYS_VER // 2.5.00 // FOCUS_MATRIX";
       position: absolute;
       top: -12px;
       left: 20px;
@@ -178,7 +178,7 @@
       stroke-linecap: round;
       stroke-dasharray: 691.15;
       stroke-dashoffset: 0;
-      transition: stroke-dashoffset 0.5s linear, stroke 0.3s ease;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
       filter: drop-shadow(0 0 8px var(--cyan));
     }
     .progress-ring-fill.no-anim {
@@ -269,6 +269,11 @@
       border-color: var(--cyan);
       color: var(--text);
     }
+    .btn-secondary.confirming {
+      border-color: var(--pink);
+      color: var(--pink);
+      box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
+    }
 
     /* Hotkey Bar */
     .hotkey-hint {
@@ -332,6 +337,13 @@
       accent-color: var(--cyan);
       cursor: pointer;
     }
+    .vol-num {
+      font-size: 10px;
+      width: 32px;
+      color: var(--cyan);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
     .sound-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -376,10 +388,15 @@
       font-size: 13px;
       font-family: inherit;
       outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
     }
     .mission-input:focus {
       border-color: var(--cyan);
       box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+    }
+    .mission-input.saved {
+      border-color: var(--green);
+      box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
     }
     .clear-mission-btn {
       position: absolute;
@@ -453,18 +470,19 @@
           <button class="mute-btn" id="muteBtn" title="เปิด/ปิดเสียง (M)" aria-label="เปิดหรือปิดเสียง">🔊</button>
           <span>VOL</span>
           <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="0.5" aria-label="ระดับเสียงบรรยากาศ">
+          <span class="vol-num" id="volumePercent">50%</span>
         </div>
       </div>
       <div class="sound-grid">
-        <button class="sound-btn" data-sound="rain" aria-label="เปิดเสียง Cyber Rain">
+        <button class="sound-btn" data-sound="rain" aria-label="เปิดเสียง Cyber Rain" aria-pressed="false">
           <span>🌧️</span>
           <b>Cyber Rain</b>
         </button>
-        <button class="sound-btn" data-sound="engine" aria-label="เปิดเสียง Deep Space Hum">
+        <button class="sound-btn" data-sound="engine" aria-label="เปิดเสียง Deep Space Hum" aria-pressed="false">
           <span>🚀</span>
           <b>Deep Space Hum</b>
         </button>
-        <button class="sound-btn" data-sound="binaural" aria-label="เปิดเสียง 40Hz Focus Wave">
+        <button class="sound-btn" data-sound="binaural" aria-label="เปิดเสียง 40Hz Focus Wave" aria-pressed="false">
           <span>⚡</span>
           <b>40Hz Focus Wave</b>
         </button>
@@ -487,12 +505,19 @@
     let audioCtx = null;
     let masterGain = null;
     let masterCompressor = null;
+    let cachedRainBuffer = null;
     let activeNodes = { rain: null, engine: null, binaural: null };
     let savedVol = parseFloat(localStorage.getItem('cp_volume') || '0.5');
     if (isNaN(savedVol) || savedVol < 0 || savedVol > 1) savedVol = 0.5;
     let isMuted = localStorage.getItem('cp_muted') === 'true';
     let isProcessingToggle = false;
     let audioInitLock = false;
+    let resetConfirmTimer = null;
+
+    function safeDisconnect(node) {
+      if (!node) return;
+      try { node.disconnect(); } catch (e) {}
+    }
 
     async function ensureAudio() {
       if (audioInitLock) return;
@@ -525,13 +550,18 @@
 
     const volumeSlider = document.getElementById('volumeSlider');
     const muteBtn = document.getElementById('muteBtn');
+    const volumePercent = document.getElementById('volumePercent');
 
-    function updateMuteButtonUI() {
+    function updateVolumeDisplay(vol) {
+      if (volumePercent) {
+        const pct = isMuted ? 0 : Math.round(vol * 100);
+        volumePercent.textContent = `${pct}%`;
+      }
       if (muteBtn) {
-        muteBtn.textContent = (isMuted || savedVol === 0) ? '🔇' : '🔊';
+        muteBtn.textContent = (isMuted || vol === 0) ? '🔇' : '🔊';
       }
     }
-    updateMuteButtonUI();
+    updateVolumeDisplay(savedVol);
 
     if (volumeSlider) {
       volumeSlider.value = isMuted ? 0 : savedVol;
@@ -541,8 +571,8 @@
         savedVol = vol;
         isMuted = (vol === 0);
         localStorage.setItem('cp_muted', String(isMuted));
-        updateMuteButtonUI();
         localStorage.setItem('cp_volume', String(vol));
+        updateVolumeDisplay(vol);
         if (masterGain) {
           masterGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.03);
         }
@@ -559,7 +589,7 @@
         masterGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.03);
       }
       if (volumeSlider) volumeSlider.value = targetVol;
-      updateMuteButtonUI();
+      updateVolumeDisplay(targetVol);
     }
 
     if (muteBtn) {
@@ -572,24 +602,29 @@
         try { activeNodes[type].stop(); } catch (e) {}
         activeNodes[type] = null;
         btn.classList.remove('playing');
+        btn.setAttribute('aria-pressed', 'false');
         return;
       }
 
       try {
         btn.classList.add('playing');
+        btn.setAttribute('aria-pressed', 'true');
         if (type === 'rain') {
-          const bufferSize = audioCtx.sampleRate * 2;
-          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-          const output = buffer.getChannelData(0);
-          let b0 = 0, b1 = 0;
-          for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * 2 - 1;
-            b0 = 0.99 * b0 + white * 0.05;
-            b1 = 0.95 * b1 + white * 0.1;
-            output[i] = (b0 + b1) * 0.8;
+          // Efficient buffer caching: generate 2s buffer once
+          if (!cachedRainBuffer) {
+            const bufferSize = audioCtx.sampleRate * 2;
+            cachedRainBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = cachedRainBuffer.getChannelData(0);
+            let b0 = 0, b1 = 0;
+            for (let i = 0; i < bufferSize; i++) {
+              const white = Math.random() * 2 - 1;
+              b0 = 0.99 * b0 + white * 0.05;
+              b1 = 0.95 * b1 + white * 0.1;
+              output[i] = (b0 + b1) * 0.8;
+            }
           }
           const noise = audioCtx.createBufferSource();
-          noise.buffer = buffer;
+          noise.buffer = cachedRainBuffer;
           noise.loop = true;
 
           const filter = audioCtx.createBiquadFilter();
@@ -606,9 +641,9 @@
           activeNodes.rain = {
             stop: () => {
               try { noise.stop(); } catch (e) {}
-              noise.disconnect();
-              filter.disconnect();
-              gain.disconnect();
+              safeDisconnect(noise);
+              safeDisconnect(filter);
+              safeDisconnect(gain);
             }
           };
         } else if (type === 'engine') {
@@ -636,10 +671,10 @@
           activeNodes.engine = {
             stop: () => {
               try { osc1.stop(); osc2.stop(); } catch (e) {}
-              osc1.disconnect();
-              osc2.disconnect();
-              filter.disconnect();
-              gain.disconnect();
+              safeDisconnect(osc1);
+              safeDisconnect(osc2);
+              safeDisconnect(filter);
+              safeDisconnect(gain);
             }
           };
         } else if (type === 'binaural') {
@@ -665,20 +700,20 @@
           activeNodes.binaural = {
             stop: () => {
               try { osc.stop(); mod.stop(); } catch (e) {}
-              osc.disconnect();
-              mod.disconnect();
-              modGain.disconnect();
-              gain.disconnect();
+              safeDisconnect(osc);
+              safeDisconnect(mod);
+              safeDisconnect(modGain);
+              safeDisconnect(gain);
             }
           };
         }
       } catch (err) {
         btn.classList.remove('playing');
+        btn.setAttribute('aria-pressed', 'false');
         activeNodes[type] = null;
       }
     }
 
-    // Distinct Chime Audio: 'focus_end' (relax alert) vs 'break_end' (work alert)
     async function playBeep(modeType = 'focus_end') {
       await ensureAudio();
       try {
@@ -708,11 +743,14 @@
       } catch (e) {}
     }
 
-    // Web Notification Helper
     function notifySessionComplete(title, bodyText) {
       try {
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(title, { body: bodyText });
+          new Notification(title, {
+            body: bodyText,
+            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>",
+            tag: 'cyberpunk-pomodoro'
+          });
         }
       } catch (e) {}
     }
@@ -734,7 +772,6 @@
 
     progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
 
-    // Restore state from LocalStorage
     let savedMission = localStorage.getItem('cp_mission');
     if (savedMission !== null) {
       missionInput.value = savedMission;
@@ -743,7 +780,11 @@
       localStorage.setItem('cp_mission', e.target.value);
     });
     missionInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') missionInput.blur();
+      if (e.key === 'Enter') {
+        missionInput.blur();
+        missionInput.classList.add('saved');
+        setTimeout(() => { missionInput.classList.remove('saved'); }, 600);
+      }
     });
 
     if (clearMissionBtn) {
@@ -798,7 +839,13 @@
       toggleBtn.textContent = 'START';
       systemStatus.textContent = 'ONLINE // READY';
 
-      // Auto mute 40Hz focus wave if entering break
+      if (resetConfirmTimer) {
+        clearTimeout(resetConfirmTimer);
+        resetConfirmTimer = null;
+        resetBtn.textContent = 'RESET';
+        resetBtn.classList.remove('confirming');
+      }
+
       if (mode !== 'focus' && activeNodes.binaural) {
         const binauralBtn = document.querySelector('.sound-btn[data-sound="binaural"]');
         if (binauralBtn) toggleSound('binaural', binauralBtn);
@@ -898,9 +945,29 @@
     });
 
     toggleBtn.addEventListener('click', toggleTimer);
-    resetBtn.addEventListener('click', () => {
+
+    // Accidental Reset Guard: Require 2 clicks if timer is running
+    function handleResetAction() {
+      if (isRunning && !resetConfirmTimer) {
+        resetBtn.textContent = 'CONFIRM?';
+        resetBtn.classList.add('confirming');
+        resetConfirmTimer = setTimeout(() => {
+          resetBtn.textContent = 'RESET';
+          resetBtn.classList.remove('confirming');
+          resetConfirmTimer = null;
+        }, 2500);
+        return;
+      }
+      if (resetConfirmTimer) {
+        clearTimeout(resetConfirmTimer);
+        resetConfirmTimer = null;
+        resetBtn.textContent = 'RESET';
+        resetBtn.classList.remove('confirming');
+      }
       setMode(currentMode, currentDuration);
-    });
+    }
+
+    resetBtn.addEventListener('click', handleResetAction);
 
     skipBtn.addEventListener('click', () => {
       if (currentMode === 'focus') {
@@ -910,7 +977,6 @@
       }
     });
 
-    // Reset Cycle Count Button with Visual Feedback
     resetCycleBtn.addEventListener('click', () => {
       cycleCount = 1;
       localStorage.setItem('cp_cycle', '1');
@@ -939,7 +1005,7 @@
         toggleTimer();
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        setMode(currentMode, currentDuration);
+        handleResetAction();
       } else if (e.key === 's' || e.key === 'S') {
         e.preventDefault();
         skipBtn.click();
