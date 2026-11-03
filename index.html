@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#070913">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <title>CYBERPUNK FOCUS // POMODORO STATION</title>
   <style>
     :root {
@@ -41,6 +42,10 @@
       overflow-x: hidden;
     }
 
+    button, .btn, .mode-tab, .sound-btn, .volume-slider {
+      touch-action: manipulation;
+    }
+
     /* Cyberpunk HUD Frame */
     .station-container {
       width: 100%;
@@ -55,7 +60,7 @@
       position: relative;
     }
     .station-container::before {
-      content: "SYS_VER // 2.2.00 // FOCUS_MATRIX";
+      content: "SYS_VER // 2.3.00 // FOCUS_MATRIX";
       position: absolute;
       top: -12px;
       left: 20px;
@@ -303,6 +308,19 @@
       color: var(--text-dim);
       letter-spacing: 1px;
     }
+    .mute-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      transition: color 0.2s;
+    }
+    .mute-btn:hover {
+      color: var(--cyan);
+    }
     .volume-slider {
       width: 80px;
       accent-color: var(--cyan);
@@ -364,7 +382,7 @@
       <div class="glitch-title">⚡ CYBERPUNK FOCUS</div>
       <div class="status-badge">
         <span class="status-dot"></span>
-        <span id="systemStatus">ONLINE // READY</span>
+        <span id="systemStatus" aria-live="polite">ONLINE // READY</span>
       </div>
     </div>
 
@@ -410,6 +428,7 @@
       <div class="deck-title">
         <span>🎧 NEURAL AMBIENT GENERATOR</span>
         <div class="volume-control">
+          <button class="mute-btn" id="muteBtn" title="เปิด/ปิดเสียง (M)" aria-label="เปิดหรือปิดเสียง">🔊</button>
           <span>VOL</span>
           <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="0.5" aria-label="ระดับเสียงบรรยากาศ">
         </div>
@@ -448,6 +467,8 @@
     let activeNodes = { rain: null, engine: null, binaural: null };
     let savedVol = parseFloat(localStorage.getItem('cp_volume') || '0.5');
     if (isNaN(savedVol) || savedVol < 0 || savedVol > 1) savedVol = 0.5;
+    let isMuted = false;
+    let isProcessingToggle = false;
 
     async function ensureAudio() {
       if (!audioCtx) {
@@ -460,7 +481,7 @@
         masterCompressor.release.setValueAtTime(0.25, audioCtx.currentTime);
 
         masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(savedVol, audioCtx.currentTime);
+        masterGain.gain.setValueAtTime(isMuted ? 0 : savedVol, audioCtx.currentTime);
 
         masterCompressor.connect(masterGain);
         masterGain.connect(audioCtx.destination);
@@ -473,15 +494,39 @@
     }
 
     const volumeSlider = document.getElementById('volumeSlider');
+    const muteBtn = document.getElementById('muteBtn');
+
+    function updateMuteButtonUI() {
+      if (muteBtn) {
+        muteBtn.textContent = (isMuted || savedVol === 0) ? '🔇' : '🔊';
+      }
+    }
+
     if (volumeSlider) {
       volumeSlider.value = savedVol;
       volumeSlider.addEventListener('input', async (e) => {
         await ensureAudio();
         const vol = parseFloat(e.target.value);
         savedVol = vol;
+        isMuted = (vol === 0);
+        updateMuteButtonUI();
         localStorage.setItem('cp_volume', String(vol));
         if (masterGain) masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
       });
+    }
+
+    async function toggleMute() {
+      await ensureAudio();
+      isMuted = !isMuted;
+      const targetVol = isMuted ? 0 : (savedVol > 0 ? savedVol : 0.5);
+      if (!isMuted && savedVol === 0) savedVol = 0.5;
+      if (masterGain) masterGain.gain.setValueAtTime(targetVol, audioCtx.currentTime);
+      if (volumeSlider) volumeSlider.value = targetVol;
+      updateMuteButtonUI();
+    }
+
+    if (muteBtn) {
+      muteBtn.addEventListener('click', toggleMute);
     }
 
     async function toggleSound(type, btn) {
@@ -621,11 +666,11 @@
 
     // Web Notification Helper
     function notifySessionComplete(title, bodyText) {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        try {
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
           new Notification(title, { body: bodyText });
-        } catch (e) {}
-      }
+        }
+      } catch (e) {}
     }
 
     // Pomodoro Timer Logic
@@ -680,16 +725,16 @@
       progressFill.style.strokeDashoffset = offset;
 
       if (!withAnim) {
-        // Re-enable animation on next frame
         requestAnimationFrame(() => {
           progressFill.classList.remove('no-anim');
         });
       }
 
-      document.title = `(${timeDisplay.textContent}) CYBERPUNK FOCUS`;
+      const statePrefix = isRunning ? '' : '[PAUSED] ';
+      document.title = `${statePrefix}(${timeDisplay.textContent}) CYBERPUNK FOCUS`;
     }
 
-    function setMode(mode, duration, preserveCycle = true) {
+    function setMode(mode, duration) {
       currentMode = mode;
       currentDuration = duration;
       timeLeft = duration;
@@ -722,7 +767,7 @@
         progressFill.style.stroke = 'var(--pink)';
         sessionLabel.textContent = 'REST // LONG BREAK';
       }
-      updateDisplay(false); // No animation glitch when resetting/changing mode
+      updateDisplay(false);
     }
 
     function handleTimerComplete() {
@@ -750,33 +795,46 @@
     }
 
     async function toggleTimer() {
-      await ensureAudio();
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
+      if (isProcessingToggle) return;
+      isProcessingToggle = true;
 
-      if (isRunning) {
-        // Pause
-        isRunning = false;
-        clearInterval(timerId);
-        timerId = null;
-        toggleBtn.textContent = 'RESUME';
-        systemStatus.textContent = 'SYSTEM // PAUSED';
-      } else {
-        // Start with timestamp target to prevent drift in background tabs
-        isRunning = true;
-        toggleBtn.textContent = 'PAUSE';
-        systemStatus.textContent = 'SYSTEM // RUNNING';
-        targetEndTime = Date.now() + timeLeft * 1000;
+      try {
+        await ensureAudio();
+        if ('Notification' in window && Notification.permission === 'default') {
+          try {
+            Notification.requestPermission();
+          } catch (e) {}
+        }
 
-        timerId = setInterval(() => {
-          const remaining = Math.max(0, Math.round((targetEndTime - Date.now()) / 1000));
-          timeLeft = remaining;
+        if (isRunning) {
+          // Pause
+          isRunning = false;
+          clearInterval(timerId);
+          timerId = null;
+          toggleBtn.textContent = 'RESUME';
+          systemStatus.textContent = 'SYSTEM // PAUSED';
+          updateDisplay(false);
+        } else {
+          // Start with timestamp target to prevent drift in background tabs
+          isRunning = true;
+          toggleBtn.textContent = 'PAUSE';
+          systemStatus.textContent = 'SYSTEM // RUNNING';
+          targetEndTime = Date.now() + timeLeft * 1000;
           updateDisplay(true);
-          if (timeLeft <= 0) {
-            handleTimerComplete();
-          }
-        }, 250);
+
+          timerId = setInterval(() => {
+            const remaining = Math.max(0, Math.round((targetEndTime - Date.now()) / 1000));
+            if (remaining !== timeLeft || remaining === 0) {
+              timeLeft = remaining;
+              updateDisplay(true);
+              if (timeLeft <= 0) {
+                handleTimerComplete();
+              }
+            }
+          }, 250);
+        }
+      } finally {
+        isProcessingToggle = false;
       }
     }
 
@@ -791,7 +849,6 @@
       setMode(currentMode, currentDuration);
     });
 
-    // Skip handler (Fix: Skipping focus mode does NOT increment cycle)
     skipBtn.addEventListener('click', () => {
       if (currentMode === 'focus') {
         setMode('shortBreak', 300);
@@ -819,7 +876,6 @@
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
-      // Ignore if user is currently typing in input field
       if (document.activeElement === missionInput) return;
 
       if (e.code === 'Space') {
@@ -833,12 +889,7 @@
         skipBtn.click();
       } else if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
-        if (masterGain) {
-          const currentGain = masterGain.gain.value;
-          const newVol = currentGain > 0 ? 0 : savedVol || 0.5;
-          masterGain.gain.setValueAtTime(newVol, audioCtx ? audioCtx.currentTime : 0);
-          if (volumeSlider) volumeSlider.value = newVol;
-        }
+        toggleMute();
       }
     });
 
