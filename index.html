@@ -23,6 +23,10 @@
       margin: 0;
       padding: 0;
     }
+    :focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 2px;
+    }
     body {
       background-color: var(--bg);
       background-image: 
@@ -60,7 +64,7 @@
       position: relative;
     }
     .station-container::before {
-      content: "SYS_VER // 2.3.00 // FOCUS_MATRIX";
+      content: "SYS_VER // 2.4.00 // FOCUS_MATRIX";
       position: absolute;
       top: -12px;
       left: 20px;
@@ -198,8 +202,10 @@
     .session-info-row {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       margin-top: 4px;
+      flex-wrap: wrap;
     }
     .session-info {
       font-size: clamp(10px, 2.5vw, 12px);
@@ -213,7 +219,7 @@
       border: 1px solid var(--border);
       color: var(--text-dim);
       font-size: 10px;
-      padding: 1px 5px;
+      padding: 1px 6px;
       border-radius: 3px;
       cursor: pointer;
       transition: all 0.2s;
@@ -358,13 +364,14 @@
     .mission-input-row {
       display: flex;
       gap: 8px;
+      position: relative;
     }
     .mission-input {
       flex: 1;
       background: #090d1a;
       border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 8px 12px;
+      padding: 8px 32px 8px 12px;
       color: var(--text);
       font-size: 13px;
       font-family: inherit;
@@ -373,6 +380,21 @@
     .mission-input:focus {
       border-color: var(--cyan);
       box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+    }
+    .clear-mission-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+    }
+    .clear-mission-btn:hover {
+      color: var(--cyan);
     }
   </style>
 </head>
@@ -454,6 +476,7 @@
       <div class="deck-title">🎯 CURRENT MISSION OBJECTIVE</div>
       <div class="mission-input-row">
         <input type="text" class="mission-input" id="missionInput" maxlength="80" placeholder="ระบุภารกิจหรือเป้าหมายที่ต้องการโฟกัส..." value="สร้างสรรค์โปรเจกต์ระดับเทพ" autocomplete="off" aria-label="ระบุภารกิจที่กำลังโฟกัส">
+        <button class="clear-mission-btn" id="clearMissionBtn" title="ล้างข้อความ" aria-label="ล้างข้อความภารกิจ">✕</button>
       </div>
     </div>
   </div>
@@ -467,24 +490,31 @@
     let activeNodes = { rain: null, engine: null, binaural: null };
     let savedVol = parseFloat(localStorage.getItem('cp_volume') || '0.5');
     if (isNaN(savedVol) || savedVol < 0 || savedVol > 1) savedVol = 0.5;
-    let isMuted = false;
+    let isMuted = localStorage.getItem('cp_muted') === 'true';
     let isProcessingToggle = false;
+    let audioInitLock = false;
 
     async function ensureAudio() {
+      if (audioInitLock) return;
       if (!audioCtx) {
-        audioCtx = new AudioContextClass();
-        masterCompressor = audioCtx.createDynamicsCompressor();
-        masterCompressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
-        masterCompressor.knee.setValueAtTime(30, audioCtx.currentTime);
-        masterCompressor.ratio.setValueAtTime(12, audioCtx.currentTime);
-        masterCompressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
-        masterCompressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+        audioInitLock = true;
+        try {
+          audioCtx = new AudioContextClass();
+          masterCompressor = audioCtx.createDynamicsCompressor();
+          masterCompressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
+          masterCompressor.knee.setValueAtTime(30, audioCtx.currentTime);
+          masterCompressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+          masterCompressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+          masterCompressor.release.setValueAtTime(0.25, audioCtx.currentTime);
 
-        masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(isMuted ? 0 : savedVol, audioCtx.currentTime);
+          masterGain = audioCtx.createGain();
+          masterGain.gain.setValueAtTime(isMuted ? 0 : savedVol, audioCtx.currentTime);
 
-        masterCompressor.connect(masterGain);
-        masterGain.connect(audioCtx.destination);
+          masterCompressor.connect(masterGain);
+          masterGain.connect(audioCtx.destination);
+        } finally {
+          audioInitLock = false;
+        }
       }
       if (audioCtx.state === 'suspended') {
         try {
@@ -501,26 +531,33 @@
         muteBtn.textContent = (isMuted || savedVol === 0) ? '🔇' : '🔊';
       }
     }
+    updateMuteButtonUI();
 
     if (volumeSlider) {
-      volumeSlider.value = savedVol;
+      volumeSlider.value = isMuted ? 0 : savedVol;
       volumeSlider.addEventListener('input', async (e) => {
         await ensureAudio();
         const vol = parseFloat(e.target.value);
         savedVol = vol;
         isMuted = (vol === 0);
+        localStorage.setItem('cp_muted', String(isMuted));
         updateMuteButtonUI();
         localStorage.setItem('cp_volume', String(vol));
-        if (masterGain) masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        if (masterGain) {
+          masterGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.03);
+        }
       });
     }
 
     async function toggleMute() {
       await ensureAudio();
       isMuted = !isMuted;
+      localStorage.setItem('cp_muted', String(isMuted));
       const targetVol = isMuted ? 0 : (savedVol > 0 ? savedVol : 0.5);
       if (!isMuted && savedVol === 0) savedVol = 0.5;
-      if (masterGain) masterGain.gain.setValueAtTime(targetVol, audioCtx.currentTime);
+      if (masterGain) {
+        masterGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.03);
+      }
       if (volumeSlider) volumeSlider.value = targetVol;
       updateMuteButtonUI();
     }
@@ -532,7 +569,6 @@
     async function toggleSound(type, btn) {
       await ensureAudio();
       if (activeNodes[type]) {
-        // Stop and disconnect nodes
         try { activeNodes[type].stop(); } catch (e) {}
         activeNodes[type] = null;
         btn.classList.remove('playing');
@@ -542,7 +578,6 @@
       try {
         btn.classList.add('playing');
         if (type === 'rain') {
-          // Pink / White Noise Generator for Rain
           const bufferSize = audioCtx.sampleRate * 2;
           const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
           const output = buffer.getChannelData(0);
@@ -577,7 +612,6 @@
             }
           };
         } else if (type === 'engine') {
-          // Low Frequency Sci-Fi Space Hum
           const osc1 = audioCtx.createOscillator();
           const osc2 = audioCtx.createOscillator();
           osc1.type = 'sawtooth';
@@ -609,7 +643,6 @@
             }
           };
         } else if (type === 'binaural') {
-          // 40Hz Gamma Focus Frequency
           const osc = audioCtx.createOscillator();
           osc.type = 'sine';
           osc.frequency.value = 216;
@@ -645,22 +678,33 @@
       }
     }
 
-    async function playBeep(success = false) {
+    // Distinct Chime Audio: 'focus_end' (relax alert) vs 'break_end' (work alert)
+    async function playBeep(modeType = 'focus_end') {
       await ensureAudio();
       try {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(success ? 880 : 440, audioCtx.currentTime);
-        if (success) {
-          osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.3);
+
+        if (modeType === 'focus_end') {
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.35);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(masterCompressor || audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.35);
+        } else {
+          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(masterCompressor || audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.35);
         }
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-        osc.connect(gain);
-        gain.connect(masterCompressor || audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
       } catch (e) {}
     }
 
@@ -686,6 +730,7 @@
     const modeTabs = document.querySelectorAll('.mode-tab');
     const soundBtns = document.querySelectorAll('.sound-btn');
     const missionInput = document.getElementById('missionInput');
+    const clearMissionBtn = document.getElementById('clearMissionBtn');
 
     progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
 
@@ -700,6 +745,14 @@
     missionInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') missionInput.blur();
     });
+
+    if (clearMissionBtn) {
+      clearMissionBtn.addEventListener('click', () => {
+        missionInput.value = '';
+        localStorage.removeItem('cp_mission');
+        missionInput.focus();
+      });
+    }
 
     let currentDuration = 1500;
     let timeLeft = 1500;
@@ -723,6 +776,7 @@
 
       const offset = CIRCUMFERENCE - (timeLeft / currentDuration) * CIRCUMFERENCE;
       progressFill.style.strokeDashoffset = offset;
+      progressFill.style.opacity = (timeLeft === currentDuration) ? '0' : '1';
 
       if (!withAnim) {
         requestAnimationFrame(() => {
@@ -775,9 +829,9 @@
       timerId = null;
       isRunning = false;
       toggleBtn.textContent = 'START';
-      playBeep(true);
 
       if (currentMode === 'focus') {
+        playBeep('focus_end');
         notifySessionComplete('FOCUS COMPLETE // CYBERPUNK POMODORO', `จบ Session ${cycleCount} เรียบร้อยแล้ว ได้เวลาพักผ่อน!`);
         if (cycleCount % 4 === 0) {
           cycleCount++;
@@ -789,6 +843,7 @@
           setMode('shortBreak', 300);
         }
       } else {
+        playBeep('break_end');
         notifySessionComplete('BREAK FINISHED // BACK TO MATRIX', 'หมดเวลาพักแล้ว พร้อมกลับมาลุยภารกิจต่อหรือยัง?');
         setMode('focus', 1500);
       }
@@ -807,7 +862,6 @@
         }
 
         if (isRunning) {
-          // Pause
           isRunning = false;
           clearInterval(timerId);
           timerId = null;
@@ -815,7 +869,6 @@
           systemStatus.textContent = 'SYSTEM // PAUSED';
           updateDisplay(false);
         } else {
-          // Start with timestamp target to prevent drift in background tabs
           isRunning = true;
           toggleBtn.textContent = 'PAUSE';
           systemStatus.textContent = 'SYSTEM // RUNNING';
@@ -857,7 +910,7 @@
       }
     });
 
-    // Reset Cycle Count Button
+    // Reset Cycle Count Button with Visual Feedback
     resetCycleBtn.addEventListener('click', () => {
       cycleCount = 1;
       localStorage.setItem('cp_cycle', '1');
@@ -865,7 +918,10 @@
       if (currentMode === 'focus') {
         sessionLabel.textContent = `SESSION ${formattedCycle} // DEEP WORK`;
       }
-      playBeep(false);
+      playBeep('break_end');
+      const origText = resetCycleBtn.textContent;
+      resetCycleBtn.textContent = 'DONE!';
+      setTimeout(() => { resetCycleBtn.textContent = origText; }, 1200);
     });
 
     soundBtns.forEach(btn => {
