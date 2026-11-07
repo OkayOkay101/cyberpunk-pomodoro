@@ -738,6 +738,7 @@
     let isAutoStart = localStorage.getItem('cp_autostart') === 'true';
     let audioInitLock = false;
     let resetConfirmTimer = null;
+    let cachedThemePrimary = PomodoroCore.getThemeVariables(localStorage.getItem('cp_theme') || 'cyan').primary;
 
     // Durations Config (minutes -> seconds)
     let configDurations = {
@@ -790,20 +791,36 @@
       const ctx = canvas.getContext('2d');
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
+      let isCanvasBlank = false;
 
       function renderFrame() {
         requestAnimationFrame(renderFrame);
         analyser.getByteFrequencyData(dataArray);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        let isSilent = true;
+        for (let i = 0; i < bufferLength; i++) {
+          if (dataArray[i] > 0) {
+            isSilent = false;
+            break;
+          }
+        }
+
+        if (isSilent) {
+          if (!isCanvasBlank) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            isCanvasBlank = true;
+          }
+          return;
+        }
+        isCanvasBlank = false;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         const barWidth = (canvas.width / bufferLength) * 1.5;
         let x = 0;
-        const currentTheme = localStorage.getItem('cp_theme') || 'cyan';
-        const primaryColor = PomodoroCore.getThemeVariables(currentTheme).primary;
+        ctx.fillStyle = cachedThemePrimary;
 
         for (let i = 0; i < bufferLength; i++) {
           const barHeight = (dataArray[i] / 255) * canvas.height;
-          ctx.fillStyle = primaryColor;
           ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
           x += barWidth;
         }
@@ -1406,6 +1423,7 @@
 
     function applyTheme(theme) {
       const vars = PomodoroCore.getThemeVariables(theme);
+      cachedThemePrimary = vars.primary;
       document.documentElement.style.setProperty('--accent', vars.primary);
       document.documentElement.style.setProperty('--border', vars.border);
       localStorage.setItem('cp_theme', theme);

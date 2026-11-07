@@ -89,11 +89,11 @@ The repository includes a comprehensive, zero-dependency unit test suite in [`te
 ### Running Unit Tests via CLI (Node.js)
 ```bash
 node test-runner.js
-# Output: Unit Tests Completed: 18/18 passed, 0 failed.
+# Output: Unit Tests Completed: 19/19 passed, 0 failed.
 ```
 
 ### Running Unit Tests in Browser
-Simply open `test.html` or click the **🧪 TESTS** button in the web HUD header to view real-time passing status across all 18 core module tests:
+Simply open `test.html` or click the **🧪 TESTS** button in the web HUD header to view real-time passing status across all 19 core module tests:
 1. `formatTime()` - Formats MM:SS cleanly.
 2. `calculateProgressOffset()` - Accurate circular SVG dashoffset mapping.
 3. `getNextMode()` - Correct 4th cycle long break progression.
@@ -112,6 +112,7 @@ Simply open `test.html` or click the **🧪 TESTS** button in the web HUD header
 16. `calculateStreak()` - Safely resets on corrupted dates and recovers from invalid streak values.
 17. `calculateProgressOffset()` - Handles NaN timeLeft and non-positive circle circumferences.
 18. `escapeHtml()` - Escapes HTML special characters to prevent stored XSS and UI breakout.
+19. `getThemeVariables()` - Returns immutable cached palette matching baseline schema with 0 allocation overhead.
 
 ---
 

@@ -1,0 +1,4 @@
+## 2026-11-08 - Visualizer Hot Path Theme Caching & Idle Frame Elimination
+
+**Learning:** In high-frequency animation loops (such as Web Audio requestAnimationFrame visualizers at 60-120fps), invoking synchronous storage reads (localStorage.getItem), repeatedly allocating theme palette objects in unmemoized functions, and redundantly mutating 2D canvas context state (ctx.fillStyle) across every frequency bin inside tight loops create major frame time and GC bottlenecks. Furthermore, continuing to clear and draw 0-height bars during audio silence wastes substantial CPU and GPU cycles.
+**Action:** Hoist theme palette structures to a frozen static lookup map, cache the active theme primary color upon theme switch events, hoist ctx.fillStyle mutations outside the bar drawing loop, and short-circuit redundant canvas redraws when frequency bins are completely silent.

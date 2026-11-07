@@ -3,6 +3,14 @@
  * Zero-dependency pure JavaScript unit tests
  */
 
+// Theme Palette Cache
+const THEME_PALETTES = Object.freeze({
+  cyan: Object.freeze({ border: '#1f294d', primary: '#00f0ff', accent: '#ff0055' }),
+  pink: Object.freeze({ border: '#4d1f3d', primary: '#ff007f', accent: '#00f0ff' }),
+  yellow: Object.freeze({ border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' }),
+  green: Object.freeze({ border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' })
+});
+
 // Core Logic Functions
 const PomodoroCore = {
   formatTime(seconds) {
@@ -79,13 +87,7 @@ const PomodoroCore = {
   },
 
   getThemeVariables(themeName) {
-    const themes = {
-      cyan: { border: '#1f294d', primary: '#00f0ff', accent: '#ff0055' },
-      pink: { border: '#4d1f3d', primary: '#ff007f', accent: '#00f0ff' },
-      yellow: { border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' },
-      green: { border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' }
-    };
-    return themes[themeName] || themes.cyan;
+    return THEME_PALETTES[themeName] || THEME_PALETTES.cyan;
   },
 
   serializeConfig(config) {
@@ -293,6 +295,22 @@ function runUnitTests() {
     assertEqual(PomodoroCore.escapeHtml("Tom & 'Jerry'"), 'Tom &amp; &#039;Jerry&#039;');
     assertEqual(PomodoroCore.escapeHtml(null), '');
     assertEqual(PomodoroCore.escapeHtml(undefined), '');
+  });
+
+  // 19. Theme Palette Contract & Equality
+  test('getThemeVariables() returns immutable palette matching baseline schema exactly', () => {
+    const expectedThemes = ['cyan', 'pink', 'yellow', 'green'];
+    for (const theme of expectedThemes) {
+      const vars = PomodoroCore.getThemeVariables(theme);
+      assertEqual(typeof vars.primary, 'string', `${theme} primary must be string`);
+      assertEqual(typeof vars.border, 'string', `${theme} border must be string`);
+      assertEqual(typeof vars.accent, 'string', `${theme} accent must be string`);
+      assertEqual(vars.primary.startsWith('#'), true, `${theme} primary should start with #`);
+    }
+    const fallback = PomodoroCore.getThemeVariables('non_existent_theme');
+    assertEqual(fallback.primary, '#00f0ff', 'Fallback must be cyan primary');
+    assertEqual(fallback.border, '#1f294d', 'Fallback must be cyan border');
+    assertEqual(fallback.accent, '#ff0055', 'Fallback must be cyan accent');
   });
 
   return { passed, failed, total: passed + failed, results };
