@@ -835,11 +835,10 @@
 
     function updateVolumeDisplay(vol) {
       if (volumePercent) {
-        const pct = isMuted ? 0 : Math.round(vol * 100);
-        volumePercent.textContent = `${pct}%`;
+        volumePercent.textContent = PomodoroCore.formatVolumePercent(vol, isMuted);
       }
       if (muteBtn) {
-        muteBtn.textContent = (isMuted || vol === 0) ? '🔇' : '🔊';
+        muteBtn.textContent = PomodoroCore.getVolumeIcon(vol, isMuted);
       }
     }
     updateVolumeDisplay(savedVol);
@@ -862,15 +861,15 @@
 
     async function toggleMute() {
       await ensureAudio();
-      isMuted = !isMuted;
+      const nextState = PomodoroCore.calculateMuteToggle(isMuted, savedVol);
+      isMuted = nextState.isMuted;
+      savedVol = nextState.savedVol;
       localStorage.setItem('cp_muted', String(isMuted));
-      const targetVol = isMuted ? 0 : (savedVol > 0 ? savedVol : 0.5);
-      if (!isMuted && savedVol === 0) savedVol = 0.5;
       if (masterGain) {
-        masterGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.03);
+        masterGain.gain.setTargetAtTime(nextState.targetVol, audioCtx.currentTime, 0.03);
       }
-      if (volumeSlider) volumeSlider.value = targetVol;
-      updateVolumeDisplay(targetVol);
+      if (volumeSlider) volumeSlider.value = nextState.targetVol;
+      updateVolumeDisplay(nextState.targetVol);
     }
 
     if (muteBtn) muteBtn.addEventListener('click', toggleMute);
@@ -1093,14 +1092,14 @@
     progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
 
     // Stats & Streak Logic
-    let totalFocusMinsToday = parseInt(localStorage.getItem('cp_focus_mins_today') || '0', 10);
     let lastActiveDate = localStorage.getItem('cp_last_date');
     const todayStr = new Date().toISOString().split('T')[0];
+    let totalFocusMinsToday = PomodoroCore.calculateDailyFocusMins(lastActiveDate, todayStr, localStorage.getItem('cp_focus_mins_today'));
     let currentStreak = PomodoroCore.calculateStreak(lastActiveDate, todayStr, parseInt(localStorage.getItem('cp_streak') || '1', 10));
 
     function updateStatsBadges() {
-      if (streakBadge) streakBadge.textContent = `⚡ STREAK: ${currentStreak} DAY${currentStreak > 1 ? 'S' : ''}`;
-      if (focusTimeBadge) focusTimeBadge.textContent = `🎯 ${totalFocusMinsToday} MINS TODAY`;
+      if (streakBadge) streakBadge.textContent = PomodoroCore.formatStreakBadge(currentStreak);
+      if (focusTimeBadge) focusTimeBadge.textContent = PomodoroCore.formatFocusTimeBadge(totalFocusMinsToday);
     }
     updateStatsBadges();
 
@@ -1122,12 +1121,9 @@
       taskChecklist.querySelectorAll('input[type="checkbox"]').forEach(box => {
         box.addEventListener('change', (e) => {
           const id = parseInt(e.target.closest('.task-item').dataset.id, 10);
-          const target = tasks.find(item => item.id === id);
-          if (target) {
-            target.done = e.target.checked;
-            localStorage.setItem('cp_tasks', JSON.stringify(tasks));
-            renderTasks();
-          }
+          tasks = PomodoroCore.toggleTaskItem(tasks, id, e.target.checked);
+          localStorage.setItem('cp_tasks', JSON.stringify(tasks));
+          renderTasks();
         });
       });
     }
@@ -1140,9 +1136,9 @@
     });
     missionInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        const val = PomodoroCore.sanitizeMission(missionInput.value);
-        if (val) {
-          tasks.unshift({ id: Date.now(), text: val, done: false });
+        const newTask = PomodoroCore.createTaskItem(missionInput.value);
+        if (newTask) {
+          tasks.unshift(newTask);
           localStorage.setItem('cp_tasks', JSON.stringify(tasks));
           renderTasks();
         }
@@ -1170,9 +1166,9 @@
     if (isNaN(cycleCount) || cycleCount < 1) cycleCount = 1;
 
     function refreshTabLabels() {
-      document.getElementById('tabFocus').textContent = `FOCUS (${Math.round(configDurations.focus / 60)}M)`;
-      document.getElementById('tabShort').textContent = `SHORT (${Math.round(configDurations.shortBreak / 60)}M)`;
-      document.getElementById('tabLong').textContent = `LONG (${Math.round(configDurations.longBreak / 60)}M)`;
+      document.getElementById('tabFocus').textContent = PomodoroCore.formatTabLabel('focus', configDurations.focus);
+      document.getElementById('tabShort').textContent = PomodoroCore.formatTabLabel('shortBreak', configDurations.shortBreak);
+      document.getElementById('tabLong').textContent = PomodoroCore.formatTabLabel('longBreak', configDurations.longBreak);
     }
     refreshTabLabels();
 
@@ -1188,8 +1184,7 @@
         requestAnimationFrame(() => { progressFill.classList.remove('no-anim'); });
       }
 
-      const statePrefix = isRunning ? '' : '[PAUSED] ';
-      document.title = `${statePrefix}(${timeDisplay.textContent}) CYBERPUNK FOCUS`;
+      document.title = PomodoroCore.formatDocumentTitle(timeDisplay.textContent, isRunning);
     }
 
     function setMode(mode, duration) {
@@ -1288,7 +1283,7 @@
           updateDisplay(true);
 
           timerId = setInterval(() => {
-            const remaining = Math.max(0, Math.round((targetEndTime - Date.now()) / 1000));
+            const remaining = PomodoroCore.calculateRemainingSeconds(targetEndTime, Date.now());
             if (remaining !== timeLeft || remaining === 0) {
               timeLeft = remaining;
               playTick();
