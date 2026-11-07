@@ -1,0 +1,18 @@
+import sys
+import py_compile
+from pathlib import Path
+
+def main():
+    root = Path(__file__).resolve().parent.parent
+    py_files = list(root.glob("tests/**/*.py")) + [Path(__file__)]
+    for py_file in py_files:
+        try:
+            py_compile.compile(str(py_file), doraise=True)
+        except Exception as e:
+            print(f"Syntax error in {py_file}: {e}", file=sys.stderr)
+            return 1
+    print(f"Checked {len(py_files)} Python file(s): syntax OK.")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

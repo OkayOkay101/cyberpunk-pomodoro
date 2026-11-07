@@ -64,12 +64,13 @@ const PomodoroCore = {
 
   escapeHtml(text) {
     if (!text || typeof text !== 'string') return '';
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    if (!/[&<>"']/.test(text)) return text;
+    return text.replace(/[&<>"']/g, ch => (
+      ch === '&' ? '&amp;' :
+      ch === '<' ? '&lt;' :
+      ch === '>' ? '&gt;' :
+      ch === '"' ? '&quot;' : '&#039;'
+    ));
   },
 
   validateCustomDuration(val, min, max, defaultVal) {
@@ -483,6 +484,18 @@ function runUnitTests() {
     assertEqual(toggled[0].done, true);
     assertEqual(toggled[1].done, false);
     assertEqual(tasks[0].done, false, 'Should not mutate original array');
+  });
+
+  // 27. Optimized HTML Sanitizer Fast-Path and Equality
+  test('escapeHtml() preserves exact character mappings with optimized fast-path', () => {
+    assertEqual(PomodoroCore.escapeHtml('Clean cyberpunk mission title'), 'Clean cyberpunk mission title');
+    assertEqual(PomodoroCore.escapeHtml('<script>alert("xss")</script>'), '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+    assertEqual(PomodoroCore.escapeHtml("Tom & 'Jerry'"), 'Tom &amp; &#039;Jerry&#039;');
+    assertEqual(PomodoroCore.escapeHtml('A & B < C > D "E" \'F\''), 'A &amp; B &lt; C &gt; D &quot;E&quot; &#039;F&#039;');
+    assertEqual(PomodoroCore.escapeHtml(''), '');
+    assertEqual(PomodoroCore.escapeHtml(null), '');
+    assertEqual(PomodoroCore.escapeHtml(undefined), '');
+    assertEqual(PomodoroCore.escapeHtml(42), '');
   });
 
   return { passed, failed, total: passed + failed, results };
