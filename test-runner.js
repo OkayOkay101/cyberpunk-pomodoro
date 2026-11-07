@@ -85,7 +85,10 @@ const PomodoroCore = {
       yellow: { border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' },
       green: { border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' }
     };
-    return themes[themeName] || themes.cyan;
+    if (themeName && Object.prototype.hasOwnProperty.call(themes, themeName)) {
+      return themes[themeName];
+    }
+    return themes.cyan;
   },
 
   serializeConfig(config) {
@@ -147,7 +150,9 @@ const PomodoroCore = {
       shortBreak: 'SHORT',
       longBreak: 'LONG'
     };
-    const label = labels[mode] || 'FOCUS';
+    const label = (mode && Object.prototype.hasOwnProperty.call(labels, mode))
+      ? labels[mode]
+      : 'FOCUS';
     const num = Number(durationSeconds);
     const mins = (!isNaN(num) && num > 0) ? Math.round(num / 60) : 0;
     return `${label} (${mins}M)`;
@@ -483,6 +488,20 @@ function runUnitTests() {
     assertEqual(toggled[0].done, true);
     assertEqual(toggled[1].done, false);
     assertEqual(tasks[0].done, false, 'Should not mutate original array');
+  });
+
+  // 27. Prototype Pollution & Inherited Property Lookup Hardening
+  test('getThemeVariables() and formatTabLabel() guard against prototype property lookups', () => {
+    const prototypeKeys = ['toString', 'valueOf', 'constructor', '__proto__', 'hasOwnProperty'];
+    for (const key of prototypeKeys) {
+      const theme = PomodoroCore.getThemeVariables(key);
+      assertEqual(theme.primary, '#00f0ff', `Theme key "${key}" must fallback to cyan primary`);
+      assertEqual(theme.border, '#1f294d', `Theme key "${key}" must fallback to cyan border`);
+      assertEqual(theme.accent, '#ff0055', `Theme key "${key}" must fallback to cyan accent`);
+
+      const tabLabel = PomodoroCore.formatTabLabel(key, 1500);
+      assertEqual(tabLabel, 'FOCUS (25M)', `Tab mode "${key}" must fallback to default FOCUS`);
+    }
   });
 
   return { passed, failed, total: passed + failed, results };

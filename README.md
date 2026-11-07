@@ -89,11 +89,11 @@ The repository includes a comprehensive, zero-dependency unit test suite in [`te
 ### Running Unit Tests via CLI (Node.js)
 ```bash
 node test-runner.js
-# Output: Unit Tests Completed: 26/26 passed, 0 failed.
+# Output: Unit Tests Completed: 27/27 passed, 0 failed.
 ```
 
 ### Running Unit Tests in Browser
-Simply open `test.html` or click the **🧪 TESTS** button in the web HUD header to view real-time passing status across all 26 core module tests:
+Simply open `test.html` or click the **🧪 TESTS** button in the web HUD header to view real-time passing status across all 27 core module tests:
 1. `formatTime()` - Formats MM:SS cleanly.
 2. `calculateProgressOffset()` - Accurate circular SVG dashoffset mapping.
 3. `getNextMode()` - Correct 4th cycle long break progression.
@@ -120,6 +120,7 @@ Simply open `test.html` or click the **🧪 TESTS** button in the web HUD header
 24. `calculateMuteToggle()` - Pure calculation of mute toggle states and audio volume restoration.
 25. `formatVolumePercent()` & `getVolumeIcon()` - Resolves HUD volume percentage and dynamic speaker icon.
 26. `createTaskItem()` & `toggleTaskItem()` - Immutable task object creation and status toggling.
+27. `getThemeVariables()` & `formatTabLabel()` - Guards dictionary lookups against prototype pollution and prototype chain inheritance.
 
 ---
 
