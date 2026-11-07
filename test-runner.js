@@ -107,6 +107,93 @@ const PomodoroCore = {
     } catch (e) {
       return defaults;
     }
+  },
+
+  calculateDailyFocusMins(lastDateStr, todayStr, storedMins) {
+    if (!lastDateStr || lastDateStr !== todayStr) return 0;
+    const parsed = parseInt(storedMins, 10);
+    return (!isNaN(parsed) && parsed > 0) ? parsed : 0;
+  },
+
+  formatStreakBadge(currentStreak) {
+    const valid = (typeof currentStreak === 'number' && !isNaN(currentStreak) && currentStreak >= 1)
+      ? Math.floor(currentStreak)
+      : 1;
+    return `⚡ STREAK: ${valid} DAY${valid > 1 ? 'S' : ''}`;
+  },
+
+  formatFocusTimeBadge(minutes) {
+    const parsed = parseInt(minutes, 10);
+    const valid = (!isNaN(parsed) && parsed >= 0) ? parsed : 0;
+    return `🎯 ${valid} MINS TODAY`;
+  },
+
+  calculateRemainingSeconds(targetEndTimeMs, nowMs) {
+    const target = Number(targetEndTimeMs);
+    const now = Number(nowMs);
+    if (isNaN(target) || isNaN(now) || target <= now) return 0;
+    return Math.max(0, Math.round((target - now) / 1000));
+  },
+
+  formatDocumentTitle(timeStr, isRunning) {
+    const safeTime = (typeof timeStr === 'string' && timeStr.trim().length > 0) ? timeStr.trim() : '00:00';
+    const statePrefix = isRunning ? '' : '[PAUSED] ';
+    return `${statePrefix}(${safeTime}) CYBERPUNK FOCUS`;
+  },
+
+  formatTabLabel(mode, durationSeconds) {
+    const labels = {
+      focus: 'FOCUS',
+      shortBreak: 'SHORT',
+      longBreak: 'LONG'
+    };
+    const label = labels[mode] || 'FOCUS';
+    const num = Number(durationSeconds);
+    const mins = (!isNaN(num) && num > 0) ? Math.round(num / 60) : 0;
+    return `${label} (${mins}M)`;
+  },
+
+  calculateMuteToggle(isMuted, savedVol) {
+    const nextMuted = !isMuted;
+    const validVol = PomodoroCore.clampVolume(savedVol);
+    let targetVol = 0;
+    let nextSavedVol = validVol;
+    if (!nextMuted) {
+      nextSavedVol = validVol > 0 ? validVol : 0.5;
+      targetVol = nextSavedVol;
+    }
+    return { isMuted: nextMuted, targetVol, savedVol: nextSavedVol };
+  },
+
+  formatVolumePercent(vol, isMuted) {
+    if (isMuted) return '0%';
+    const clamped = PomodoroCore.clampVolume(vol);
+    return `${Math.round(clamped * 100)}%`;
+  },
+
+  getVolumeIcon(vol, isMuted) {
+    const clamped = PomodoroCore.clampVolume(vol);
+    return (isMuted || clamped === 0) ? '🔇' : '🔊';
+  },
+
+  createTaskItem(text, id) {
+    const sanitized = PomodoroCore.sanitizeMission(text);
+    if (!sanitized) return null;
+    return {
+      id: (typeof id === 'number' && !isNaN(id)) ? id : Date.now(),
+      text: sanitized,
+      done: false
+    };
+  },
+
+  toggleTaskItem(tasks, taskId, isDone) {
+    if (!Array.isArray(tasks)) return [];
+    return tasks.map(task => {
+      if (task && task.id === taskId) {
+        return { ...task, done: Boolean(isDone) };
+      }
+      return task;
+    });
   }
 };
 
@@ -293,6 +380,109 @@ function runUnitTests() {
     assertEqual(PomodoroCore.escapeHtml("Tom & 'Jerry'"), 'Tom &amp; &#039;Jerry&#039;');
     assertEqual(PomodoroCore.escapeHtml(null), '');
     assertEqual(PomodoroCore.escapeHtml(undefined), '');
+  });
+
+  // 19. Daily Focus Minutes Reset (Bug Fix)
+  test('calculateDailyFocusMins() resets to 0 on date change or missing date', () => {
+    assertEqual(PomodoroCore.calculateDailyFocusMins('2026-11-02', '2026-11-03', 100), 0, 'New day should reset focus minutes to 0');
+    assertEqual(PomodoroCore.calculateDailyFocusMins(null, '2026-11-03', 50), 0, 'Null lastDate should reset to 0');
+    assertEqual(PomodoroCore.calculateDailyFocusMins('2026-11-03', '2026-11-03', 75), 75, 'Same day maintains stored focus minutes');
+    assertEqual(PomodoroCore.calculateDailyFocusMins('2026-11-03', '2026-11-03', '50'), 50, 'Numeric string parses correctly');
+    assertEqual(PomodoroCore.calculateDailyFocusMins('2026-11-03', '2026-11-03', -10), 0, 'Negative minutes fallback to 0');
+    assertEqual(PomodoroCore.calculateDailyFocusMins('2026-11-03', '2026-11-03', 'invalid'), 0, 'Invalid string fallback to 0');
+  });
+
+  // 20. HUD Stats Badge Formatters
+  test('formatStreakBadge() and formatFocusTimeBadge() format stats HUD correctly', () => {
+    assertEqual(PomodoroCore.formatStreakBadge(1), '⚡ STREAK: 1 DAY');
+    assertEqual(PomodoroCore.formatStreakBadge(5), '⚡ STREAK: 5 DAYS');
+    assertEqual(PomodoroCore.formatStreakBadge(0), '⚡ STREAK: 1 DAY');
+    assertEqual(PomodoroCore.formatStreakBadge(null), '⚡ STREAK: 1 DAY');
+    assertEqual(PomodoroCore.formatStreakBadge('abc'), '⚡ STREAK: 1 DAY');
+
+    assertEqual(PomodoroCore.formatFocusTimeBadge(0), '🎯 0 MINS TODAY');
+    assertEqual(PomodoroCore.formatFocusTimeBadge(50), '🎯 50 MINS TODAY');
+    assertEqual(PomodoroCore.formatFocusTimeBadge('75'), '🎯 75 MINS TODAY');
+    assertEqual(PomodoroCore.formatFocusTimeBadge(-20), '🎯 0 MINS TODAY');
+    assertEqual(PomodoroCore.formatFocusTimeBadge(null), '🎯 0 MINS TODAY');
+  });
+
+  // 21. Countdown Remaining Seconds Calculation
+  test('calculateRemainingSeconds() calculates remaining seconds accurately', () => {
+    const now = 1700000000000;
+    assertEqual(PomodoroCore.calculateRemainingSeconds(now + 25000, now), 25, '25s future');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(now + 1500, now), 2, 'Rounds 1.5s to 2s');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(now, now), 0, 'Current time yields 0');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(now - 5000, now), 0, 'Past time clamps to 0');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(NaN, now), 0, 'NaN target yields 0');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(now + 10000, 'invalid'), 0, 'Invalid now yields 0');
+  });
+
+  // 22. Document Title Formatting
+  test('formatDocumentTitle() reflects paused vs running state and time display', () => {
+    assertEqual(PomodoroCore.formatDocumentTitle('25:00', true), '(25:00) CYBERPUNK FOCUS');
+    assertEqual(PomodoroCore.formatDocumentTitle('25:00', false), '[PAUSED] (25:00) CYBERPUNK FOCUS');
+    assertEqual(PomodoroCore.formatDocumentTitle('', false), '[PAUSED] (00:00) CYBERPUNK FOCUS');
+    assertEqual(PomodoroCore.formatDocumentTitle(null, true), '(00:00) CYBERPUNK FOCUS');
+  });
+
+  // 23. Mode Tab Label Formatter
+  test('formatTabLabel() formats mode labels with converted minute values', () => {
+    assertEqual(PomodoroCore.formatTabLabel('focus', 1500), 'FOCUS (25M)');
+    assertEqual(PomodoroCore.formatTabLabel('shortBreak', 300), 'SHORT (5M)');
+    assertEqual(PomodoroCore.formatTabLabel('longBreak', 900), 'LONG (15M)');
+    assertEqual(PomodoroCore.formatTabLabel('focus', 0), 'FOCUS (0M)');
+    assertEqual(PomodoroCore.formatTabLabel('unknown', 1500), 'FOCUS (25M)');
+  });
+
+  // 24. Mute Toggle State Calculation
+  test('calculateMuteToggle() toggles mute state and handles zero volume safely', () => {
+    const muteFromActive = PomodoroCore.calculateMuteToggle(false, 0.7);
+    assertEqual(muteFromActive.isMuted, true);
+    assertEqual(muteFromActive.targetVol, 0);
+    assertEqual(muteFromActive.savedVol, 0.7);
+
+    const unmuteToSaved = PomodoroCore.calculateMuteToggle(true, 0.7);
+    assertEqual(unmuteToSaved.isMuted, false);
+    assertEqual(unmuteToSaved.targetVol, 0.7);
+    assertEqual(unmuteToSaved.savedVol, 0.7);
+
+    const unmuteFromZero = PomodoroCore.calculateMuteToggle(true, 0);
+    assertEqual(unmuteFromZero.isMuted, false);
+    assertEqual(unmuteFromZero.targetVol, 0.5);
+    assertEqual(unmuteFromZero.savedVol, 0.5);
+  });
+
+  // 25. Volume Display Percentage and Icon Resolver
+  test('formatVolumePercent() and getVolumeIcon() format audio controls accurately', () => {
+    assertEqual(PomodoroCore.formatVolumePercent(0.5, false), '50%');
+    assertEqual(PomodoroCore.formatVolumePercent(0.85, false), '85%');
+    assertEqual(PomodoroCore.formatVolumePercent(0.5, true), '0%');
+    assertEqual(PomodoroCore.formatVolumePercent(0, false), '0%');
+
+    assertEqual(PomodoroCore.getVolumeIcon(0.5, false), '🔊');
+    assertEqual(PomodoroCore.getVolumeIcon(0.5, true), '🔇');
+    assertEqual(PomodoroCore.getVolumeIcon(0, false), '🔇');
+  });
+
+  // 26. Task Management Pure Functions
+  test('createTaskItem() and toggleTaskItem() manage task models safely', () => {
+    const item = PomodoroCore.createTaskItem('   Write unit tests   ', 101);
+    assertEqual(item.id, 101);
+    assertEqual(item.text, 'Write unit tests');
+    assertEqual(item.done, false);
+
+    const empty = PomodoroCore.createTaskItem('   ');
+    assertEqual(empty, null);
+
+    const tasks = [
+      { id: 1, text: 'Task 1', done: false },
+      { id: 2, text: 'Task 2', done: false }
+    ];
+    const toggled = PomodoroCore.toggleTaskItem(tasks, 1, true);
+    assertEqual(toggled[0].done, true);
+    assertEqual(toggled[1].done, false);
+    assertEqual(tasks[0].done, false, 'Should not mutate original array');
   });
 
   return { passed, failed, total: passed + failed, results };
