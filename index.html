@@ -583,8 +583,8 @@
       <div class="hud-tools">
         <button class="tool-btn" id="tickToggleBtn" title="เปิด/ปิดเสียงเดินของเวลา (Tick)">⏱️ TICK: OFF</button>
         <button class="tool-btn" id="autoStartBtn" title="สลับโหมดเริ่มรอบถัดไปอัตโนมัติ">⚡ AUTO: OFF</button>
-        <button class="tool-btn" id="settingsBtn" title="การตั้งค่า">⚙️ SETTINGS</button>
-        <button class="tool-btn" id="fullscreenBtn" title="โหมดเต็มจอ">⛶</button>
+        <button class="tool-btn" id="settingsBtn" title="การตั้งค่า" aria-haspopup="dialog">⚙️ SETTINGS</button>
+        <button class="tool-btn" id="fullscreenBtn" title="โหมดเต็มจอ" aria-label="โหมดเต็มจอ">⛶</button>
         <a href="test.html" class="tool-btn" style="text-decoration: none;" title="เปิดดูผล Unit Tests">🧪 TESTS</a>
       </div>
     </div>
@@ -690,19 +690,19 @@
 
   <!-- HUD Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
-    <div class="modal-box">
-      <div class="modal-title">⚙️ SYSTEM CONFIGURATION</div>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+      <div class="modal-title" id="settingsModalTitle">⚙️ SYSTEM CONFIGURATION</div>
       <div class="settings-row">
         <span>Focus Duration (นาที):</span>
-        <input type="number" class="settings-input" id="cfgFocusMin" min="1" max="90" value="25">
+        <input type="number" class="settings-input" id="cfgFocusMin" min="1" max="90" value="25" aria-label="Focus Duration (นาที)">
       </div>
       <div class="settings-row">
         <span>Short Break (นาที):</span>
-        <input type="number" class="settings-input" id="cfgShortMin" min="1" max="30" value="5">
+        <input type="number" class="settings-input" id="cfgShortMin" min="1" max="30" value="5" aria-label="Short Break (นาที)">
       </div>
       <div class="settings-row">
         <span>Long Break (นาที):</span>
-        <input type="number" class="settings-input" id="cfgLongMin" min="1" max="60" value="15">
+        <input type="number" class="settings-input" id="cfgLongMin" min="1" max="60" value="15" aria-label="Long Break (นาที)">
       </div>
       <div class="settings-row">
         <span>HUD Neon Theme:</span>
@@ -1428,6 +1428,9 @@
     }
     if (closeSettingsBtn) {
       closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('open'));
+      settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) settingsModal.classList.remove('open');
+      });
     }
     if (saveSettingsBtn) {
       saveSettingsBtn.addEventListener('click', () => {
@@ -1448,6 +1451,10 @@
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && settingsModal && settingsModal.classList.contains('open')) {
+        settingsModal.classList.remove('open');
+        return;
+      }
       if (document.activeElement === missionInput || document.activeElement.tagName === 'INPUT') return;
 
       if (e.code === 'Space') {

@@ -197,6 +197,19 @@ function runUnitTests() {
     assertEqual(corrupt.focusTime, 1500);
   });
 
+  // 11. Modal Dialog & Accessibility Attributes Specification
+  test('modal dialog and interactive buttons enforce WCAG a11y specifications', () => {
+    if (typeof require !== 'undefined') {
+      const fs = require('fs');
+      const html = fs.readFileSync('index.html', 'utf8');
+      assertEqual(html.includes('role="dialog"'), true, 'Modal box must have role="dialog"');
+      assertEqual(html.includes('aria-modal="true"'), true, 'Modal box must have aria-modal="true"');
+      assertEqual(html.includes('id="settingsModalTitle"'), true, 'Modal title must have id="settingsModalTitle"');
+      assertEqual(html.includes('aria-labelledby="settingsModalTitle"'), true, 'Modal box must reference title via aria-labelledby');
+      assertEqual(html.includes('id="fullscreenBtn" title="โหมดเต็มจอ" aria-label="โหมดเต็มจอ"'), true, 'Fullscreen button must provide explicit aria-label');
+    }
+  });
+
   return { passed, failed, total: passed + failed, results };
 }
 
