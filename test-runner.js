@@ -6,21 +6,25 @@
 // Core Logic Functions
 const PomodoroCore = {
   formatTime(seconds) {
-    if (isNaN(seconds) || seconds < 0) return '00:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
+    const totalSecs = Math.floor(seconds);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   },
 
   calculateProgressOffset(timeLeft, duration, circumference) {
-    if (!duration || duration <= 0) return 0;
-    const clamped = Math.max(0, Math.min(timeLeft, duration));
+    if (!duration || duration <= 0 || isNaN(duration)) return 0;
+    if (isNaN(circumference) || circumference <= 0) return 0;
+    const safeTime = isNaN(timeLeft) ? 0 : timeLeft;
+    const clamped = Math.max(0, Math.min(safeTime, duration));
     return circumference - (clamped / duration) * circumference;
   },
 
   getNextMode(currentMode, cycleCount) {
     if (currentMode === 'focus') {
-      return (cycleCount % 4 === 0) ? 'longBreak' : 'shortBreak';
+      const validCycle = parseInt(cycleCount, 10);
+      return (!isNaN(validCycle) && validCycle > 0 && validCycle % 4 === 0) ? 'longBreak' : 'shortBreak';
     }
     return 'focus';
   },
@@ -32,25 +36,40 @@ const PomodoroCore = {
   },
 
   calculateStreak(lastDateStr, todayStr, currentStreak) {
-    if (!lastDateStr) return 1;
-    if (lastDateStr === todayStr) return currentStreak;
+    const validStreak = (typeof currentStreak === 'number' && !isNaN(currentStreak) && currentStreak >= 1)
+      ? Math.floor(currentStreak)
+      : 1;
+    if (!lastDateStr || typeof lastDateStr !== 'string') return 1;
+    if (lastDateStr === todayStr) return validStreak;
     const lastDate = new Date(lastDateStr);
     const today = new Date(todayStr);
     const diffTime = today - lastDate;
+    if (isNaN(diffTime)) return 1;
     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays === 1) return currentStreak + 1;
+    if (diffDays === 1) return validStreak + 1;
     if (diffDays > 1) return 1;
-    return currentStreak;
+    return validStreak;
   },
 
   formatSessionLabel(cycleCount) {
-    const validCycle = Math.max(1, parseInt(cycleCount || '1', 10));
+    const parsed = parseInt(cycleCount, 10);
+    const validCycle = (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
     return `SESSION ${String(validCycle).padStart(2, '0')} // DEEP WORK`;
   },
 
   sanitizeMission(text) {
     if (!text || typeof text !== 'string') return '';
     return text.trim().slice(0, 80);
+  },
+
+  escapeHtml(text) {
+    if (!text || typeof text !== 'string') return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   },
 
   validateCustomDuration(val, min, max, defaultVal) {
@@ -77,6 +96,13 @@ const PomodoroCore = {
     try {
       if (!jsonStr) return defaults;
       const parsed = JSON.parse(jsonStr);
+      if (parsed === null || typeof parsed !== 'object') return defaults;
+      if (Array.isArray(defaults)) {
+        return Array.isArray(parsed) ? parsed : defaults;
+      }
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
       return { ...defaults, ...parsed };
     } catch (e) {
       return defaults;
@@ -195,6 +221,78 @@ function runUnitTests() {
     assertEqual(restored.theme, 'pink');
     const corrupt = PomodoroCore.deserializeConfig('invalid-json{{{', defaults);
     assertEqual(corrupt.focusTime, 1500);
+  });
+
+  // 11. Array Deserialization Safety (Bug Fix)
+  test('deserializeConfig() preserves Array type when deserializing array data', () => {
+    const defaultTasks = [
+      { id: 1, text: 'Task 1', done: true },
+      { id: 2, text: 'Task 2', done: false }
+    ];
+    const savedTasks = [
+      { id: 10, text: 'Injected Task', done: false }
+    ];
+    const json = JSON.stringify(savedTasks);
+    const restored = PomodoroCore.deserializeConfig(json, defaultTasks);
+    assertEqual(Array.isArray(restored), true, 'Restored tasks must be an Array instance');
+    assertEqual(restored.length, 1, 'Restored array should have length 1');
+    assertEqual(restored[0].text, 'Injected Task', 'Restored task text should match');
+  });
+
+  // 12. Deserialization Fallback for Malformed / Primitive JSON
+  test('deserializeConfig() rejects primitive or non-object JSON payloads', () => {
+    const defaults = { focusTime: 1500 };
+    assertEqual(PomodoroCore.deserializeConfig('null', defaults).focusTime, 1500, 'null JSON should fallback to defaults');
+    assertEqual(PomodoroCore.deserializeConfig('12345', defaults).focusTime, 1500, 'number JSON should fallback to defaults');
+    assertEqual(PomodoroCore.deserializeConfig('"some string"', defaults).focusTime, 1500, 'string JSON should fallback to defaults');
+  });
+
+  // 13. Session Label NaN & Boundary Protection
+  test('formatSessionLabel() handles non-numeric strings and invalid cycle numbers safely', () => {
+    assertEqual(PomodoroCore.formatSessionLabel('abc'), 'SESSION 01 // DEEP WORK');
+    assertEqual(PomodoroCore.formatSessionLabel(NaN), 'SESSION 01 // DEEP WORK');
+    assertEqual(PomodoroCore.formatSessionLabel(0), 'SESSION 01 // DEEP WORK');
+    assertEqual(PomodoroCore.formatSessionLabel(-5), 'SESSION 01 // DEEP WORK');
+    assertEqual(PomodoroCore.formatSessionLabel(null), 'SESSION 01 // DEEP WORK');
+  });
+
+  // 14. Time Formatting with Fractional and Non-finite Numbers
+  test('formatTime() handles fractional seconds and non-finite numbers safely', () => {
+    assertEqual(PomodoroCore.formatTime(65.8), '01:05', '65.8s should truncate to 01:05');
+    assertEqual(PomodoroCore.formatTime(0.9), '00:00', '0.9s should truncate to 00:00');
+    assertEqual(PomodoroCore.formatTime(Infinity), '00:00', 'Infinity should fallback to 00:00');
+    assertEqual(PomodoroCore.formatTime(-Infinity), '00:00', '-Infinity should fallback to 00:00');
+  });
+
+  // 15. Cycle Count Boundary Protection in getNextMode
+  test('getNextMode() guards against zero and negative cycle counts', () => {
+    assertEqual(PomodoroCore.getNextMode('focus', 0), 'shortBreak', 'Cycle 0 should not trigger longBreak');
+    assertEqual(PomodoroCore.getNextMode('focus', -4), 'shortBreak', 'Negative cycle should not trigger longBreak');
+    assertEqual(PomodoroCore.getNextMode('focus', 'invalid'), 'shortBreak', 'Invalid cycle should not trigger longBreak');
+  });
+
+  // 16. Streak Calculation Error Handling
+  test('calculateStreak() handles invalid date strings and non-numeric streak gracefully', () => {
+    assertEqual(PomodoroCore.calculateStreak('invalid-date', '2026-11-03', 5), 1, 'Corrupted last date resets to 1');
+    assertEqual(PomodoroCore.calculateStreak('2026-11-03', '2026-11-03', null), 1, 'Null current streak defaults to 1');
+    assertEqual(PomodoroCore.calculateStreak('2026-11-03', '2026-11-03', 'abc'), 1, 'Non-numeric streak defaults to 1');
+  });
+
+  // 17. Progress Offset Robustness
+  test('calculateProgressOffset() handles NaN timeLeft and invalid circumference safely', () => {
+    const C = 691.15;
+    assertEqual(PomodoroCore.calculateProgressOffset(NaN, 1500, C), C, 'NaN timeLeft should yield full circumference');
+    assertEqual(PomodoroCore.calculateProgressOffset(1500, 0, C), 0, 'Zero duration yields 0');
+    assertEqual(PomodoroCore.calculateProgressOffset(1500, -10, C), 0, 'Negative duration yields 0');
+    assertEqual(PomodoroCore.calculateProgressOffset(1500, 1500, 0), 0, 'Zero circumference yields 0');
+  });
+
+  // 18. HTML Sanitization Helper
+  test('escapeHtml() escapes special HTML characters to prevent XSS injection', () => {
+    assertEqual(PomodoroCore.escapeHtml('<script>alert("xss")</script>'), '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+    assertEqual(PomodoroCore.escapeHtml("Tom & 'Jerry'"), 'Tom &amp; &#039;Jerry&#039;');
+    assertEqual(PomodoroCore.escapeHtml(null), '');
+    assertEqual(PomodoroCore.escapeHtml(undefined), '');
   });
 
   return { passed, failed, total: passed + failed, results };
