@@ -855,7 +855,7 @@
 
     async function ensureAudio() {
       if (audioInitLock) return;
-      if (!audioCtx) {
+      if (!audioCtx && AudioContextClass) {
         audioInitLock = true;
         try {
           audioCtx = new AudioContextClass();
@@ -876,11 +876,13 @@
           analyser.connect(masterGain);
           masterGain.connect(audioCtx.destination);
           startVisualizer();
+        } catch (e) {
+          audioCtx = null;
         } finally {
           audioInitLock = false;
         }
       }
-      if (audioCtx.state === 'suspended') {
+      if (audioCtx && audioCtx.state === 'suspended') {
         try { await audioCtx.resume(); } catch (e) {}
       }
     }
@@ -970,7 +972,7 @@
         localStorage.setItem('cp_muted', String(isMuted));
         localStorage.setItem('cp_volume', String(vol));
         updateVolumeDisplay(vol);
-        if (masterGain) {
+        if (masterGain && audioCtx) {
           masterGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.03);
         }
       });
@@ -983,7 +985,7 @@
       savedVol = nextState.savedVol;
       localStorage.setItem('cp_muted', nextState.storage.muted);
       localStorage.setItem('cp_volume', nextState.storage.volume);
-      if (masterGain) {
+      if (masterGain && audioCtx) {
         masterGain.gain.setTargetAtTime(nextState.targetVol, audioCtx.currentTime, 0.03);
       }
       if (volumeSlider) volumeSlider.value = nextState.targetVol;
@@ -994,10 +996,16 @@
 
     // Synthetic Ambient Audio Generator
     async function toggleSound(type, btn) {
-      await ensureAudio();
       if (activeNodes[type]) {
         try { activeNodes[type].stop(); } catch (e) {}
         activeNodes[type] = null;
+        btn.classList.remove('playing');
+        btn.setAttribute('aria-pressed', 'false');
+        return;
+      }
+
+      await ensureAudio();
+      if (!audioCtx) {
         btn.classList.remove('playing');
         btn.setAttribute('aria-pressed', 'false');
         return;
