@@ -269,7 +269,7 @@ function runUnitTests() {
   test('formatVolumePercent() and getVolumeIcon() format audio controls accurately', () => {
     assertEqual(PomodoroCore.formatVolumePercent(0.5, false), '50%');
     assertEqual(PomodoroCore.formatVolumePercent(0.85, false), '85%');
-    assertEqual(PomodoroCore.formatVolumePercent(0.5, true), '0%');
+    assertEqual(PomodoroCore.formatVolumePercent(0.5, true), 'MUTED');
     assertEqual(PomodoroCore.formatVolumePercent(0, false), '0%');
 
     assertEqual(PomodoroCore.getVolumeIcon(0.5, false), '🔊');
