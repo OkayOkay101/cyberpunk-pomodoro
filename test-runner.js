@@ -349,6 +349,30 @@ function runUnitTests() {
     assertEqual(mixed.includes('Valid &lt;x&gt;'), true, 'Valid task text should stay escaped');
   });
 
+  // 32. Local Date String Generation (Timezone Bug Fix)
+  test('getLocalDateString() returns local date in YYYY-MM-DD format', () => {
+    const dateStr = PomodoroCore.getLocalDateString();
+    assertEqual(typeof dateStr, 'string');
+    assertEqual(dateStr.length, 10);
+    assertEqual(dateStr.charAt(4), '-');
+    assertEqual(dateStr.charAt(7), '-');
+    const year = parseInt(dateStr.substring(0, 4), 10);
+    const month = parseInt(dateStr.substring(5, 7), 10);
+    const day = parseInt(dateStr.substring(8, 10), 10);
+    assertEqual(!isNaN(year) && year >= 2020 && year <= 2100, true);
+    assertEqual(!isNaN(month) && month >= 1 && month <= 12, true);
+    assertEqual(!isNaN(day) && day >= 1 && day <= 31, true);
+
+    const now = new Date();
+    assertEqual(year, now.getFullYear());
+    assertEqual(month, now.getMonth() + 1);
+    assertEqual(day, now.getDate());
+
+    const testDate = new Date('2026-01-15T12:00:00');
+    const customStr = PomodoroCore.getLocalDateString(testDate);
+    assertEqual(customStr, '2026-01-15');
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
