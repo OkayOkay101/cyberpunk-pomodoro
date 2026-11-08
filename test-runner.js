@@ -386,6 +386,29 @@ function runUnitTests() {
     assertEqual(PomodoroCore.resolveKeyboardAction(null), null);
   });
 
+  // 34. Duration Config Resolver & Sanitization
+  test('resolveDurations() enforces bounds and returns seconds, minutes, and storage representations', () => {
+    const def = PomodoroCore.resolveDurations();
+    assertEqual(def.focus, 1500);
+    assertEqual(def.shortBreak, 300);
+    assertEqual(def.longBreak, 900);
+    assertEqual(def.minutes.focus, 25);
+    assertEqual(def.minutes.shortBreak, 5);
+    assertEqual(def.minutes.longBreak, 15);
+    assertEqual(def.storage.cp_cfg_focus, '25');
+
+    const custom = PomodoroCore.resolveDurations({ focus: '50', shortBreak: 10, longBreak: '20' });
+    assertEqual(custom.focus, 3000);
+    assertEqual(custom.shortBreak, 600);
+    assertEqual(custom.longBreak, 1200);
+    assertEqual(custom.minutes.focus, 50);
+
+    const bounded = PomodoroCore.resolveDurations({ focus: 150, shortBreak: -5, longBreak: 0 });
+    assertEqual(bounded.minutes.focus, 25);
+    assertEqual(bounded.minutes.shortBreak, 5);
+    assertEqual(bounded.minutes.longBreak, 15);
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');

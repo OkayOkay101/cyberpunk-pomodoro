@@ -107,6 +107,24 @@
     return num;
   },
 
+  resolveDurations(inputs) {
+    const raw = (inputs && typeof inputs === 'object' && !Array.isArray(inputs)) ? inputs : {};
+    const f = PomodoroCore.validateCustomDuration(raw.focus, 1, 90, 25);
+    const s = PomodoroCore.validateCustomDuration(raw.shortBreak, 1, 30, 5);
+    const l = PomodoroCore.validateCustomDuration(raw.longBreak, 1, 60, 15);
+    return {
+      focus: f * 60,
+      shortBreak: s * 60,
+      longBreak: l * 60,
+      minutes: { focus: f, shortBreak: s, longBreak: l },
+      storage: {
+        cp_cfg_focus: String(f),
+        cp_cfg_short: String(s),
+        cp_cfg_long: String(l)
+      }
+    };
+  },
+
   getThemeVariables(themeName) {
     const safeTheme = (typeof themeName === 'string' && VALID_THEMES.includes(themeName)) ? themeName : 'cyan';
     return THEMES[safeTheme];
