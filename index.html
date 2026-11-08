@@ -630,13 +630,13 @@
         <span class="stat-badge" id="streakBadge">⚡ STREAK: 1 DAY</span>
         <span class="stat-badge" id="focusTimeBadge">🎯 0 MINS TODAY</span>
       </div>
-      <div class="hud-tools">
-        <button class="tool-btn" id="tickToggleBtn" title="เปิด/ปิดเสียงเดินของเวลา (Tick)">⏱️ TICK: OFF</button>
-        <button class="tool-btn" id="autoStartBtn" title="สลับโหมดเริ่มรอบถัดไปอัตโนมัติ">⚡ AUTO: OFF</button>
-        <button class="tool-btn" id="settingsBtn" title="การตั้งค่า">⚙️ SETTINGS</button>
-        <button class="tool-btn" id="fullscreenBtn" title="โหมดเต็มจอ">⛶</button>
-        <a href="test.html" class="tool-btn" style="text-decoration: none;" title="เปิดดูผล Unit Tests">🧪 TESTS</a>
-      </div>
+<div class="hud-tools">
+      <button class="tool-btn" id="tickToggleBtn" title="เปิด/ปิดเสียงเดินของเวลา (Tick)" aria-label="เปิด/ปิดเสียงเดินของเวลา (Tick)" aria-pressed="false">⏱️ TICK: OFF</button>
+      <button class="tool-btn" id="autoStartBtn" title="สลับโหมดเริ่มรอบถัดไปอัตโนมัติ" aria-label="สลับโหมดเริ่มรอบถัดไปอัตโนมัติ" aria-pressed="false">⚡ AUTO: OFF</button>
+      <button class="tool-btn" id="settingsBtn" title="การตั้งค่า" aria-label="การตั้งค่า">⚙️ SETTINGS</button>
+      <button class="tool-btn" id="fullscreenBtn" title="โหมดเต็มจอ" aria-label="โหมดเต็มจอ">⛶</button>
+      <a href="test.html" class="tool-btn" style="text-decoration: none;" title="เปิดดูผล Unit Tests" aria-label="เปิดดูผล Unit Tests">🧪 TESTS</a>
+    </div>
     </div>
 
     <!-- Header Row -->
@@ -1406,22 +1406,26 @@
     if (tickToggleBtn) {
       tickToggleBtn.textContent = `⏱️ TICK: ${isTickEnabled ? 'ON' : 'OFF'}`;
       tickToggleBtn.classList.toggle('active', isTickEnabled);
+      tickToggleBtn.setAttribute('aria-pressed', String(isTickEnabled));
       tickToggleBtn.addEventListener('click', () => {
         isTickEnabled = !isTickEnabled;
         localStorage.setItem('cp_tick', String(isTickEnabled));
         tickToggleBtn.textContent = `⏱️ TICK: ${isTickEnabled ? 'ON' : 'OFF'}`;
         tickToggleBtn.classList.toggle('active', isTickEnabled);
+        tickToggleBtn.setAttribute('aria-pressed', String(isTickEnabled));
       });
     }
 
     if (autoStartBtn) {
       autoStartBtn.textContent = `⚡ AUTO: ${isAutoStart ? 'ON' : 'OFF'}`;
       autoStartBtn.classList.toggle('active', isAutoStart);
+      autoStartBtn.setAttribute('aria-pressed', String(isAutoStart));
       autoStartBtn.addEventListener('click', () => {
         isAutoStart = !isAutoStart;
         localStorage.setItem('cp_autostart', String(isAutoStart));
         autoStartBtn.textContent = `⚡ AUTO: ${isAutoStart ? 'ON' : 'OFF'}`;
         autoStartBtn.classList.toggle('active', isAutoStart);
+        autoStartBtn.setAttribute('aria-pressed', String(isAutoStart));
       });
     }
 
