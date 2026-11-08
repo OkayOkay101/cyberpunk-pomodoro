@@ -466,6 +466,19 @@ function runUnitTests() {
     });
   }
 
+  // 39. Prototype Pollution & Null-Prototype Defense for Tab Labels & Keyboard Actions
+  test('formatTabLabel() and resolveKeyboardAction() guard against prototype keys and null-prototype objects', () => {
+    assertEqual(PomodoroCore.formatTabLabel('__proto__', 1500), 'FOCUS (25M)');
+    assertEqual(PomodoroCore.formatTabLabel('toString', 1500), 'FOCUS (25M)');
+    assertEqual(PomodoroCore.formatTabLabel('valueOf', 1500), 'FOCUS (25M)');
+    assertEqual(PomodoroCore.formatTabLabel('constructor', 1500), 'FOCUS (25M)');
+    assertEqual(PomodoroCore.formatTabLabel(Object.create(null), 1500), 'FOCUS (25M)');
+
+    assertEqual(PomodoroCore.resolveKeyboardAction({ key: Object.create(null) }), null);
+    assertEqual(PomodoroCore.resolveKeyboardAction({ key: 'toString' }), null);
+    assertEqual(PomodoroCore.resolveKeyboardAction({ key: '__proto__' }), null);
+  });
+
   return { passed, failed, total: passed + failed, results };
 }
 

@@ -26,11 +26,11 @@
   const VALID_LABELS = Object.keys(LABELS);
   const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   const PAD_TWO = Array.from({ length: 100 }, (_, i) => (i < 10 ? '0' + i : String(i)));
-  const TAB_LABELS = {
+  const TAB_LABELS = Object.assign(Object.create(null), {
     focus: 'FOCUS',
     shortBreak: 'SHORT',
     longBreak: 'LONG'
-  };
+  });
   const MODE_SESSION_LABELS = Object.assign(Object.create(null), {
     shortBreak: 'RECHARGE // SHORT BREAK',
     longBreak: 'REST // LONG BREAK'
@@ -223,7 +223,7 @@
   },
 
   formatTabLabel(mode, durationSeconds) {
-    const label = TAB_LABELS[mode] || 'FOCUS';
+    const label = (typeof mode === 'string' && TAB_LABELS[mode]) ? TAB_LABELS[mode] : 'FOCUS';
     const num = Number(durationSeconds);
     const mins = (!isNaN(num) && num > 0) ? Math.round(num / 60) : 0;
     return `${label} (${mins}M)`;
@@ -343,7 +343,7 @@
     }
 
     if (code === 'Space') return 'toggleTimer';
-    return KEY_ACTIONS[key] || null;
+    return (typeof key === 'string' && KEY_ACTIONS[key]) || null;
   },
 
   getModeSessionLabel(mode, cycleCount) {

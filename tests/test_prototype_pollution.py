@@ -136,6 +136,106 @@ class TestPrototypePollutionDefense(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_format_tab_label_rejects_proto_and_builtins(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const protoVectors = [
+            '__proto__', 'constructor', 'prototype',
+            'toString', 'valueOf', 'hasOwnProperty', 'isPrototypeOf'
+        ];
+
+        for (const vector of protoVectors) {
+            const label = PomodoroCore.formatTabLabel(vector, 1500);
+            if (label !== 'FOCUS (25M)') {
+                console.error(`FAIL: formatTabLabel('${vector}', 1500) leaked prototype/builtin: "${label}"`);
+                process.exit(1);
+            }
+        }
+
+        // Standard modes still format correctly
+        if (PomodoroCore.formatTabLabel('focus', 1500) !== 'FOCUS (25M)') process.exit(2);
+        if (PomodoroCore.formatTabLabel('shortBreak', 300) !== 'SHORT (5M)') process.exit(3);
+        if (PomodoroCore.formatTabLabel('longBreak', 900) !== 'LONG (15M)') process.exit(4);
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
+    def test_format_tab_label_handles_null_prototype_and_non_string(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        // Object.create(null) must not crash with TypeError: Cannot convert object to primitive value
+        try {
+            const label = PomodoroCore.formatTabLabel(Object.create(null), 1500);
+            if (label !== 'FOCUS (25M)') {
+                console.error('FAIL: formatTabLabel(Object.create(null)) returned ' + label);
+                process.exit(1);
+            }
+        } catch (e) {
+            console.error('FAIL: formatTabLabel(Object.create(null)) threw ' + e.message);
+            process.exit(2);
+        }
+
+        // Symbol and function inputs must fall back safely
+        if (PomodoroCore.formatTabLabel(() => {}, 1500) !== 'FOCUS (25M)') process.exit(3);
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
+    def test_resolve_keyboard_action_handles_null_prototype_and_proto_keys(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        // Null-prototype object as key must not crash with TypeError
+        try {
+            const action = PomodoroCore.resolveKeyboardAction({ key: Object.create(null) });
+            if (action !== null) {
+                console.error('FAIL: resolveKeyboardAction with null-prototype key should be null, got ' + action);
+                process.exit(1);
+            }
+        } catch (e) {
+            console.error('FAIL: resolveKeyboardAction threw on null-prototype key: ' + e.message);
+            process.exit(2);
+        }
+
+        // Prototype names should return null, not throw or leak
+        const protoKeys = ['toString', 'valueOf', '__proto__', 'constructor'];
+        for (const k of protoKeys) {
+            const action = PomodoroCore.resolveKeyboardAction({ key: k });
+            if (action !== null) {
+                console.error(`FAIL: resolveKeyboardAction with key '${k}' should return null, got ${action}`);
+                process.exit(3);
+            }
+        }
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
