@@ -1,10 +1,10 @@
-name: CI
+﻿name: CI
 
 on:
   push:
-    branches: [ main, main, master ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main, main, master ]
+    branches: [ main, master ]
 
 permissions:
   contents: read
@@ -20,12 +20,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
-      - name: Install dependencies
-        run: |
-          npm install
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Run tests
         run: |
           node test-runner.js
+          python scripts/check_python_syntax.py
+          python -m unittest discover -s tests -p "test_*.py"
