@@ -702,13 +702,13 @@
 
     <!-- Mode Selector Tabs -->
     <div class="mode-tabs" role="tablist" aria-label="โหมดจับเวลา">
-      <button class="mode-tab active" data-mode="focus" id="tabFocus" role="tab" aria-selected="true" tabindex="0" aria-label="โฟกัส">FOCUS (25M)</button>
-      <button class="mode-tab" data-mode="shortBreak" id="tabShort" role="tab" aria-selected="false" tabindex="-1" aria-label="พักสั้น">SHORT (5M)</button>
-      <button class="mode-tab" data-mode="longBreak" id="tabLong" role="tab" aria-selected="false" tabindex="-1" aria-label="พักยาว">LONG (15M)</button>
+      <button class="mode-tab active" data-mode="focus" id="tabFocus" role="tab" aria-selected="true" tabindex="0" aria-label="โฟกัส" aria-controls="timerPanel">FOCUS (25M)</button>
+      <button class="mode-tab" data-mode="shortBreak" id="tabShort" role="tab" aria-selected="false" tabindex="-1" aria-label="พักสั้น" aria-controls="timerPanel">SHORT (5M)</button>
+      <button class="mode-tab" data-mode="longBreak" id="tabLong" role="tab" aria-selected="false" tabindex="-1" aria-label="พักยาว" aria-controls="timerPanel">LONG (15M)</button>
     </div>
 
     <!-- Timer Ring -->
-    <div class="timer-circle-wrapper">
+    <div class="timer-circle-wrapper" id="timerPanel" role="tabpanel" aria-labelledby="tabFocus">
       <svg class="progress-ring" viewBox="0 0 250 250" aria-hidden="true">
         <circle class="progress-ring-bg" cx="125" cy="125" r="110" />
         <circle class="progress-ring-fill" id="progressFill" cx="125" cy="125" r="110" />
@@ -1339,6 +1339,10 @@
         t.classList.toggle('active', isActive);
         t.setAttribute('aria-selected', isActive ? 'true' : 'false');
         t.setAttribute('tabindex', isActive ? '0' : '-1');
+        if (isActive) {
+          const panel = document.getElementById('timerPanel');
+          if (panel) panel.setAttribute('aria-labelledby', t.id);
+        }
       });
 
       progressFill.style.stroke = PomodoroCore.getModeStroke(mode);

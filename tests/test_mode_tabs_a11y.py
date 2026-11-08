@@ -82,6 +82,28 @@ class TestModeTabsAccessibility(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_mode_tabs_have_associated_tabpanel(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+
+        # All mode tabs must specify aria-controls="timerPanel"
+        for tab_id in ['tabFocus', 'tabShort', 'tabLong']:
+            match = re.search(rf'<button[^>]*id="{tab_id}"[^>]*>', html)
+            self.assertIsNotNone(match, f"#{tab_id} button not found")
+            self.assertIn('aria-controls="timerPanel"', match.group(0),
+                          f"#{tab_id} missing aria-controls='timerPanel'")
+
+        # Timer container must be a semantic tabpanel labelled by the initial active tab
+        panel_match = re.search(r'<div[^>]*id="timerPanel"[^>]*>', html)
+        self.assertIsNotNone(panel_match, "#timerPanel element not found in index.html")
+        panel_html = panel_match.group(0)
+        self.assertIn('role="tabpanel"', panel_html, "#timerPanel missing role='tabpanel'")
+        self.assertIn('aria-labelledby="tabFocus"', panel_html,
+                      "#timerPanel missing initial aria-labelledby='tabFocus'")
+
+        # setMode must update aria-labelledby on the timer panel when tab switches
+        self.assertIn("panel.setAttribute('aria-labelledby', t.id)", html,
+                      "setMode does not update timerPanel aria-labelledby when switching tabs")
+
 
 if __name__ == "__main__":
     unittest.main()
