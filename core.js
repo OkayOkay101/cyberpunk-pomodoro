@@ -26,6 +26,11 @@
   const VALID_LABELS = Object.keys(LABELS);
   const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   const PAD_TWO = Array.from({ length: 100 }, (_, i) => (i < 10 ? '0' + i : String(i)));
+  const TAB_LABELS = {
+    focus: 'FOCUS',
+    shortBreak: 'SHORT',
+    longBreak: 'LONG'
+  };
   const PomodoroCore = {
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
@@ -182,12 +187,7 @@
   },
 
   formatTabLabel(mode, durationSeconds) {
-    const labels = {
-      focus: 'FOCUS',
-      shortBreak: 'SHORT',
-      longBreak: 'LONG'
-    };
-    const label = labels[mode] || 'FOCUS';
+    const label = TAB_LABELS[mode] || 'FOCUS';
     const num = Number(durationSeconds);
     const mins = (!isNaN(num) && num > 0) ? Math.round(num / 60) : 0;
     return `${label} (${mins}M)`;
