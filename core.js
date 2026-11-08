@@ -225,16 +225,22 @@
     if (!Array.isArray(tasks) || tasks.length === 0) {
       return '<div class="task-empty" role="status">ยังไม่มีภารกิจ — พิมพ์ด้านบนแล้วกด Enter เพื่อเพิ่ม</div>';
     }
-    return tasks.map(task => {
-      if (!task || typeof task.text !== 'string') return '';
+    let html = '';
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      if (!task || typeof task.text !== 'string') continue;
       const safeText = PomodoroCore.escapeHtml(task.text);
-      return `
-        <div class="task-item ${task.done ? 'done' : ''}" data-id="${PomodoroCore.escapeHtml(String(task.id))}">
-          <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="${safeText}">
+      const doneClass = task.done ? 'done' : '';
+      const checked = task.done ? 'checked' : '';
+      const safeId = PomodoroCore.escapeHtml(String(task.id));
+      html += `
+        <div class="task-item ${doneClass}" data-id="${safeId}">
+          <input type="checkbox" ${checked} aria-label="${safeText}">
           <span>${safeText}</span>
         </div>
       `;
-    }).join('');
+    }
+    return html;
   }
   };
 
