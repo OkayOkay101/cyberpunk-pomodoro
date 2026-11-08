@@ -651,6 +651,38 @@ function runUnitTests() {
     });
   }
 
+  // 34. Audio Cue Configuration Decoupling
+  test('getAudioCueConfig() resolves synthesis parameters and handles fallbacks safely', () => {
+    const focusCue = PomodoroCore.getAudioCueConfig('focus_end');
+    assertEqual(focusCue.type, 'exponential_ramp', 'Focus end cue type');
+    assertEqual(focusCue.startFreq, 880, 'Focus start frequency');
+    assertEqual(focusCue.endFreq, 1760, 'Focus target frequency');
+    assertEqual(focusCue.duration, 0.35, 'Focus duration');
+    assertEqual(focusCue.initialGain, 0.2, 'Focus initial gain');
+    assertEqual(focusCue.targetGain, 0.01, 'Focus target gain');
+    assertEqual(focusCue.waveType, 'sine', 'Focus oscillator wave');
+
+    const breakCue = PomodoroCore.getAudioCueConfig('break_end');
+    assertEqual(breakCue.type, 'step_ramp', 'Break end cue type');
+    assertEqual(breakCue.startFreq, 587.33, 'Break start frequency');
+    assertEqual(breakCue.stepFreq, 880, 'Break step frequency');
+    assertEqual(breakCue.stepTime, 0.15, 'Break step offset');
+    assertEqual(breakCue.duration, 0.35, 'Break duration');
+    assertEqual(breakCue.initialGain, 0.25, 'Break initial gain');
+    assertEqual(breakCue.targetGain, 0.01, 'Break target gain');
+    assertEqual(breakCue.waveType, 'sine', 'Break oscillator wave');
+
+    const fallbackCue = PomodoroCore.getAudioCueConfig('unknown_cue');
+    assertEqual(fallbackCue.type, 'exponential_ramp', 'Unknown cue falls back to focus_end');
+    assertEqual(fallbackCue.startFreq, 880, 'Fallback start frequency');
+
+    const nullCue = PomodoroCore.getAudioCueConfig(null);
+    assertEqual(nullCue.type, 'exponential_ramp', 'Null cue falls back to focus_end');
+
+    const undefCue = PomodoroCore.getAudioCueConfig(undefined);
+    assertEqual(undefCue.type, 'exponential_ramp', 'Undefined cue falls back to focus_end');
+  });
+
   return { passed, failed, total: passed + failed, results };
 }
 
