@@ -62,6 +62,19 @@
     body: 'จบ Session ' + i + ' เรียบร้อยแล้ว ได้เวลาพักผ่อน!',
     soundType: 'focus_end'
   }));
+  const FOCUS_SKIP_LOOKUP = Array.from({ length: 101 }, (_, i) => {
+    const isLong = (i > 0 && i % 4 === 0);
+    return Object.freeze({
+      nextMode: isLong ? 'longBreak' : 'shortBreak',
+      toastMessage: isLong ? 'LONG BREAK' : 'SHORT BREAK',
+      cycleCount: i
+    });
+  });
+  const BREAK_SKIP_LOOKUP = Array.from({ length: 101 }, (_, i) => Object.freeze({
+    nextMode: 'focus',
+    toastMessage: 'FOCUS MODE',
+    cycleCount: i
+  }));
   const MS_PER_DAY = 86400000;
   const KEY_ACTIONS = Object.freeze(Object.assign(Object.create(null), {
     r: 'resetTimer',
@@ -592,6 +605,15 @@
   },
 
   calculateSkipTransition(modeOrParams, cycleCount) {
+    if (typeof modeOrParams === 'string' && typeof cycleCount === 'number') {
+      if (cycleCount >= 1 && cycleCount <= 100 && (cycleCount | 0) === cycleCount) {
+        if (modeOrParams === 'focus') {
+          return FOCUS_SKIP_LOOKUP[cycleCount];
+        }
+        return BREAK_SKIP_LOOKUP[cycleCount];
+      }
+    }
+
     let mode = modeOrParams;
     let cycle = cycleCount;
 
@@ -603,13 +625,19 @@
     const safeCycle = PomodoroCore.parseCycleCount(cycle);
 
     if (mode === 'focus') {
-      const nextMode = PomodoroCore.getNextMode('focus', safeCycle);
-      const toastMessage = PomodoroCore.getModeToastMessage(nextMode);
+      if (safeCycle <= 100) {
+        return FOCUS_SKIP_LOOKUP[safeCycle];
+      }
+      const isLong = (safeCycle % 4 === 0);
       return {
-        nextMode,
-        toastMessage,
+        nextMode: isLong ? 'longBreak' : 'shortBreak',
+        toastMessage: isLong ? 'LONG BREAK' : 'SHORT BREAK',
         cycleCount: safeCycle
       };
+    }
+
+    if (safeCycle <= 100) {
+      return BREAK_SKIP_LOOKUP[safeCycle];
     }
 
     return {
