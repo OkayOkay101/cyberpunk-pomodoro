@@ -336,7 +336,20 @@ function runUnitTests() {
     assertEqual(PomodoroCore.getThemeLabel(), 'Cyan Matrix', 'Missing theme falls back to cyan');
   });
 
-  // 30. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
+  // 30. Task List Fallback for Unrenderable Entries
+  test('renderTaskList() falls back to the empty state when no task is renderable', () => {
+    const emptyState = PomodoroCore.renderTaskList([]);
+    assertEqual(
+      PomodoroCore.renderTaskList([null, undefined, { id: 9 }, { id: 10, text: 42 }, 'not-a-task']),
+      emptyState,
+      'List with no renderable tasks should reuse the empty state'
+    );
+    const mixed = PomodoroCore.renderTaskList([null, { id: 11 }, { id: 12, text: 'Valid <x>', done: false }]);
+    assertEqual(mixed.includes('task-empty'), false, 'Mixed list should not show the empty state');
+    assertEqual(mixed.includes('Valid &lt;x&gt;'), true, 'Valid task text should stay escaped');
+  });
+
+  // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
     const path = require('path');

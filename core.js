@@ -222,8 +222,9 @@
   },
 
   renderTaskList(tasks) {
+    const emptyState = '<div class="task-empty" role="status">ยังไม่มีภารกิจ — พิมพ์ด้านบนแล้วกด Enter เพื่อเพิ่ม</div>';
     if (!Array.isArray(tasks) || tasks.length === 0) {
-      return '<div class="task-empty" role="status">ยังไม่มีภารกิจ — พิมพ์ด้านบนแล้วกด Enter เพื่อเพิ่ม</div>';
+      return emptyState;
     }
     let html = '';
     for (let i = 0; i < tasks.length; i++) {
@@ -240,7 +241,7 @@
         </div>
       `;
     }
-    return html;
+    return html || emptyState;
   }
   };
 

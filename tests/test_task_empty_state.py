@@ -53,6 +53,46 @@ class TestTaskChecklistEmptyState(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_unrenderable_entries_fall_back_to_empty_state(self):
+        from pathlib import Path
+
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const emptyState = PomodoroCore.renderTaskList([]);
+        if (!emptyState.includes('class="task-empty"') || !emptyState.includes('role="status"')) {
+            console.error('FAIL: baseline empty state is missing its accessible markup');
+            process.exit(1);
+        }
+
+        const corrupted = [null, undefined, { id: 9 }, { id: 10, text: 42 }, 'not-a-task'];
+        const rendered = PomodoroCore.renderTaskList(corrupted);
+        if (rendered !== emptyState) {
+            console.error('FAIL: list with no renderable tasks should fall back to the empty state, got ' + JSON.stringify(rendered));
+            process.exit(2);
+        }
+
+        const mixed = [null, { id: 11 }, { id: 12, text: 'Valid <x>', done: false }];
+        const mixedHtml = PomodoroCore.renderTaskList(mixed);
+        if (!mixedHtml.includes('task-item') || mixedHtml.includes('task-empty')) {
+            console.error('FAIL: mixed list should render only its valid tasks');
+            process.exit(3);
+        }
+        if (!mixedHtml.includes('Valid &lt;x&gt;')) {
+            console.error('FAIL: valid task text is not HTML-escaped');
+            process.exit(4);
+        }
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(Path(__file__).resolve().parent.parent)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_production_page_uses_shared_core_module(self):
         from pathlib import Path
 
