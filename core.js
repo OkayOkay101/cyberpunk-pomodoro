@@ -47,6 +47,11 @@
   const TIMER_STATUS_RUNNING = Object.freeze({ buttonText: 'PAUSE', statusText: 'SYSTEM // RUNNING' });
   const TIMER_STATUS_PAUSED = Object.freeze({ buttonText: 'RESUME', statusText: 'SYSTEM // PAUSED' });
   const TIMER_STATUS_READY = Object.freeze({ buttonText: 'START', statusText: 'ONLINE // READY' });
+  const BREAK_NOTIFICATION = Object.freeze({
+    title: 'BREAK FINISHED // BACK TO MATRIX',
+    body: 'หมดเวลาพักแล้ว พร้อมกลับมาลุยภารกิจต่อหรือยัง?',
+    soundType: 'break_end'
+  });
   const MS_PER_DAY = 86400000;
   const KEY_ACTIONS = Object.freeze(Object.assign(Object.create(null), {
     r: 'resetTimer',
@@ -456,6 +461,32 @@
     }
 
     return TIMER_STATUS_READY;
+  },
+
+  parseCycleCount(cycleCount) {
+    const parsed = parseInt(cycleCount, 10);
+    return (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
+  },
+
+  getSessionNotification(modeOrParams, cycleCount) {
+    let mode = modeOrParams;
+    let cycle = cycleCount;
+
+    if (modeOrParams && typeof modeOrParams === 'object') {
+      mode = modeOrParams.mode;
+      cycle = modeOrParams.cycleCount;
+    }
+
+    if (mode === 'focus') {
+      const validCycle = PomodoroCore.parseCycleCount(cycle);
+      return {
+        title: 'FOCUS COMPLETE // CYBERPUNK POMODORO',
+        body: `จบ Session ${validCycle} เรียบร้อยแล้ว ได้เวลาพักผ่อน!`,
+        soundType: 'focus_end'
+      };
+    }
+
+    return BREAK_NOTIFICATION;
   }
   };
 

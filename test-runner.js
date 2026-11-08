@@ -511,6 +511,54 @@ function runUnitTests() {
     assertEqual(PomodoroCore.createTaskItem(null, 10), null, 'Null text must return null');
   });
 
+  // 40. Cycle Count Parsing and Boundary Safety
+  test('parseCycleCount() enforces positive integer boundaries and handles non-numeric values safely', () => {
+    assertEqual(PomodoroCore.parseCycleCount(1), 1);
+    assertEqual(PomodoroCore.parseCycleCount(5), 5);
+    assertEqual(PomodoroCore.parseCycleCount('4'), 4);
+    assertEqual(PomodoroCore.parseCycleCount('09'), 9);
+    assertEqual(PomodoroCore.parseCycleCount(0), 1, 'Zero cycle falls back to 1');
+    assertEqual(PomodoroCore.parseCycleCount(-5), 1, 'Negative cycle falls back to 1');
+    assertEqual(PomodoroCore.parseCycleCount(NaN), 1, 'NaN cycle falls back to 1');
+    assertEqual(PomodoroCore.parseCycleCount(null), 1, 'Null cycle falls back to 1');
+    assertEqual(PomodoroCore.parseCycleCount(undefined), 1, 'Undefined cycle falls back to 1');
+    assertEqual(PomodoroCore.parseCycleCount('corrupted'), 1, 'String cycle falls back to 1');
+  });
+
+  // 41. Session Completion Notification & Audio Decoupling
+  test('getSessionNotification() resolves completion notifications and sound cues across modes and cycles', () => {
+    const focus1 = PomodoroCore.getSessionNotification('focus', 1);
+    assertEqual(focus1.title, 'FOCUS COMPLETE // CYBERPUNK POMODORO');
+    assertEqual(focus1.body, 'จบ Session 1 เรียบร้อยแล้ว ได้เวลาพักผ่อน!');
+    assertEqual(focus1.soundType, 'focus_end');
+
+    const focus4 = PomodoroCore.getSessionNotification('focus', 4);
+    assertEqual(focus4.body, 'จบ Session 4 เรียบร้อยแล้ว ได้เวลาพักผ่อน!');
+
+    const focusStr = PomodoroCore.getSessionNotification('focus', '8');
+    assertEqual(focusStr.body, 'จบ Session 8 เรียบร้อยแล้ว ได้เวลาพักผ่อน!');
+
+    const focusFallback = PomodoroCore.getSessionNotification('focus', 0);
+    assertEqual(focusFallback.body, 'จบ Session 1 เรียบร้อยแล้ว ได้เวลาพักผ่อน!');
+
+    const shortBreak = PomodoroCore.getSessionNotification('shortBreak', 1);
+    assertEqual(shortBreak.title, 'BREAK FINISHED // BACK TO MATRIX');
+    assertEqual(shortBreak.body, 'หมดเวลาพักแล้ว พร้อมกลับมาลุยภารกิจต่อหรือยัง?');
+    assertEqual(shortBreak.soundType, 'break_end');
+
+    const longBreak = PomodoroCore.getSessionNotification('longBreak', 4);
+    assertEqual(longBreak.title, 'BREAK FINISHED // BACK TO MATRIX');
+    assertEqual(longBreak.soundType, 'break_end');
+    assertEqual(shortBreak, longBreak, 'Break notifications should reuse cached instance');
+
+    const fallbackMode = PomodoroCore.getSessionNotification('unknown', 1);
+    assertEqual(fallbackMode.title, 'BREAK FINISHED // BACK TO MATRIX');
+
+    const objInput = PomodoroCore.getSessionNotification({ mode: 'focus', cycleCount: 3 });
+    assertEqual(objInput.body, 'จบ Session 3 เรียบร้อยแล้ว ได้เวลาพักผ่อน!');
+    assertEqual(objInput.soundType, 'focus_end');
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
