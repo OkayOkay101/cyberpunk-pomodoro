@@ -820,11 +820,11 @@
     let resetConfirmTimer = null;
 
     // Durations Config (minutes -> seconds)
-    let configDurations = {
-      focus: PomodoroCore.validateCustomDuration(localStorage.getItem('cp_cfg_focus') || '25', 1, 90, 25) * 60,
-      shortBreak: PomodoroCore.validateCustomDuration(localStorage.getItem('cp_cfg_short') || '5', 1, 30, 5) * 60,
-      longBreak: PomodoroCore.validateCustomDuration(localStorage.getItem('cp_cfg_long') || '15', 1, 60, 15) * 60
-    };
+    let configDurations = PomodoroCore.resolveDurations({
+      focus: localStorage.getItem('cp_cfg_focus'),
+      shortBreak: localStorage.getItem('cp_cfg_short'),
+      longBreak: localStorage.getItem('cp_cfg_long')
+    });
 
     function safeDisconnect(node) {
       if (!node) return;
@@ -1523,9 +1523,9 @@
 
     if (settingsBtn) {
       settingsBtn.addEventListener('click', () => {
-        cfgFocusMin.value = Math.round(configDurations.focus / 60);
-        cfgShortMin.value = Math.round(configDurations.shortBreak / 60);
-        cfgLongMin.value = Math.round(configDurations.longBreak / 60);
+        cfgFocusMin.value = (configDurations.minutes && configDurations.minutes.focus) || Math.round(configDurations.focus / 60);
+        cfgShortMin.value = (configDurations.minutes && configDurations.minutes.shortBreak) || Math.round(configDurations.shortBreak / 60);
+        cfgLongMin.value = (configDurations.minutes && configDurations.minutes.longBreak) || Math.round(configDurations.longBreak / 60);
         settingsModal.classList.add('open');
       });
     }
@@ -1534,15 +1534,15 @@
     }
     if (saveSettingsBtn) {
       saveSettingsBtn.addEventListener('click', () => {
-        const f = PomodoroCore.validateCustomDuration(cfgFocusMin.value, 1, 90, 25);
-        const s = PomodoroCore.validateCustomDuration(cfgShortMin.value, 1, 30, 5);
-        const l = PomodoroCore.validateCustomDuration(cfgLongMin.value, 1, 60, 15);
-        configDurations.focus = f * 60;
-        configDurations.shortBreak = s * 60;
-        configDurations.longBreak = l * 60;
-        localStorage.setItem('cp_cfg_focus', String(f));
-        localStorage.setItem('cp_cfg_short', String(s));
-        localStorage.setItem('cp_cfg_long', String(l));
+        const resolved = PomodoroCore.resolveDurations({
+          focus: cfgFocusMin.value,
+          shortBreak: cfgShortMin.value,
+          longBreak: cfgLongMin.value
+        });
+        configDurations = resolved;
+        localStorage.setItem('cp_cfg_focus', resolved.storage.cp_cfg_focus);
+        localStorage.setItem('cp_cfg_short', resolved.storage.cp_cfg_short);
+        localStorage.setItem('cp_cfg_long', resolved.storage.cp_cfg_long);
         refreshTabLabels();
         setMode(currentMode, configDurations[currentMode]);
         settingsModal.classList.remove('open');

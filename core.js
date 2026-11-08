@@ -82,7 +82,8 @@
   formatSessionLabel(cycleCount) {
     const parsed = parseInt(cycleCount, 10);
     const validCycle = (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
-    return `SESSION ${String(validCycle).padStart(2, '0')} // DEEP WORK`;
+    const cycleStr = validCycle < 100 ? PAD_TWO[validCycle] : String(validCycle);
+    return `SESSION ${cycleStr} // DEEP WORK`;
   },
 
   sanitizeMission(text) {
@@ -105,6 +106,24 @@
     const num = parseInt(val, 10);
     if (isNaN(num) || num < min || num > max) return defaultVal;
     return num;
+  },
+
+  resolveDurations(inputs) {
+    const raw = (inputs && typeof inputs === 'object' && !Array.isArray(inputs)) ? inputs : {};
+    const f = PomodoroCore.validateCustomDuration(raw.focus, 1, 90, 25);
+    const s = PomodoroCore.validateCustomDuration(raw.shortBreak, 1, 30, 5);
+    const l = PomodoroCore.validateCustomDuration(raw.longBreak, 1, 60, 15);
+    return {
+      focus: f * 60,
+      shortBreak: s * 60,
+      longBreak: l * 60,
+      minutes: { focus: f, shortBreak: s, longBreak: l },
+      storage: {
+        cp_cfg_focus: String(f),
+        cp_cfg_short: String(s),
+        cp_cfg_long: String(l)
+      }
+    };
   },
 
   getThemeVariables(themeName) {
