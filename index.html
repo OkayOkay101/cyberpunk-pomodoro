@@ -1283,8 +1283,7 @@
     let timerId = null;
     let targetEndTime = null;
     let currentMode = 'focus';
-    let cycleCount = parseInt(localStorage.getItem('cp_cycle') || '1', 10);
-    if (isNaN(cycleCount) || cycleCount < 1) cycleCount = 1;
+    let cycleCount = PomodoroCore.parseCycleCount(localStorage.getItem('cp_cycle'));
 
     function refreshTabLabels() {
       document.getElementById('tabFocus').textContent = PomodoroCore.formatTabLabel('focus', configDurations.focus);
@@ -1357,9 +1356,11 @@
       isRunning = false;
       updateTimerStatusUI();
 
+      const notif = PomodoroCore.getSessionNotification(currentMode, cycleCount);
+      playBeep(notif.soundType);
+      notifySessionComplete(notif.title, notif.body);
+
       if (currentMode === 'focus') {
-        playBeep('focus_end');
-        notifySessionComplete('FOCUS COMPLETE // CYBERPUNK POMODORO', `จบ Session ${cycleCount} เรียบร้อยแล้ว ได้เวลาพักผ่อน!`);
         totalFocusMinsToday += Math.round(configDurations.focus / 60);
         localStorage.setItem('cp_focus_mins_today', String(totalFocusMinsToday));
         localStorage.setItem('cp_last_date', todayStr);
@@ -1372,8 +1373,6 @@
         const toastMsg = next === 'longBreak' ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
         setMode(next, configDurations[next], toastMsg);
       } else {
-        playBeep('break_end');
-        notifySessionComplete('BREAK FINISHED // BACK TO MATRIX', 'หมดเวลาพักแล้ว พร้อมกลับมาลุยภารกิจต่อหรือยัง?');
         setMode('focus', configDurations.focus, 'FOCUS SESSION STARTED');
       }
 
