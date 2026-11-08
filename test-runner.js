@@ -326,6 +326,28 @@ function runUnitTests() {
     assertEqual(invalidVol.storage.volume, '0.5', 'Invalid saved volume must persist the 0.5 default');
   });
 
+  // 29. Human-readable Theme Palette Labels
+  test('getThemeLabel() returns descriptive palette names with a safe cyan fallback', () => {
+    assertEqual(PomodoroCore.getThemeLabel('cyan'), 'Cyan Matrix');
+    assertEqual(PomodoroCore.getThemeLabel('pink'), 'Neon Pink / Outrun');
+    assertEqual(PomodoroCore.getThemeLabel('yellow'), 'Night City Yellow');
+    assertEqual(PomodoroCore.getThemeLabel('green'), 'Emerald Hacker');
+    assertEqual(PomodoroCore.getThemeLabel('unknown'), 'Cyan Matrix', 'Unknown theme falls back to cyan');
+    assertEqual(PomodoroCore.getThemeLabel(), 'Cyan Matrix', 'Missing theme falls back to cyan');
+  });
+
+  // 30. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
+  if (typeof require === 'function') {
+    const fs = require('fs');
+    const path = require('path');
+    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    test('theme selector shows the active palette name and pressed state', () => {
+      assertEqual(html.includes('id="activeThemeName"'), true, 'Active palette name element is missing');
+      assertEqual(html.includes('aria-pressed="true"'), true, 'Active option is not exposed as pressed');
+      assertEqual(html.includes('PomodoroCore.getThemeLabel(theme)'), true, 'Palette name is not kept in sync');
+    });
+  }
+
   return { passed, failed, total: passed + failed, results };
 }
 
