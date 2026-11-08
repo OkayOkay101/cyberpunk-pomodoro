@@ -157,6 +157,140 @@ class TestKeyboardShortcuts(unittest.TestCase):
             "index.html must check modal open state for keyboard routing"
         )
 
+    def test_resolve_keyboard_action_suppresses_with_ctrl_key(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const cases = [
+            { code: 'Space', key: ' ', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true },
+            { code: 'KeyR', key: 'r', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true },
+            { code: 'KeyR', key: 'R', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true },
+            { code: 'KeyS', key: 's', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true },
+            { code: 'KeyS', key: 'S', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true },
+            { code: 'KeyM', key: 'm', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true },
+            { code: 'KeyF', key: 'f', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true },
+            { code: 'KeyF', key: 'F', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true }
+        ];
+
+        for (const params of cases) {
+            const actual = PomodoroCore.resolveKeyboardAction(params);
+            if (actual !== null) {
+                console.error(`Expected null when ctrlKey is true for ${JSON.stringify(params)}, got ${actual}`);
+                process.exit(1);
+            }
+        }
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
+    def test_resolve_keyboard_action_suppresses_with_meta_key(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const cases = [
+            { code: 'Space', key: ' ', targetTagName: 'BODY', isModalOpen: false, metaKey: true },
+            { code: 'KeyR', key: 'r', targetTagName: 'BODY', isModalOpen: false, metaKey: true },
+            { code: 'KeyS', key: 's', targetTagName: 'BODY', isModalOpen: false, metaKey: true },
+            { code: 'KeyM', key: 'm', targetTagName: 'BODY', isModalOpen: false, metaKey: true },
+            { code: 'KeyF', key: 'f', targetTagName: 'BODY', isModalOpen: false, metaKey: true }
+        ];
+
+        for (const params of cases) {
+            const actual = PomodoroCore.resolveKeyboardAction(params);
+            if (actual !== null) {
+                console.error(`Expected null when metaKey is true for ${JSON.stringify(params)}, got ${actual}`);
+                process.exit(1);
+            }
+        }
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
+    def test_resolve_keyboard_action_suppresses_with_alt_key(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const cases = [
+            { code: 'Space', key: ' ', targetTagName: 'BODY', isModalOpen: false, altKey: true },
+            { code: 'KeyR', key: 'r', targetTagName: 'BODY', isModalOpen: false, altKey: true },
+            { code: 'KeyS', key: 's', targetTagName: 'BODY', isModalOpen: false, altKey: true },
+            { code: 'KeyM', key: 'm', targetTagName: 'BODY', isModalOpen: false, altKey: true },
+            { code: 'KeyF', key: 'f', targetTagName: 'BODY', isModalOpen: false, altKey: true }
+        ];
+
+        for (const params of cases) {
+            const actual = PomodoroCore.resolveKeyboardAction(params);
+            if (actual !== null) {
+                console.error(`Expected null when altKey is true for ${JSON.stringify(params)}, got ${actual}`);
+                process.exit(1);
+            }
+        }
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
+    def test_resolve_keyboard_action_modal_escape_with_modifiers(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        // Escape to close modal should work regardless of modifier flags
+        const res = PomodoroCore.resolveKeyboardAction({ key: 'Escape', isModalOpen: true, ctrlKey: false });
+        if (res !== 'closeModal') {
+            console.error('Escape with modal open should return closeModal, got ' + res);
+            process.exit(1);
+        }
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
+    def test_index_html_passes_modifier_keys(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn(
+            "ctrlKey: e.ctrlKey",
+            html,
+            "index.html must pass ctrlKey to PomodoroCore.resolveKeyboardAction"
+        )
+        self.assertIn(
+            "metaKey: e.metaKey",
+            html,
+            "index.html must pass metaKey to PomodoroCore.resolveKeyboardAction"
+        )
+        self.assertIn(
+            "altKey: e.altKey",
+            html,
+            "index.html must pass altKey to PomodoroCore.resolveKeyboardAction"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -312,10 +312,14 @@
 
   resolveKeyboardAction(params) {
     if (!params || typeof params !== 'object') return null;
-    const { key, code, targetTagName, isModalOpen } = params;
+    const { key, code, targetTagName, isModalOpen, ctrlKey, metaKey, altKey } = params;
 
     if (isModalOpen) {
       return key === 'Escape' ? 'closeModal' : null;
+    }
+
+    if (ctrlKey || metaKey || altKey) {
+      return null;
     }
 
     if (typeof targetTagName === 'string') {
