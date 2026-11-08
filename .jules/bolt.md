@@ -22,3 +22,8 @@
 
 **Learning:** The previous optimization moved `THEMES` and `LABELS` to module scope but `getThemeVariables()` and `getThemeLabel()` still called `Object.keys()` on every invocation, recreating the valid keys arrays. The visualizer (60fps) and settings UI call these functions frequently.
 **Action:** Pre-computed `VALID_THEMES` and `VALID_LABELS` as module-level constants. Functions now only do a simple array lookup and object property access. Measured 67.0% speedup for `getThemeVariables()` (17.7ms → 5.8ms at 500k iters) and 52.9% for `getThemeLabel()` (12.6ms → 5.9ms at 500k iters).
+
+## 2026-11-08 - Fast-path dangerous key check for deserializeConfig
+
+**Learning:** `deserializeConfig()` recreated a `dangerousKeys` array and used `Array.includes()` (O(n)) for every key in the parsed config object on every call, adding allocation and linear lookup overhead. The common case (valid config without dangerous keys) paid this cost despite no prototype pollution risk.
+**Action:** Moved `DANGEROUS_KEYS` to a module-level `Set` for O(1) lookup. Added a fast-path check that scans keys once for dangerous keys; if none found, merges with a single spread `{ ...defaults, ...parsed }` avoiding an intermediate sanitized object. If dangerous keys exist, falls back to filtered merge. Measured 29.8% speedup for valid object (293.8ms → 206.1ms at 500k iters) and 29.0% for object with extra keys (425.8ms → 302.5ms at 500k iters), while preserving prototype pollution protection.

@@ -24,6 +24,7 @@
     green: 'Emerald Hacker'
   };
   const VALID_LABELS = Object.keys(LABELS);
+  const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   const PomodoroCore = {
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
@@ -124,14 +125,23 @@
       if (Array.isArray(parsed)) {
         return parsed;
       }
-      const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
-      const sanitized = {};
+      let hasDangerous = false;
       for (const key of Object.keys(parsed)) {
-        if (!dangerousKeys.includes(key)) {
-          sanitized[key] = parsed[key];
+        if (DANGEROUS_KEYS.has(key)) {
+          hasDangerous = true;
+          break;
         }
       }
-      return { ...defaults, ...sanitized };
+      if (!hasDangerous) {
+        return { ...defaults, ...parsed };
+      }
+      const result = { ...defaults };
+      for (const key of Object.keys(parsed)) {
+        if (!DANGEROUS_KEYS.has(key)) {
+          result[key] = parsed[key];
+        }
+      }
+      return result;
     } catch (e) {
       return defaults;
     }
