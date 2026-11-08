@@ -31,6 +31,14 @@
     shortBreak: 'SHORT',
     longBreak: 'LONG'
   };
+  const MODE_SESSION_LABELS = Object.assign(Object.create(null), {
+    shortBreak: 'RECHARGE // SHORT BREAK',
+    longBreak: 'REST // LONG BREAK'
+  });
+  const MODE_STROKES = Object.assign(Object.create(null), {
+    shortBreak: 'var(--green)',
+    longBreak: 'var(--pink)'
+  });
   const MS_PER_DAY = 86400000;
   const KEY_ACTIONS = Object.freeze(Object.assign(Object.create(null), {
     r: 'resetTimer',
@@ -352,6 +360,20 @@
 
     if (code === 'Space') return 'toggleTimer';
     return KEY_ACTIONS[key] || null;
+  },
+
+  getModeSessionLabel(mode, cycleCount) {
+    if (typeof mode === 'string' && MODE_SESSION_LABELS[mode]) {
+      return MODE_SESSION_LABELS[mode];
+    }
+    return PomodoroCore.formatSessionLabel(cycleCount);
+  },
+
+  getModeStroke(mode) {
+    if (typeof mode === 'string' && MODE_STROKES[mode]) {
+      return MODE_STROKES[mode];
+    }
+    return 'var(--accent)';
   },
 
   getNextTabIndex(currentIndex, totalTabs, key) {
