@@ -16,12 +16,14 @@
     yellow: { border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' },
     green: { border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' }
   };
+  const VALID_THEMES = Object.keys(THEMES);
   const LABELS = {
     cyan: 'Cyan Matrix',
     pink: 'Neon Pink / Outrun',
     yellow: 'Night City Yellow',
     green: 'Emerald Hacker'
   };
+  const VALID_LABELS = Object.keys(LABELS);
   const PomodoroCore = {
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
@@ -98,27 +100,13 @@
   },
 
   getThemeVariables(themeName) {
-    const themes = {
-      cyan: { border: '#1f294d', primary: '#00f0ff', accent: '#ff0055' },
-      pink: { border: '#4d1f3d', primary: '#ff007f', accent: '#00f0ff' },
-      yellow: { border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' },
-      green: { border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' }
-    };
-    const validThemes = Object.keys(themes);
-    const safeTheme = (typeof themeName === 'string' && validThemes.includes(themeName)) ? themeName : 'cyan';
-    return themes[safeTheme];
+    const safeTheme = (typeof themeName === 'string' && VALID_THEMES.includes(themeName)) ? themeName : 'cyan';
+    return THEMES[safeTheme];
   },
 
   getThemeLabel(themeName) {
-    const labels = {
-      cyan: 'Cyan Matrix',
-      pink: 'Neon Pink / Outrun',
-      yellow: 'Night City Yellow',
-      green: 'Emerald Hacker'
-    };
-    const validLabels = Object.keys(labels);
-    const safeTheme = (typeof themeName === 'string' && validLabels.includes(themeName)) ? themeName : 'cyan';
-    return labels[safeTheme];
+    const safeTheme = (typeof themeName === 'string' && VALID_LABELS.includes(themeName)) ? themeName : 'cyan';
+    return LABELS[safeTheme];
   },
 
   serializeConfig(config) {
