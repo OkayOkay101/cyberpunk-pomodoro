@@ -26,6 +26,7 @@
   const VALID_LABELS = Object.keys(LABELS);
   const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   const PAD_TWO = Array.from({ length: 100 }, (_, i) => (i < 10 ? '0' + i : String(i)));
+  const NUM_STRINGS = Array.from({ length: 101 }, (_, i) => String(i));
   const TAB_LABELS = {
     focus: 'FOCUS',
     shortBreak: 'SHORT',
@@ -121,25 +122,38 @@
   },
 
   validateCustomDuration(val, min, max, defaultVal) {
+    if (val === undefined || val === null) return defaultVal;
     const num = parseInt(val, 10);
     if (isNaN(num) || num < min || num > max) return defaultVal;
     return num;
   },
 
   resolveDurations(inputs) {
-    const raw = (inputs && typeof inputs === 'object' && !Array.isArray(inputs)) ? inputs : {};
-    const f = PomodoroCore.validateCustomDuration(raw.focus, 1, 90, 25);
-    const s = PomodoroCore.validateCustomDuration(raw.shortBreak, 1, 30, 5);
-    const l = PomodoroCore.validateCustomDuration(raw.longBreak, 1, 60, 15);
+    if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
+      return {
+        focus: 1500,
+        shortBreak: 300,
+        longBreak: 900,
+        minutes: { focus: 25, shortBreak: 5, longBreak: 15 },
+        storage: {
+          cp_cfg_focus: '25',
+          cp_cfg_short: '5',
+          cp_cfg_long: '15'
+        }
+      };
+    }
+    const f = PomodoroCore.validateCustomDuration(inputs.focus, 1, 90, 25);
+    const s = PomodoroCore.validateCustomDuration(inputs.shortBreak, 1, 30, 5);
+    const l = PomodoroCore.validateCustomDuration(inputs.longBreak, 1, 60, 15);
     return {
       focus: f * 60,
       shortBreak: s * 60,
       longBreak: l * 60,
       minutes: { focus: f, shortBreak: s, longBreak: l },
       storage: {
-        cp_cfg_focus: String(f),
-        cp_cfg_short: String(s),
-        cp_cfg_long: String(l)
+        cp_cfg_focus: NUM_STRINGS[f],
+        cp_cfg_short: NUM_STRINGS[s],
+        cp_cfg_long: NUM_STRINGS[l]
       }
     };
   },
