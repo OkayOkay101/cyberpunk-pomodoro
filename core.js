@@ -213,12 +213,14 @@
 
   toggleTaskItem(tasks, taskId, isDone) {
     if (!Array.isArray(tasks)) return [];
-    return tasks.map(task => {
+    const result = tasks.slice();
+    for (let i = 0; i < result.length; i++) {
+      const task = result[i];
       if (task && task.id === taskId) {
-        return { ...task, done: Boolean(isDone) };
+        result[i] = { ...task, done: Boolean(isDone) };
       }
-      return task;
-    });
+    }
+    return result;
   },
 
   renderTaskList(tasks) {
