@@ -82,7 +82,8 @@
   formatSessionLabel(cycleCount) {
     const parsed = parseInt(cycleCount, 10);
     const validCycle = (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
-    return `SESSION ${String(validCycle).padStart(2, '0')} // DEEP WORK`;
+    const cycleStr = validCycle < 100 ? PAD_TWO[validCycle] : String(validCycle);
+    return `SESSION ${cycleStr} // DEEP WORK`;
   },
 
   sanitizeMission(text) {
