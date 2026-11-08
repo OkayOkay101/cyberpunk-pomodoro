@@ -1176,27 +1176,25 @@
     async function playBeep(modeType = 'focus_end') {
       await ensureAudio();
       try {
+        const cue = PomodoroCore.getAudioCueConfig(modeType);
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = 'sine';
+        osc.type = cue.waveType;
 
-        if (modeType === 'focus_end') {
-          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.35);
-          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
-          osc.connect(gain);
-          gain.connect(masterCompressor || audioCtx.destination);
-          osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+        if (cue.type === 'exponential_ramp') {
+          osc.frequency.setValueAtTime(cue.startFreq, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(cue.endFreq, audioCtx.currentTime + cue.duration);
         } else {
-          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-          osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
-          gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
-          osc.connect(gain);
-          gain.connect(masterCompressor || audioCtx.destination);
-          osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+          osc.frequency.setValueAtTime(cue.startFreq, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(cue.stepFreq, audioCtx.currentTime + cue.stepTime);
         }
+        gain.gain.setValueAtTime(cue.initialGain, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(cue.targetGain, audioCtx.currentTime + cue.duration);
+
+        osc.connect(gain);
+        gain.connect(masterCompressor || audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + cue.duration);
       } catch (e) {}
     }
 

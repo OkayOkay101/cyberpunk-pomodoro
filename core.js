@@ -97,6 +97,27 @@
     f: 'toggleFullscreen',
     F: 'toggleFullscreen'
   }));
+  const AUDIO_CUE_CONFIGS = Object.freeze(Object.assign(Object.create(null), {
+    focus_end: Object.freeze({
+      waveType: 'sine',
+      duration: 0.35,
+      type: 'exponential_ramp',
+      startFreq: 880,
+      endFreq: 1760,
+      initialGain: 0.2,
+      targetGain: 0.01
+    }),
+    break_end: Object.freeze({
+      waveType: 'sine',
+      duration: 0.35,
+      type: 'step_ramp',
+      startFreq: 587.33,
+      stepFreq: 880,
+      stepTime: 0.15,
+      initialGain: 0.25,
+      targetGain: 0.01
+    })
+  }));
   const PomodoroCore = {
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
@@ -715,6 +736,13 @@
       toastMessage: 'FOCUS MODE',
       cycleCount: safeCycle
     };
+  },
+
+  getAudioCueConfig(soundType) {
+    if (typeof soundType === 'string' && AUDIO_CUE_CONFIGS[soundType]) {
+      return AUDIO_CUE_CONFIGS[soundType];
+    }
+    return AUDIO_CUE_CONFIGS.focus_end;
   }
   };
 
