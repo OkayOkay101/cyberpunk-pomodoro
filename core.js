@@ -42,6 +42,8 @@
     f: 'toggleFullscreen',
     F: 'toggleFullscreen'
   }));
+  const SUFFIX_FOCUS = ') CYBERPUNK FOCUS';
+  const PREFIX_PAUSED = '[PAUSED] (';
   const PomodoroCore = {
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
@@ -209,9 +211,23 @@
   },
 
   formatDocumentTitle(timeStr, isRunning) {
-    const safeTime = (typeof timeStr === 'string' && timeStr.trim().length > 0) ? timeStr.trim() : '00:00';
-    const statePrefix = isRunning ? '' : '[PAUSED] ';
-    return `${statePrefix}(${safeTime}) CYBERPUNK FOCUS`;
+    let safeTime = '00:00';
+    if (typeof timeStr === 'string') {
+      const len = timeStr.length;
+      if (len > 0) {
+        const first = timeStr.charCodeAt(0);
+        const last = timeStr.charCodeAt(len - 1);
+        if (first >= 48 && first <= 57 && last >= 48 && last <= 57) {
+          safeTime = timeStr;
+        } else {
+          const trimmed = timeStr.trim();
+          if (trimmed.length > 0) safeTime = trimmed;
+        }
+      }
+    }
+    return isRunning
+      ? '(' + safeTime + SUFFIX_FOCUS
+      : PREFIX_PAUSED + safeTime + SUFFIX_FOCUS;
   },
 
   formatTabLabel(mode, durationSeconds) {
