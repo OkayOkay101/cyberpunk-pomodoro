@@ -873,7 +873,8 @@
       const nextState = PomodoroCore.calculateMuteToggle(isMuted, savedVol);
       isMuted = nextState.isMuted;
       savedVol = nextState.savedVol;
-      localStorage.setItem('cp_muted', String(isMuted));
+      localStorage.setItem('cp_muted', nextState.storage.muted);
+      localStorage.setItem('cp_volume', nextState.storage.volume);
       if (masterGain) {
         masterGain.gain.setTargetAtTime(nextState.targetVol, audioCtx.currentTime, 0.03);
       }

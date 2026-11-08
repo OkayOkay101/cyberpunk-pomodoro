@@ -169,7 +169,15 @@
       nextSavedVol = validVol > 0 ? validVol : 0.5;
       targetVol = nextSavedVol;
     }
-    return { isMuted: nextMuted, targetVol, savedVol: nextSavedVol };
+    return {
+      isMuted: nextMuted,
+      targetVol,
+      savedVol: nextSavedVol,
+      storage: {
+        muted: String(nextMuted),
+        volume: String(nextSavedVol)
+      }
+    };
   },
 
   formatVolumePercent(vol, isMuted) {

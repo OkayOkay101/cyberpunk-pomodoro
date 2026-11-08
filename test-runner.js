@@ -309,6 +309,23 @@ function runUnitTests() {
     assertEqual(PomodoroCore.escapeHtml(42), '');
   });
 
+  // 28. Mute State Persistence (Bug Fix)
+  test('calculateMuteToggle() returns storage values that preserve restored volume', () => {
+    const unmuteFromZero = PomodoroCore.calculateMuteToggle(true, 0);
+    assertEqual(unmuteFromZero.storage.muted, 'false', 'Unmute must persist muted=false');
+    assertEqual(unmuteFromZero.storage.volume, '0.5', 'Restored volume must persist as 0.5');
+
+    const muteFromActive = PomodoroCore.calculateMuteToggle(false, 0.7);
+    assertEqual(muteFromActive.storage.muted, 'true', 'Mute must persist muted=true');
+    assertEqual(muteFromActive.storage.volume, '0.7', 'Muting must keep the last active volume');
+
+    const unmuteFromSaved = PomodoroCore.calculateMuteToggle(true, 0.7);
+    assertEqual(unmuteFromSaved.storage.volume, '0.7', 'Unmute must restore the saved volume');
+
+    const invalidVol = PomodoroCore.calculateMuteToggle(true, 'invalid');
+    assertEqual(invalidVol.storage.volume, '0.5', 'Invalid saved volume must persist the 0.5 default');
+  });
+
   return { passed, failed, total: passed + failed, results };
 }
 
