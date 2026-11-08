@@ -288,19 +288,17 @@
     return html || emptyState;
   },
 
-  getLocalDateString(date = new Date()) {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+  getLocalDateString(date) {
+    let d;
+    if (date === undefined) {
+      d = new Date();
+    } else if (date instanceof Date) {
+      d = isNaN(date.getTime()) ? new Date() : date;
+    } else {
+      d = new Date(date);
+      if (isNaN(d.getTime())) d = new Date();
     }
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${d.getFullYear()}-${PAD_TWO[d.getMonth() + 1]}-${PAD_TWO[d.getDate()]}`;
   },
 
   resolveKeyboardAction(params) {
