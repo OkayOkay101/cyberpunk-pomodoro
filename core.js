@@ -92,7 +92,9 @@
       yellow: { border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' },
       green: { border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' }
     };
-    return themes[themeName] || themes.cyan;
+    const validThemes = Object.keys(themes);
+    const safeTheme = (typeof themeName === 'string' && validThemes.includes(themeName)) ? themeName : 'cyan';
+    return themes[safeTheme];
   },
 
   getThemeLabel(themeName) {
@@ -102,7 +104,9 @@
       yellow: 'Night City Yellow',
       green: 'Emerald Hacker'
     };
-    return labels[themeName] || labels.cyan;
+    const validLabels = Object.keys(labels);
+    const safeTheme = (typeof themeName === 'string' && validLabels.includes(themeName)) ? themeName : 'cyan';
+    return labels[safeTheme];
   },
 
   serializeConfig(config) {
@@ -120,7 +124,14 @@
       if (Array.isArray(parsed)) {
         return parsed;
       }
-      return { ...defaults, ...parsed };
+      const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+      const sanitized = {};
+      for (const key of Object.keys(parsed)) {
+        if (!dangerousKeys.includes(key)) {
+          sanitized[key] = parsed[key];
+        }
+      }
+      return { ...defaults, ...sanitized };
     } catch (e) {
       return defaults;
     }
