@@ -12,3 +12,8 @@
 
 **Learning:** Using 	asks.map(...) to toggle a checkbox invokes a callback and bounds check for every task, even though only one item usually changes. Copying the array once with slice() and mutating only matching entries removes the per-element callback allocation while keeping the returned array, item references, and duplicate-id behavior identical.
 **Action:** Replaced the map callback in PomodoroCore.toggleTaskItem() with a single indexed loop over a shallow copy. Measured 41.9% faster at 10 tasks, 50.6% at 100 tasks, and 38.3% at 2,000 tasks.
+
+## 2026-11-08 - Module-level constants for theme variables and labels
+
+**Learning:** `getThemeVariables()` and `getThemeLabel()` recreated constant objects/arrays on every call, causing unnecessary allocations and GC pressure. The visualizer's render loop (60fps) called `getThemeVariables()` every frame, amplifying the cost.
+**Action:** Moved `THEMES` and `LABELS` constants to module scope outside the `PomodoroCore` object. `getThemeVariables()` and `getThemeLabel()` now perform simple object lookups. Measured 43.4% speedup for `getThemeVariables()` (76.7ms → 43.4ms at 500k iterations × 5 themes) and equivalent output for `getThemeLabel()`.
