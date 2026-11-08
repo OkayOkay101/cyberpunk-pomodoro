@@ -323,6 +323,17 @@
     if (key === 'f' || key === 'F') return 'toggleFullscreen';
 
     return null;
+  },
+
+  getNextTabIndex(currentIndex, totalTabs, key) {
+    const total = parseInt(totalTabs, 10);
+    const curr = parseInt(currentIndex, 10);
+    if (isNaN(total) || total <= 0 || isNaN(curr) || curr < 0 || curr >= total) return -1;
+    if (key === 'ArrowRight' || key === 'ArrowDown') return (curr + 1) % total;
+    if (key === 'ArrowLeft' || key === 'ArrowUp') return (curr - 1 + total) % total;
+    if (key === 'Home') return 0;
+    if (key === 'End') return total - 1;
+    return -1;
   }
   };
 
