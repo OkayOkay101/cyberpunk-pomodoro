@@ -26,6 +26,7 @@
   const VALID_LABELS = Object.keys(LABELS);
   const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   const PAD_TWO = Array.from({ length: 100 }, (_, i) => (i < 10 ? '0' + i : String(i)));
+  const PERCENT_LOOKUP = Array.from({ length: 101 }, (_, i) => i + '%');
   const TAB_LABELS = {
     focus: 'FOCUS',
     shortBreak: 'SHORT',
@@ -80,9 +81,9 @@
   },
 
   clampVolume(vol) {
-    const num = parseFloat(vol);
+    const num = typeof vol === 'number' ? vol : parseFloat(vol);
     if (isNaN(num)) return 0.5;
-    return Math.max(0, Math.min(1, num));
+    return num < 0 ? 0 : (num > 1 ? 1 : num);
   },
 
   calculateStreak(lastDateStr, todayStr, currentStreak) {
@@ -255,12 +256,13 @@
   formatVolumePercent(vol, isMuted) {
     if (isMuted) return 'MUTED';
     const clamped = PomodoroCore.clampVolume(vol);
-    return `${Math.round(clamped * 100)}%`;
+    const pct = Math.round(clamped * 100);
+    return pct >= 0 && pct <= 100 ? PERCENT_LOOKUP[pct] : pct + '%';
   },
 
   getVolumeIcon(vol, isMuted) {
-    const clamped = PomodoroCore.clampVolume(vol);
-    return (isMuted || clamped === 0) ? '🔇' : '🔊';
+    if (isMuted) return '🔇';
+    return PomodoroCore.clampVolume(vol) === 0 ? '🔇' : '🔊';
   },
 
   createTaskItem(text, id) {
