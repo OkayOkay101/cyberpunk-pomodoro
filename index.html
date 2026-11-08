@@ -1435,7 +1435,7 @@
     modeTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const mode = tab.dataset.mode;
-        const toastMsg = mode === 'focus' ? 'FOCUS MODE' : mode === 'shortBreak' ? 'SHORT BREAK' : 'LONG BREAK';
+        const toastMsg = PomodoroCore.getModeToastMessage(mode); // 'FOCUS MODE' | 'SHORT BREAK' | 'LONG BREAK'
         setMode(mode, configDurations[mode], toastMsg);
       });
     });
@@ -1478,13 +1478,10 @@
     resetBtn.addEventListener('click', handleResetAction);
 
     skipBtn.addEventListener('click', () => {
-      if (currentMode === 'focus') {
-        const next = PomodoroCore.getNextMode('focus', cycleCount);
-        const toastMsg = next === 'longBreak' ? 'LONG BREAK' : 'SHORT BREAK';
-        setMode(next, configDurations[next], toastMsg);
-      } else {
-        setMode('focus', configDurations.focus, 'FOCUS MODE');
-      }
+      const skip = PomodoroCore.calculateSkipTransition(currentMode, cycleCount);
+      const next = skip.nextMode;
+      const toastMsg = skip.toastMessage;
+      setMode(next, configDurations[next], toastMsg);
     });
 
     resetCycleBtn.addEventListener('click', () => {
