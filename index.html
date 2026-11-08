@@ -585,12 +585,34 @@
     .theme-btn:hover {
       transform: scale(1.08);
     }
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
     .theme-btn.active {
       border-color: #fff;
       box-shadow: 0 0 0 2px #070913, 0 0 10px #fff;
     }
     .theme-btn.active::after {
       content: "✓";
+    }
+    .theme-btn:hover::before,
+    .theme-btn:focus-visible::before {
+      content: attr(data-label);
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 3px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      z-index: 10;
     }
     .modal-footer {
       display: flex;
@@ -735,10 +757,10 @@
       <div class="settings-row theme-row">
         <span id="themeLabel">HUD Neon Theme: <b id="activeThemeName">Cyan Matrix</b></span>
         <div class="theme-swatches" role="group" aria-labelledby="themeLabel">
-          <button type="button" class="theme-btn active" data-theme="cyan" style="background: #00f0ff;" title="Cyan Matrix" aria-label="Cyan Matrix" aria-pressed="true"></button>
-          <button type="button" class="theme-btn" data-theme="pink" style="background: #ff007f;" title="Neon Pink / Outrun" aria-label="Neon Pink / Outrun" aria-pressed="false"></button>
-          <button type="button" class="theme-btn" data-theme="yellow" style="background: #ffe600;" title="Night City Yellow" aria-label="Night City Yellow" aria-pressed="false"></button>
-          <button type="button" class="theme-btn" data-theme="green" style="background: #00ff66;" title="Emerald Hacker" aria-label="Emerald Hacker" aria-pressed="false"></button>
+          <button type="button" class="theme-btn active" data-theme="cyan" style="background: #00f0ff;" title="Cyan Matrix" aria-label="Cyan Matrix" aria-pressed="true" data-label="Cyan Matrix"></button>
+          <button type="button" class="theme-btn" data-theme="pink" style="background: #ff007f;" title="Neon Pink / Outrun" aria-label="Neon Pink / Outrun" aria-pressed="false" data-label="Neon Pink"></button>
+          <button type="button" class="theme-btn" data-theme="yellow" style="background: #ffe600;" title="Night City Yellow" aria-label="Night City Yellow" aria-pressed="false" data-label="Night City Yellow"></button>
+          <button type="button" class="theme-btn" data-theme="green" style="background: #00ff66;" title="Emerald Hacker" aria-label="Emerald Hacker" aria-pressed="false" data-label="Emerald Hacker"></button>
         </div>
       </div>
       <div class="modal-footer">
