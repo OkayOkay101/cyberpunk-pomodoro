@@ -191,6 +191,17 @@
     return `${label} (${mins}M)`;
   },
 
+  getTimerToggleAriaLabel(text) {
+    const normalized = typeof text === 'string' ? text.trim().toUpperCase() : '';
+    if (normalized === 'PAUSE') return 'หยุดชั่วคราว';
+    if (normalized === 'RESUME') return 'จับเวลาต่อ';
+    return 'เริ่มจับเวลา';
+  },
+
+  getResetButtonAriaLabel(isConfirming) {
+    return Boolean(isConfirming) ? 'ยืนยันการรีเซ็ตเวลา' : 'รีเซ็ตเวลา';
+  },
+
   calculateMuteToggle(isMuted, savedVol) {
     const nextMuted = !isMuted;
     const validVol = PomodoroCore.clampVolume(savedVol);

@@ -673,7 +673,7 @@
     <!-- Controls -->
     <div class="btn-row">
       <button class="btn btn-secondary" id="resetBtn" aria-label="รีเซ็ตเวลา">RESET</button>
-      <button class="btn btn-primary" id="toggleBtn" aria-label="เริ่มหรือหยุดตัวจับเวลา">START</button>
+      <button class="btn btn-primary" id="toggleBtn" aria-label="เริ่มจับเวลา">START</button>
       <button class="btn btn-secondary" id="skipBtn" aria-label="ข้ามไปยังรอบถัดไป">SKIP &gt;&gt;</button>
     </div>
 
@@ -1242,12 +1242,14 @@
       clearInterval(timerId);
       timerId = null;
       toggleBtn.textContent = 'START';
+      toggleBtn.setAttribute('aria-label', PomodoroCore.getTimerToggleAriaLabel('START'));
       systemStatus.textContent = 'ONLINE // READY';
 
       if (resetConfirmTimer) {
         clearTimeout(resetConfirmTimer);
         resetConfirmTimer = null;
         resetBtn.textContent = 'RESET';
+        resetBtn.setAttribute('aria-label', PomodoroCore.getResetButtonAriaLabel(false));
         resetBtn.classList.remove('confirming');
       }
 
@@ -1280,6 +1282,7 @@
       timerId = null;
       isRunning = false;
       toggleBtn.textContent = 'START';
+      toggleBtn.setAttribute('aria-label', PomodoroCore.getTimerToggleAriaLabel('START'));
 
       if (currentMode === 'focus') {
         playBeep('focus_end');
@@ -1320,11 +1323,13 @@
           clearInterval(timerId);
           timerId = null;
           toggleBtn.textContent = 'RESUME';
+          toggleBtn.setAttribute('aria-label', PomodoroCore.getTimerToggleAriaLabel('RESUME'));
           systemStatus.textContent = 'SYSTEM // PAUSED';
           updateDisplay(false);
         } else {
           isRunning = true;
           toggleBtn.textContent = 'PAUSE';
+          toggleBtn.setAttribute('aria-label', PomodoroCore.getTimerToggleAriaLabel('PAUSE'));
           systemStatus.textContent = 'SYSTEM // RUNNING';
           targetEndTime = Date.now() + timeLeft * 1000;
           updateDisplay(true);
@@ -1358,9 +1363,11 @@
     function handleResetAction() {
       if (isRunning && !resetConfirmTimer) {
         resetBtn.textContent = 'CONFIRM?';
+        resetBtn.setAttribute('aria-label', PomodoroCore.getResetButtonAriaLabel(true));
         resetBtn.classList.add('confirming');
         resetConfirmTimer = setTimeout(() => {
           resetBtn.textContent = 'RESET';
+          resetBtn.setAttribute('aria-label', PomodoroCore.getResetButtonAriaLabel(false));
           resetBtn.classList.remove('confirming');
           resetConfirmTimer = null;
         }, 2500);
@@ -1370,6 +1377,7 @@
         clearTimeout(resetConfirmTimer);
         resetConfirmTimer = null;
         resetBtn.textContent = 'RESET';
+        resetBtn.setAttribute('aria-label', PomodoroCore.getResetButtonAriaLabel(false));
         resetBtn.classList.remove('confirming');
       }
       setMode(currentMode, currentDuration);

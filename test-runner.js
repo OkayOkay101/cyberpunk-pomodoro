@@ -373,6 +373,18 @@ function runUnitTests() {
     assertEqual(customStr, '2026-01-15');
   });
 
+  // 33. Timer Controls Accessible Label Helpers
+  test('getTimerToggleAriaLabel() and getResetButtonAriaLabel() return state-accurate Thai labels', () => {
+    assertEqual(PomodoroCore.getTimerToggleAriaLabel('START'), 'เริ่มจับเวลา');
+    assertEqual(PomodoroCore.getTimerToggleAriaLabel('PAUSE'), 'หยุดชั่วคราว');
+    assertEqual(PomodoroCore.getTimerToggleAriaLabel('RESUME'), 'จับเวลาต่อ');
+    assertEqual(PomodoroCore.getTimerToggleAriaLabel(''), 'เริ่มจับเวลา');
+    assertEqual(PomodoroCore.getTimerToggleAriaLabel(null), 'เริ่มจับเวลา');
+
+    assertEqual(PomodoroCore.getResetButtonAriaLabel(true), 'ยืนยันการรีเซ็ตเวลา');
+    assertEqual(PomodoroCore.getResetButtonAriaLabel(false), 'รีเซ็ตเวลา');
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
