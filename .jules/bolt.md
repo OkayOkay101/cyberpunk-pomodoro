@@ -55,3 +55,9 @@
 
 **Learning:** `getLocalDateString()` used a default parameter `date = new Date()` and immediately instantiated a second `new Date(date)`, causing redundant heap object allocations even on routine calls. Additionally, formatting month and day with `String().padStart(2, '0')` incurred repeated number-to-string conversions, method dispatch, and temporary string allocations. Using a single `new Date()` allocation, avoiding re-wrapping existing `Date` instances, and reusing the pre-computed `PAD_TWO` lookup table eliminates unnecessary object creations and string formatting overhead.
 **Action:** Updated `PomodoroCore.getLocalDateString()` to allocate `new Date()` only when needed, reuse valid `Date` objects directly without re-instantiation, and format 2-digit month and day via `PAD_TWO`. Measured 37.3% speedup on no-args calls (193.00ms → 121.11ms at 1M iters), 83.0% on existing Date instances (100.32ms → 17.03ms at 1M iters), and 33.3% on mixed inputs with 100% exact equality across all edge cases.
+
+
+## 2026-11-08 - Fast-path tag check and KEY_ACTIONS lookup for resolveKeyboardAction
+
+**Learning:** `resolveKeyboardAction()` unconditionally called `targetTagName.toUpperCase()` on every keypress event across the page, causing unnecessary temporary string allocations even when the active element was already uppercase (`BODY`, `BUTTON`, `DIV`) or irrelevant. Additionally, evaluating up to 9 sequential `if` string comparisons on every keystroke added linear dispatch overhead for navigation and unmapped keys.
+**Action:** Implemented a fast-path tag check that bypasses `.toUpperCase()` unless `targetTagName` length is 5 or 8, and extracted keyboard shortcuts to a module-level `KEY_ACTIONS` dictionary with `null` prototype (`Object.create(null)`). Measured 64.1% speedup on common UI keypresses (322.8ms → 115.9ms at 10M calls) and 54.2% on mixed exhaustive cases (639.0ms → 292.9ms at 21M calls) with 100% exact output equality across all edge cases.
