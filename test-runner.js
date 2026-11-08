@@ -483,6 +483,34 @@ function runUnitTests() {
     assertEqual(PomodoroCore.getTimerStatus(true, 100, 1500), PomodoroCore.getTimerStatus(true, 200, 1500));
   });
 
+  // 39. Task Model Creation and Non-Finite ID Boundary Safety (Bug Fix)
+  test('createTaskItem() guards against non-finite IDs and parses numeric string IDs safely', () => {
+    const taskNormal = PomodoroCore.createTaskItem('Valid Task', 101);
+    assertEqual(taskNormal.id, 101);
+    assertEqual(taskNormal.text, 'Valid Task');
+    assertEqual(taskNormal.done, false);
+
+    const taskZero = PomodoroCore.createTaskItem('Zero Task', 0);
+    assertEqual(taskZero.id, 0);
+
+    const taskStr = PomodoroCore.createTaskItem('String ID Task', '205');
+    assertEqual(taskStr.id, 205);
+
+    const taskInf = PomodoroCore.createTaskItem('Infinity Task', Infinity);
+    assertEqual(Number.isFinite(taskInf.id), true, 'Infinity ID must fall back to finite timestamp');
+    const jsonInf = JSON.stringify(taskInf);
+    assertEqual(jsonInf.includes('"id":null'), false, 'Task ID must not serialize to null');
+
+    const taskNegInf = PomodoroCore.createTaskItem('-Infinity Task', -Infinity);
+    assertEqual(Number.isFinite(taskNegInf.id), true, '-Infinity ID must fall back to finite timestamp');
+
+    const taskNaN = PomodoroCore.createTaskItem('NaN Task', NaN);
+    assertEqual(Number.isFinite(taskNaN.id), true, 'NaN ID must fall back to finite timestamp');
+
+    assertEqual(PomodoroCore.createTaskItem('   ', 10), null, 'Whitespace text must return null');
+    assertEqual(PomodoroCore.createTaskItem(null, 10), null, 'Null text must return null');
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
