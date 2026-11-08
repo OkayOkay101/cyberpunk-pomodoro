@@ -414,6 +414,17 @@ function runUnitTests() {
     assertEqual(bounded.minutes.longBreak, 15);
   });
 
+  // 35. Keyboard Shortcut Modifier Key Protection (Bug Fix)
+  test('resolveKeyboardAction() ignores shortcuts when modifier keys (ctrl, meta, alt) are pressed', () => {
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyR', key: 'r', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true }), null, 'Ctrl+R must not trigger reset');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyS', key: 's', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true }), null, 'Ctrl+S must not trigger skip');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyF', key: 'f', targetTagName: 'BODY', isModalOpen: false, ctrlKey: true }), null, 'Ctrl+F must not trigger fullscreen');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyR', key: 'r', targetTagName: 'BODY', isModalOpen: false, metaKey: true }), null, 'Cmd+R must not trigger reset');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyF', key: 'f', targetTagName: 'BODY', isModalOpen: false, metaKey: true }), null, 'Cmd+F must not trigger fullscreen');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'Space', key: ' ', targetTagName: 'BODY', isModalOpen: false, altKey: true }), null, 'Alt+Space must not trigger timer');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ key: 'Escape', isModalOpen: true, ctrlKey: false }), 'closeModal', 'Escape in modal still closes modal');
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');

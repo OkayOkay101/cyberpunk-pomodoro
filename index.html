@@ -1557,7 +1557,10 @@
         key: e.key,
         code: e.code,
         targetTagName: activeTag,
-        isModalOpen
+        isModalOpen,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        altKey: e.altKey
       });
 
       if (!action) return;
