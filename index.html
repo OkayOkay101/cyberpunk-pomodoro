@@ -1360,18 +1360,26 @@
       playBeep(notif.soundType);
       notifySessionComplete(notif.title, notif.body);
 
+      const transition = PomodoroCore.calculateCompletedSession({
+        currentMode,
+        cycleCount,
+        focusDuration: configDurations.focus,
+        totalFocusMinsToday,
+        currentStreak,
+        todayStr
+      });
+
       if (currentMode === 'focus') {
-        totalFocusMinsToday += Math.round(configDurations.focus / 60);
-        localStorage.setItem('cp_focus_mins_today', String(totalFocusMinsToday));
-        localStorage.setItem('cp_last_date', todayStr);
-        localStorage.setItem('cp_streak', String(currentStreak));
+        totalFocusMinsToday = transition.nextTotalFocusMins;
+        localStorage.setItem('cp_focus_mins_today', transition.storage.cp_focus_mins_today);
+        localStorage.setItem('cp_last_date', transition.storage.cp_last_date);
+        localStorage.setItem('cp_streak', transition.storage.cp_streak);
         updateStatsBadges();
 
-        const next = PomodoroCore.getNextMode('focus', cycleCount);
-        cycleCount++;
-        localStorage.setItem('cp_cycle', String(cycleCount));
-        const toastMsg = next === 'longBreak' ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
-        setMode(next, configDurations[next], toastMsg);
+        cycleCount = transition.nextCycleCount;
+        localStorage.setItem('cp_cycle', transition.storage.cp_cycle);
+        const toastMsg = transition.nextMode === 'longBreak' ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
+        setMode(transition.nextMode, configDurations[transition.nextMode], toastMsg);
       } else {
         setMode('focus', configDurations.focus, 'FOCUS SESSION STARTED');
       }
