@@ -202,7 +202,7 @@
   },
 
   formatVolumePercent(vol, isMuted) {
-    if (isMuted) return '0%';
+    if (isMuted) return 'MUTED';
     const clamped = PomodoroCore.clampVolume(vol);
     return `${Math.round(clamped * 100)}%`;
   },

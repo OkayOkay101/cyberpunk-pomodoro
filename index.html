@@ -694,7 +694,7 @@
       <div class="deck-title">
         <span>🎧 NEURAL AMBIENT GENERATOR</span>
         <div class="volume-control">
-          <button class="mute-btn" id="muteBtn" title="เปิด/ปิดเสียง (M)" aria-label="เปิดหรือปิดเสียง">🔊</button>
+          <button class="mute-btn" id="muteBtn" title="เปิด/ปิดเสียง (M)" aria-label="เปิดหรือปิดเสียง" aria-pressed="false">🔊</button>
           <span>VOL</span>
           <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="0.5" aria-label="ระดับเสียงบรรยากาศ">
           <span class="vol-num" id="volumePercent">50%</span>
@@ -889,6 +889,7 @@
       }
       if (muteBtn) {
         muteBtn.textContent = PomodoroCore.getVolumeIcon(vol, isMuted);
+        muteBtn.setAttribute('aria-pressed', String(isMuted));
       }
     }
     updateVolumeDisplay(savedVol);
