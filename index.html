@@ -716,7 +716,7 @@
       <div class="timer-content">
         <div class="time-digits" id="timeDisplay" role="timer" aria-live="polite" aria-atomic="true">25:00</div>
         <div class="session-info-row">
-          <div class="session-info" id="sessionLabel">SESSION 01 // DEEP WORK</div>
+          <div class="session-info" id="sessionLabel" role="status" aria-live="polite" aria-atomic="true">SESSION 01 // DEEP WORK</div>
           <button class="reset-cycle-btn" id="resetCycleBtn" title="รีเซ็ตรอบกลับเป็น 01" aria-label="รีเซ็ตรอบกลับเป็น 01">↺ 01</button>
         </div>
       </div>
@@ -1474,8 +1474,13 @@
       sessionLabel.textContent = PomodoroCore.getModeSessionLabel(currentMode, cycleCount);
       playBeep('break_end');
       const origText = resetCycleBtn.textContent;
+      const origLabel = resetCycleBtn.getAttribute('aria-label') || 'รีเซ็ตรอบกลับเป็น 01';
       resetCycleBtn.textContent = 'DONE!';
-      setTimeout(() => { resetCycleBtn.textContent = origText; }, 1200);
+      resetCycleBtn.setAttribute('aria-label', 'รีเซ็ตรอบเป็น 01 สำเร็จ');
+      setTimeout(() => {
+        resetCycleBtn.textContent = origText;
+        resetCycleBtn.setAttribute('aria-label', origLabel);
+      }, 1200);
     });
 
     soundBtns.forEach(btn => {
