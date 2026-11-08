@@ -44,6 +44,11 @@
     shortBreak: 'var(--green)',
     longBreak: 'var(--pink)'
   });
+  const MODE_TOAST_MESSAGES = Object.freeze(Object.assign(Object.create(null), {
+    focus: 'FOCUS MODE',
+    shortBreak: 'SHORT BREAK',
+    longBreak: 'LONG BREAK'
+  }));
   const TIMER_STATUS_RUNNING = Object.freeze({ buttonText: 'PAUSE', statusText: 'SYSTEM // RUNNING' });
   const TIMER_STATUS_PAUSED = Object.freeze({ buttonText: 'RESUME', statusText: 'SYSTEM // PAUSED' });
   const TIMER_STATUS_READY = Object.freeze({ buttonText: 'START', statusText: 'ONLINE // READY' });
@@ -576,6 +581,41 @@
       nextTotalFocusMins: safeTotalMins,
       toastMessage: 'FOCUS SESSION STARTED',
       storage: {}
+    };
+  },
+
+  getModeToastMessage(mode) {
+    if (typeof mode === 'string' && MODE_TOAST_MESSAGES[mode]) {
+      return MODE_TOAST_MESSAGES[mode];
+    }
+    return 'FOCUS MODE';
+  },
+
+  calculateSkipTransition(modeOrParams, cycleCount) {
+    let mode = modeOrParams;
+    let cycle = cycleCount;
+
+    if (modeOrParams && typeof modeOrParams === 'object') {
+      mode = modeOrParams.currentMode || modeOrParams.mode;
+      cycle = modeOrParams.cycleCount;
+    }
+
+    const safeCycle = PomodoroCore.parseCycleCount(cycle);
+
+    if (mode === 'focus') {
+      const nextMode = PomodoroCore.getNextMode('focus', safeCycle);
+      const toastMessage = PomodoroCore.getModeToastMessage(nextMode);
+      return {
+        nextMode,
+        toastMessage,
+        cycleCount: safeCycle
+      };
+    }
+
+    return {
+      nextMode: 'focus',
+      toastMessage: 'FOCUS MODE',
+      cycleCount: safeCycle
     };
   }
   };

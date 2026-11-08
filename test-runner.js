@@ -607,7 +607,39 @@ function runUnitTests() {
     assertEqual(corrupt.nextTotalFocusMins, 25);
   });
 
-  // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
+  // 31. Mode Toast Message Resolution
+  test('getModeToastMessage() maps modes to toast messages with safe fallback', () => {
+    assertEqual(PomodoroCore.getModeToastMessage('focus'), 'FOCUS MODE', 'focus mode toast');
+    assertEqual(PomodoroCore.getModeToastMessage('shortBreak'), 'SHORT BREAK', 'shortBreak toast');
+    assertEqual(PomodoroCore.getModeToastMessage('longBreak'), 'LONG BREAK', 'longBreak toast');
+    assertEqual(PomodoroCore.getModeToastMessage(null), 'FOCUS MODE', 'null fallback');
+    assertEqual(PomodoroCore.getModeToastMessage(undefined), 'FOCUS MODE', 'undefined fallback');
+    assertEqual(PomodoroCore.getModeToastMessage('__proto__'), 'FOCUS MODE', 'prototype pollution guard');
+  });
+
+  // 32. Skip Mode Transition Resolution
+  test('calculateSkipTransition() resolves next mode and toast without mutating cycle count', () => {
+    const skip1 = PomodoroCore.calculateSkipTransition('focus', 1);
+    assertEqual(skip1.nextMode, 'shortBreak', 'Cycle 1 focus -> shortBreak');
+    assertEqual(skip1.toastMessage, 'SHORT BREAK', 'Cycle 1 toast');
+    assertEqual(skip1.cycleCount, 1, 'Cycle 1 count preserved');
+
+    const skip4 = PomodoroCore.calculateSkipTransition({ currentMode: 'focus', cycleCount: 4 });
+    assertEqual(skip4.nextMode, 'longBreak', 'Cycle 4 focus -> longBreak');
+    assertEqual(skip4.toastMessage, 'LONG BREAK', 'Cycle 4 toast');
+    assertEqual(skip4.cycleCount, 4, 'Cycle 4 count preserved');
+
+    const skipBreak = PomodoroCore.calculateSkipTransition('shortBreak', 2);
+    assertEqual(skipBreak.nextMode, 'focus', 'shortBreak -> focus');
+    assertEqual(skipBreak.toastMessage, 'FOCUS MODE', 'Break skip toast');
+    assertEqual(skipBreak.cycleCount, 2, 'Break cycle preserved');
+
+    const skipCorrupt = PomodoroCore.calculateSkipTransition('focus', 'bad');
+    assertEqual(skipCorrupt.nextMode, 'shortBreak', 'Corrupt cycle falls back to 1');
+    assertEqual(skipCorrupt.cycleCount, 1, 'Safe cycle count');
+  });
+
+  // 33. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
     const path = require('path');
