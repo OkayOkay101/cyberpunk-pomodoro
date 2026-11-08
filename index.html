@@ -1286,6 +1286,12 @@
     }
     refreshTabLabels();
 
+    function updateTimerStatusUI() {
+      const status = PomodoroCore.getTimerStatus(isRunning, timeLeft, currentDuration);
+      if (toggleBtn) toggleBtn.textContent = status.buttonText;
+      if (systemStatus) systemStatus.textContent = status.statusText;
+    }
+
     function updateDisplay(withAnim = true) {
       timeDisplay.textContent = PomodoroCore.formatTime(timeLeft);
       if (!withAnim) progressFill.classList.add('no-anim');
@@ -1308,8 +1314,7 @@
       isRunning = false;
       clearInterval(timerId);
       timerId = null;
-      toggleBtn.textContent = 'START';
-      systemStatus.textContent = 'ONLINE // READY';
+      updateTimerStatusUI();
 
       if (resetConfirmTimer) {
         clearTimeout(resetConfirmTimer);
@@ -1343,7 +1348,7 @@
       clearInterval(timerId);
       timerId = null;
       isRunning = false;
-      toggleBtn.textContent = 'START';
+      updateTimerStatusUI();
 
       if (currentMode === 'focus') {
         playBeep('focus_end');
@@ -1384,13 +1389,11 @@
           isRunning = false;
           clearInterval(timerId);
           timerId = null;
-          toggleBtn.textContent = 'RESUME';
-          systemStatus.textContent = 'SYSTEM // PAUSED';
+          updateTimerStatusUI();
           updateDisplay(false);
         } else {
           isRunning = true;
-          toggleBtn.textContent = 'PAUSE';
-          systemStatus.textContent = 'SYSTEM // RUNNING';
+          updateTimerStatusUI();
           targetEndTime = Date.now() + timeLeft * 1000;
           updateDisplay(true);
 

@@ -39,6 +39,9 @@
     shortBreak: 'var(--green)',
     longBreak: 'var(--pink)'
   });
+  const TIMER_STATUS_RUNNING = Object.freeze({ buttonText: 'PAUSE', statusText: 'SYSTEM // RUNNING' });
+  const TIMER_STATUS_PAUSED = Object.freeze({ buttonText: 'RESUME', statusText: 'SYSTEM // PAUSED' });
+  const TIMER_STATUS_READY = Object.freeze({ buttonText: 'START', statusText: 'ONLINE // READY' });
   const MS_PER_DAY = 86400000;
   const KEY_ACTIONS = Object.freeze(Object.assign(Object.create(null), {
     r: 'resetTimer',
@@ -369,6 +372,33 @@
     if (key === 'Home') return 0;
     if (key === 'End') return total - 1;
     return -1;
+  },
+
+  getTimerStatus(isRunningOrParams, timeLeft, duration) {
+    let running = false;
+    let time = timeLeft;
+    let dur = duration;
+
+    if (isRunningOrParams && typeof isRunningOrParams === 'object') {
+      running = Boolean(isRunningOrParams.isRunning);
+      time = isRunningOrParams.timeLeft;
+      dur = isRunningOrParams.duration;
+    } else {
+      running = Boolean(isRunningOrParams);
+    }
+
+    if (running) {
+      return TIMER_STATUS_RUNNING;
+    }
+
+    const safeTime = Number(time);
+    const safeDur = Number(dur);
+
+    if (!isNaN(safeTime) && !isNaN(safeDur) && safeDur > 0 && safeTime > 0 && safeTime < safeDur) {
+      return TIMER_STATUS_PAUSED;
+    }
+
+    return TIMER_STATUS_READY;
   }
   };
 
