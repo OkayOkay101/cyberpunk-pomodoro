@@ -31,6 +31,7 @@
     i <= 1 ? '⚡ STREAK: 1 DAY' : '⚡ STREAK: ' + i + ' DAYS'
   ));
   const FOCUS_BADGES = Array.from({ length: 1441 }, (_, i) => '🎯 ' + i + ' MINS TODAY');
+  const NUM_STRINGS = Array.from({ length: 91 }, (_, i) => String(i));
   const TAB_LABELS = {
     focus: 'FOCUS',
     shortBreak: 'SHORT',
@@ -129,25 +130,35 @@
   },
 
   validateCustomDuration(val, min, max, defaultVal) {
-    const num = parseInt(val, 10);
-    if (isNaN(num) || num < min || num > max) return defaultVal;
-    return num;
+    if (typeof val === 'number') {
+      return (val >= min && val <= max) ? (val | 0) : defaultVal;
+    }
+    const n = parseInt(val, 10);
+    return (!isNaN(n) && n >= min && n <= max) ? n : defaultVal;
   },
 
   resolveDurations(inputs) {
-    const raw = (inputs && typeof inputs === 'object' && !Array.isArray(inputs)) ? inputs : {};
-    const f = PomodoroCore.validateCustomDuration(raw.focus, 1, 90, 25);
-    const s = PomodoroCore.validateCustomDuration(raw.shortBreak, 1, 30, 5);
-    const l = PomodoroCore.validateCustomDuration(raw.longBreak, 1, 60, 15);
+    if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
+      return {
+        focus: 1500,
+        shortBreak: 300,
+        longBreak: 900,
+        minutes: { focus: 25, shortBreak: 5, longBreak: 15 },
+        storage: { cp_cfg_focus: '25', cp_cfg_short: '5', cp_cfg_long: '15' }
+      };
+    }
+    const f = PomodoroCore.validateCustomDuration(inputs.focus, 1, 90, 25);
+    const s = PomodoroCore.validateCustomDuration(inputs.shortBreak, 1, 30, 5);
+    const l = PomodoroCore.validateCustomDuration(inputs.longBreak, 1, 60, 15);
     return {
       focus: f * 60,
       shortBreak: s * 60,
       longBreak: l * 60,
       minutes: { focus: f, shortBreak: s, longBreak: l },
       storage: {
-        cp_cfg_focus: String(f),
-        cp_cfg_short: String(s),
-        cp_cfg_long: String(l)
+        cp_cfg_focus: NUM_STRINGS[f],
+        cp_cfg_short: NUM_STRINGS[s],
+        cp_cfg_long: NUM_STRINGS[l]
       }
     };
   },
