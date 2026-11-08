@@ -454,6 +454,35 @@ function runUnitTests() {
     assertEqual(PomodoroCore.getModeStroke(null), 'var(--accent)');
   });
 
+  // 38. Timer Control Status & HUD State Resolver
+  test('getTimerStatus() resolves button label and system status across states', () => {
+    const run = PomodoroCore.getTimerStatus(true, 500, 1500);
+    assertEqual(run.buttonText, 'PAUSE');
+    assertEqual(run.statusText, 'SYSTEM // RUNNING');
+
+    const paused = PomodoroCore.getTimerStatus(false, 500, 1500);
+    assertEqual(paused.buttonText, 'RESUME');
+    assertEqual(paused.statusText, 'SYSTEM // PAUSED');
+
+    const ready = PomodoroCore.getTimerStatus(false, 1500, 1500);
+    assertEqual(ready.buttonText, 'START');
+    assertEqual(ready.statusText, 'ONLINE // READY');
+
+    const completed = PomodoroCore.getTimerStatus(false, 0, 1500);
+    assertEqual(completed.buttonText, 'START');
+    assertEqual(completed.statusText, 'ONLINE // READY');
+
+    const objRun = PomodoroCore.getTimerStatus({ isRunning: true, timeLeft: 100, duration: 1500 });
+    assertEqual(objRun.buttonText, 'PAUSE');
+    assertEqual(objRun.statusText, 'SYSTEM // RUNNING');
+
+    const fallback = PomodoroCore.getTimerStatus(null);
+    assertEqual(fallback.buttonText, 'START');
+    assertEqual(fallback.statusText, 'ONLINE // READY');
+
+    assertEqual(PomodoroCore.getTimerStatus(true, 100, 1500), PomodoroCore.getTimerStatus(true, 200, 1500));
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
