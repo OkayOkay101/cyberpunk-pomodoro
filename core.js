@@ -98,11 +98,27 @@
   },
 
   getThemeVariables(themeName) {
-    return THEMES[themeName] || THEMES.cyan;
+    const themes = {
+      cyan: { border: '#1f294d', primary: '#00f0ff', accent: '#ff0055' },
+      pink: { border: '#4d1f3d', primary: '#ff007f', accent: '#00f0ff' },
+      yellow: { border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' },
+      green: { border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' }
+    };
+    const validThemes = Object.keys(themes);
+    const safeTheme = (typeof themeName === 'string' && validThemes.includes(themeName)) ? themeName : 'cyan';
+    return themes[safeTheme];
   },
 
   getThemeLabel(themeName) {
-    return LABELS[themeName] || LABELS.cyan;
+    const labels = {
+      cyan: 'Cyan Matrix',
+      pink: 'Neon Pink / Outrun',
+      yellow: 'Night City Yellow',
+      green: 'Emerald Hacker'
+    };
+    const validLabels = Object.keys(labels);
+    const safeTheme = (typeof themeName === 'string' && validLabels.includes(themeName)) ? themeName : 'cyan';
+    return labels[safeTheme];
   },
 
   serializeConfig(config) {
@@ -120,7 +136,14 @@
       if (Array.isArray(parsed)) {
         return parsed;
       }
-      return { ...defaults, ...parsed };
+      const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+      const sanitized = {};
+      for (const key of Object.keys(parsed)) {
+        if (!dangerousKeys.includes(key)) {
+          sanitized[key] = parsed[key];
+        }
+      }
+      return { ...defaults, ...sanitized };
     } catch (e) {
       return defaults;
     }
