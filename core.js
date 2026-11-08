@@ -393,14 +393,42 @@
   },
 
   getNextTabIndex(currentIndex, totalTabs, key) {
-    const total = parseInt(totalTabs, 10);
-    const curr = parseInt(currentIndex, 10);
-    if (isNaN(total) || total <= 0 || isNaN(curr) || curr < 0 || curr >= total) return -1;
+    switch (key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'Home':
+      case 'End':
+        break;
+      default:
+        return -1;
+    }
+
+    let total;
+    if (typeof totalTabs === 'number') {
+      if (!isFinite(totalTabs)) return -1;
+      total = totalTabs | 0;
+      if (total <= 0) return -1;
+    } else {
+      total = parseInt(totalTabs, 10);
+      if (isNaN(total) || total <= 0) return -1;
+    }
+
+    let curr;
+    if (typeof currentIndex === 'number') {
+      if (!isFinite(currentIndex)) return -1;
+      curr = currentIndex | 0;
+      if (curr < 0 || curr >= total) return -1;
+    } else {
+      curr = parseInt(currentIndex, 10);
+      if (isNaN(curr) || curr < 0 || curr >= total) return -1;
+    }
+
     if (key === 'ArrowRight' || key === 'ArrowDown') return (curr + 1) % total;
     if (key === 'ArrowLeft' || key === 'ArrowUp') return (curr - 1 + total) % total;
     if (key === 'Home') return 0;
-    if (key === 'End') return total - 1;
-    return -1;
+    return total - 1;
   },
 
   getTimerStatus(isRunningOrParams, timeLeft, duration) {
