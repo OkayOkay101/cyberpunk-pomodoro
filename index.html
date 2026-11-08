@@ -500,6 +500,15 @@
       color: var(--text-dim);
       opacity: 0.6;
     }
+    .task-empty {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-align: center;
+      padding: 10px 6px;
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+      opacity: 0.85;
+    }
 
     /* Modal / Settings Overlay */
     .modal-overlay {
@@ -720,7 +729,7 @@
     </div>
   </div>
 
-  <script src="test-runner.js"></script>
+  <script src="core.js"></script>
   <script>
     // Audio Engine State
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -1111,12 +1120,7 @@
 
     function renderTasks() {
       if (!taskChecklist) return;
-      taskChecklist.innerHTML = tasks.map(t => `
-        <div class="task-item ${t.done ? 'done' : ''}" data-id="${t.id}">
-          <input type="checkbox" ${t.done ? 'checked' : ''} aria-label="${PomodoroCore.escapeHtml(t.text)}">
-          <span>${PomodoroCore.escapeHtml(t.text)}</span>
-        </div>
-      `).join('');
+      taskChecklist.innerHTML = PomodoroCore.renderTaskList(tasks);
 
       taskChecklist.querySelectorAll('input[type="checkbox"]').forEach(box => {
         box.addEventListener('change', (e) => {
