@@ -52,6 +52,11 @@
     body: 'หมดเวลาพักแล้ว พร้อมกลับมาลุยภารกิจต่อหรือยัง?',
     soundType: 'break_end'
   });
+  const FOCUS_NOTIFICATIONS = Array.from({ length: 101 }, (_, i) => Object.freeze({
+    title: 'FOCUS COMPLETE // CYBERPUNK POMODORO',
+    body: 'จบ Session ' + i + ' เรียบร้อยแล้ว ได้เวลาพักผ่อน!',
+    soundType: 'focus_end'
+  }));
   const MS_PER_DAY = 86400000;
   const KEY_ACTIONS = Object.freeze(Object.assign(Object.create(null), {
     r: 'resetTimer',
@@ -464,6 +469,12 @@
   },
 
   parseCycleCount(cycleCount) {
+    if (typeof cycleCount === 'number') {
+      if (cycleCount >= 1 && Number.isFinite(cycleCount)) {
+        return cycleCount | 0;
+      }
+      return 1;
+    }
     const parsed = parseInt(cycleCount, 10);
     return (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
   },
@@ -479,6 +490,9 @@
 
     if (mode === 'focus') {
       const validCycle = PomodoroCore.parseCycleCount(cycle);
+      if (validCycle <= 100) {
+        return FOCUS_NOTIFICATIONS[validCycle];
+      }
       return {
         title: 'FOCUS COMPLETE // CYBERPUNK POMODORO',
         body: `จบ Session ${validCycle} เรียบร้อยแล้ว ได้เวลาพักผ่อน!`,
