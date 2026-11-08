@@ -792,8 +792,8 @@
 
   <!-- HUD Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
-    <div class="modal-box">
-      <div class="modal-title">⚙️ SYSTEM CONFIGURATION</div>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+      <h2 class="modal-title" id="settingsModalTitle">⚙️ SYSTEM CONFIGURATION</h2>
       <div class="settings-row">
         <span>Focus Duration (นาที):</span>
         <input type="number" class="settings-input" id="cfgFocusMin" min="1" max="90" value="25">
@@ -816,8 +816,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" id="closeSettingsBtn">CANCEL</button>
-        <button class="btn btn-primary" id="saveSettingsBtn">SAVE</button>
+        <button class="btn btn-secondary" id="closeSettingsBtn" aria-label="ยกเลิกการตั้งค่า">CANCEL</button>
+        <button class="btn btn-primary" id="saveSettingsBtn" aria-label="บันทึกการตั้งค่า">SAVE</button>
       </div>
     </div>
   </div>
