@@ -40,6 +40,9 @@
     shortBreak: 'RECHARGE // SHORT BREAK',
     longBreak: 'REST // LONG BREAK'
   });
+  const SESSION_LABELS = Array.from({ length: 101 }, (_, i) => (
+    i <= 0 ? 'SESSION 01 // DEEP WORK' : 'SESSION ' + (i < 100 ? PAD_TWO[i] : String(i)) + ' // DEEP WORK'
+  ));
   const MODE_STROKES = Object.assign(Object.create(null), {
     shortBreak: 'var(--green)',
     longBreak: 'var(--pink)'
@@ -145,10 +148,19 @@
   },
 
   formatSessionLabel(cycleCount) {
+    if (typeof cycleCount === 'number') {
+      if (cycleCount >= 1 && cycleCount <= 100 && (cycleCount | 0) === cycleCount) {
+        return SESSION_LABELS[cycleCount];
+      }
+      if (cycleCount >= 1 && Number.isFinite(cycleCount)) {
+        const intVal = cycleCount | 0;
+        return intVal <= 100 ? SESSION_LABELS[intVal] : 'SESSION ' + intVal + ' // DEEP WORK';
+      }
+      return SESSION_LABELS[1];
+    }
     const parsed = parseInt(cycleCount, 10);
     const validCycle = (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
-    const cycleStr = validCycle < 100 ? PAD_TWO[validCycle] : String(validCycle);
-    return `SESSION ${cycleStr} // DEEP WORK`;
+    return validCycle <= 100 ? SESSION_LABELS[validCycle] : 'SESSION ' + validCycle + ' // DEEP WORK';
   },
 
   sanitizeMission(text) {
@@ -424,8 +436,15 @@
   },
 
   getModeSessionLabel(mode, cycleCount) {
-    if (typeof mode === 'string' && MODE_SESSION_LABELS[mode]) {
-      return MODE_SESSION_LABELS[mode];
+    if (typeof mode === 'string') {
+      if (mode === 'focus') {
+        if (typeof cycleCount === 'number' && cycleCount >= 1 && cycleCount <= 100 && (cycleCount | 0) === cycleCount) {
+          return SESSION_LABELS[cycleCount];
+        }
+      } else {
+        const label = MODE_SESSION_LABELS[mode];
+        if (label !== undefined) return label;
+      }
     }
     return PomodoroCore.formatSessionLabel(cycleCount);
   },
