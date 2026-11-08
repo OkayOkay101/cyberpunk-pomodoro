@@ -339,6 +339,35 @@
       font-weight: bold;
     }
 
+    /* Mode Transition Toast */
+    .mode-toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: var(--panel);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 240, 255, 0.3);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+      z-index: 200;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .mode-toast.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
     /* Audio Spectrum Visualizer */
     .visualizer-canvas {
       width: 100%;
@@ -626,6 +655,7 @@
   <div class="station-container">
     <!-- Top HUD Toolbar -->
     <div class="top-toolbar">
+      <div id="modeToast" class="mode-toast" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="stats-streak">
         <span class="stat-badge" id="streakBadge">⚡ STREAK: 1 DAY</span>
         <span class="stat-badge" id="focusTimeBadge">🎯 0 MINS TODAY</span>
@@ -700,24 +730,24 @@
           <span class="vol-num" id="volumePercent">50%</span>
         </div>
       </div>
-      <div class="sound-grid">
-        <button class="sound-btn" data-sound="rain" aria-label="เปิดเสียง Cyber Rain" aria-pressed="false">
+      <div class="sound-grid" role="group" aria-label="เสียงสังเคราะห์บรรยากาศ">
+        <button class="sound-btn" data-sound="rain" aria-label="เปิด/ปิดเสียง Cyber Rain" aria-pressed="false">
           <span>🌧️</span>
           <b>Cyber Rain</b>
         </button>
-        <button class="sound-btn" data-sound="engine" aria-label="เปิดเสียง Deep Space Hum" aria-pressed="false">
+        <button class="sound-btn" data-sound="engine" aria-label="เปิด/ปิดเสียง Deep Space Hum" aria-pressed="false">
           <span>🚀</span>
           <b>Deep Space Hum</b>
         </button>
-        <button class="sound-btn" data-sound="binaural" aria-label="เปิดเสียง 40Hz Focus Wave" aria-pressed="false">
+        <button class="sound-btn" data-sound="binaural" aria-label="เปิด/ปิดเสียง 40Hz Focus Wave" aria-pressed="false">
           <span>⚡</span>
           <b>40Hz Focus Wave</b>
         </button>
-        <button class="sound-btn" data-sound="fan" aria-label="เปิดเสียง Server Cooling Fan" aria-pressed="false">
+        <button class="sound-btn" data-sound="fan" aria-label="เปิด/ปิดเสียง Server Fan" aria-pressed="false">
           <span>🌀</span>
           <b>Server Fan</b>
         </button>
-        <button class="sound-btn" data-sound="storm" aria-label="เปิดเสียง Neon Rainstorm" aria-pressed="false">
+        <button class="sound-btn" data-sound="storm" aria-label="เปิด/ปิดเสียง Cyber Storm" aria-pressed="false">
           <span>⛈️</span>
           <b>Cyber Storm</b>
         </button>
@@ -893,6 +923,20 @@
       }
     }
     updateVolumeDisplay(savedVol);
+
+    // Mode Transition Toast
+    let modeToastTimer = null;
+    function showModeToast(message) {
+      const toast = document.getElementById('modeToast');
+      if (!toast) return;
+      if (modeToastTimer) clearTimeout(modeToastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      modeToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+        modeToastTimer = null;
+      }, 2500);
+    }
 
     if (volumeSlider) {
       volumeSlider.value = isMuted ? 0 : savedVol;
@@ -1234,7 +1278,7 @@
       document.title = PomodoroCore.formatDocumentTitle(timeDisplay.textContent, isRunning);
     }
 
-    function setMode(mode, duration) {
+    function setMode(mode, duration, toastMessage) {
       currentMode = mode;
       currentDuration = duration;
       timeLeft = duration;
@@ -1273,6 +1317,10 @@
         sessionLabel.textContent = 'REST // LONG BREAK';
       }
       updateDisplay(false);
+
+      if (toastMessage) {
+        showModeToast(toastMessage);
+      }
     }
 
     function handleTimerComplete() {
@@ -1293,11 +1341,12 @@
         const next = PomodoroCore.getNextMode('focus', cycleCount);
         cycleCount++;
         localStorage.setItem('cp_cycle', String(cycleCount));
-        setMode(next, configDurations[next]);
+        const toastMsg = next === 'longBreak' ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
+        setMode(next, configDurations[next], toastMsg);
       } else {
         playBeep('break_end');
         notifySessionComplete('BREAK FINISHED // BACK TO MATRIX', 'หมดเวลาพักแล้ว พร้อมกลับมาลุยภารกิจต่อหรือยัง?');
-        setMode('focus', configDurations.focus);
+        setMode('focus', configDurations.focus, 'FOCUS SESSION STARTED');
       }
 
       if (isAutoStart) {
@@ -1349,7 +1398,8 @@
     modeTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const mode = tab.dataset.mode;
-        setMode(mode, configDurations[mode]);
+        const toastMsg = mode === 'focus' ? 'FOCUS MODE' : mode === 'shortBreak' ? 'SHORT BREAK' : 'LONG BREAK';
+        setMode(mode, configDurations[mode], toastMsg);
       });
     });
 
@@ -1379,9 +1429,10 @@
     skipBtn.addEventListener('click', () => {
       if (currentMode === 'focus') {
         const next = PomodoroCore.getNextMode('focus', cycleCount);
-        setMode(next, configDurations[next]);
+        const toastMsg = next === 'longBreak' ? 'LONG BREAK' : 'SHORT BREAK';
+        setMode(next, configDurations[next], toastMsg);
       } else {
-        setMode('focus', configDurations.focus);
+        setMode('focus', configDurations.focus, 'FOCUS MODE');
       }
     });
 
