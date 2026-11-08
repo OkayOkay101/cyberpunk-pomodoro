@@ -52,6 +52,18 @@
   const TIMER_STATUS_RUNNING = Object.freeze({ buttonText: 'PAUSE', statusText: 'SYSTEM // RUNNING' });
   const TIMER_STATUS_PAUSED = Object.freeze({ buttonText: 'RESUME', statusText: 'SYSTEM // PAUSED' });
   const TIMER_STATUS_READY = Object.freeze({ buttonText: 'START', statusText: 'ONLINE // READY' });
+  const RESET_ACTION_CONFIRM = Object.freeze({
+    needsConfirmation: true,
+    buttonText: 'CONFIRM?',
+    confirming: true,
+    timeoutMs: 2500
+  });
+  const RESET_ACTION_EXECUTE = Object.freeze({
+    needsConfirmation: false,
+    buttonText: 'RESET',
+    confirming: false,
+    timeoutMs: 0
+  });
   const BREAK_NOTIFICATION = Object.freeze({
     title: 'BREAK FINISHED // BACK TO MATRIX',
     body: 'หมดเวลาพักแล้ว พร้อมกลับมาลุยภารกิจต่อหรือยัง?',
@@ -616,6 +628,47 @@
       nextMode: 'focus',
       toastMessage: 'FOCUS MODE',
       cycleCount: safeCycle
+    };
+  },
+
+  calculateResetAction(isRunningOrParams, isConfirming) {
+    let running = isRunningOrParams;
+    let confirming = isConfirming;
+
+    if (isRunningOrParams && typeof isRunningOrParams === 'object') {
+      running = isRunningOrParams.isRunning;
+      confirming = isRunningOrParams.isConfirming !== undefined
+        ? isRunningOrParams.isConfirming
+        : isRunningOrParams.confirming;
+    }
+
+    const isRunningState = Boolean(running);
+    const isConfirmingState = Boolean(confirming);
+
+    if (isRunningState && !isConfirmingState) {
+      return RESET_ACTION_CONFIRM;
+    }
+
+    return RESET_ACTION_EXECUTE;
+  },
+
+  calculateCycleReset(modeOrParams) {
+    let mode = modeOrParams;
+    if (modeOrParams && typeof modeOrParams === 'object') {
+      mode = modeOrParams.currentMode || modeOrParams.mode;
+    }
+    const safeMode = (typeof mode === 'string') ? mode : 'focus';
+    const nextCycleCount = 1;
+    return {
+      nextCycleCount,
+      sessionLabel: PomodoroCore.getModeSessionLabel(safeMode, nextCycleCount),
+      soundType: 'break_end',
+      feedbackText: 'DONE!',
+      feedbackAriaLabel: 'รีเซ็ตรอบเป็น 01 สำเร็จ',
+      feedbackTimeoutMs: 1200,
+      storage: {
+        cp_cycle: '1'
+      }
     };
   }
   };

@@ -1453,20 +1453,21 @@
     toggleBtn.addEventListener('click', toggleTimer);
 
     function handleResetAction() {
-      if (isRunning && !resetConfirmTimer) {
-        resetBtn.textContent = 'CONFIRM?';
+      const resetAction = PomodoroCore.calculateResetAction(isRunning, Boolean(resetConfirmTimer));
+      if (resetAction.needsConfirmation) {
+        resetBtn.textContent = resetAction.buttonText;
         resetBtn.classList.add('confirming');
         resetConfirmTimer = setTimeout(() => {
           resetBtn.textContent = 'RESET';
           resetBtn.classList.remove('confirming');
           resetConfirmTimer = null;
-        }, 2500);
+        }, resetAction.timeoutMs);
         return;
       }
       if (resetConfirmTimer) {
         clearTimeout(resetConfirmTimer);
         resetConfirmTimer = null;
-        resetBtn.textContent = 'RESET';
+        resetBtn.textContent = resetAction.buttonText;
         resetBtn.classList.remove('confirming');
       }
       setMode(currentMode, currentDuration);
@@ -1481,18 +1482,19 @@
     });
 
     resetCycleBtn.addEventListener('click', () => {
-      cycleCount = 1;
-      localStorage.setItem('cp_cycle', '1');
-      sessionLabel.textContent = PomodoroCore.getModeSessionLabel(currentMode, cycleCount);
-      playBeep('break_end');
+      const resetCycle = PomodoroCore.calculateCycleReset(currentMode);
+      cycleCount = resetCycle.nextCycleCount;
+      localStorage.setItem('cp_cycle', resetCycle.storage.cp_cycle);
+      sessionLabel.textContent = resetCycle.sessionLabel;
+      playBeep(resetCycle.soundType);
       const origText = resetCycleBtn.textContent;
       const origLabel = resetCycleBtn.getAttribute('aria-label') || 'รีเซ็ตรอบกลับเป็น 01';
-      resetCycleBtn.textContent = 'DONE!';
+      resetCycleBtn.textContent = resetCycle.feedbackText;
       resetCycleBtn.setAttribute('aria-label', 'รีเซ็ตรอบเป็น 01 สำเร็จ');
       setTimeout(() => {
         resetCycleBtn.textContent = origText;
         resetCycleBtn.setAttribute('aria-label', origLabel);
-      }, 1200);
+      }, resetCycle.feedbackTimeoutMs);
     });
 
     soundBtns.forEach(btn => {

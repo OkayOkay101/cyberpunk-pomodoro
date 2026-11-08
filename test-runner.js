@@ -651,6 +651,51 @@ function runUnitTests() {
     });
   }
 
+  // 34. Timer Reset Action Resolution
+  test('calculateResetAction() resolves confirmation state and reset button text', () => {
+    const runningAction = PomodoroCore.calculateResetAction(true, false);
+    assertEqual(runningAction.needsConfirmation, true, 'Running requires confirmation');
+    assertEqual(runningAction.buttonText, 'CONFIRM?', 'Confirmation button label');
+    assertEqual(runningAction.confirming, true, 'Confirming flag');
+    assertEqual(runningAction.timeoutMs, 2500, 'Confirmation timeout duration');
+
+    const confirmedAction = PomodoroCore.calculateResetAction(true, true);
+    assertEqual(confirmedAction.needsConfirmation, false, 'Confirmed action executes');
+    assertEqual(confirmedAction.buttonText, 'RESET', 'Reset button label');
+    assertEqual(confirmedAction.confirming, false, 'Reset clearing confirming flag');
+
+    const stoppedAction = PomodoroCore.calculateResetAction(false, false);
+    assertEqual(stoppedAction.needsConfirmation, false, 'Stopped timer resets immediately');
+
+    const objAction = PomodoroCore.calculateResetAction({ isRunning: true, isConfirming: false });
+    assertEqual(objAction.needsConfirmation, true, 'Object parameters support');
+  });
+
+  // 35. Session Cycle Reset Resolution
+  test('calculateCycleReset() resets cycle count and provides audio/accessibility payload', () => {
+    const resetFocus = PomodoroCore.calculateCycleReset('focus');
+    assertEqual(resetFocus.nextCycleCount, 1, 'Cycle resets to 1');
+    assertEqual(resetFocus.sessionLabel, 'SESSION 01 // DEEP WORK', 'Focus session label for cycle 1');
+    assertEqual(resetFocus.soundType, 'break_end', 'Break end cue on reset');
+    assertEqual(resetFocus.feedbackText, 'DONE!', 'Feedback button text');
+    assertEqual(resetFocus.feedbackAriaLabel, 'รีเซ็ตรอบเป็น 01 สำเร็จ', 'Feedback accessible label');
+    assertEqual(resetFocus.feedbackTimeoutMs, 1200, 'Feedback duration ms');
+    assertEqual(resetFocus.storage.cp_cycle, '1', 'Cycle storage payload');
+
+    const resetShort = PomodoroCore.calculateCycleReset('shortBreak');
+    assertEqual(resetShort.sessionLabel, 'RECHARGE // SHORT BREAK', 'Short break mode preserved');
+
+    const resetLong = PomodoroCore.calculateCycleReset('longBreak');
+    assertEqual(resetLong.sessionLabel, 'REST // LONG BREAK', 'Long break mode preserved');
+
+    const resetObj = PomodoroCore.calculateCycleReset({ currentMode: 'focus' });
+    assertEqual(resetObj.nextCycleCount, 1, 'Object param cycle count');
+
+    const resetFallback = PomodoroCore.calculateCycleReset(null);
+    assertEqual(resetFallback.nextCycleCount, 1, 'Null fallback cycle count');
+    assertEqual(resetFallback.sessionLabel, 'SESSION 01 // DEEP WORK', 'Null fallback session label');
+  });
+
   return { passed, failed, total: passed + failed, results };
 }
 
