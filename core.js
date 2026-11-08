@@ -286,8 +286,17 @@
   createTaskItem(text, id) {
     const sanitized = PomodoroCore.sanitizeMission(text);
     if (!sanitized) return null;
+    let validId;
+    if (typeof id === 'number' && Number.isFinite(id)) {
+      validId = id;
+    } else if (typeof id === 'string' && id.trim() !== '') {
+      const parsed = Number(id);
+      validId = Number.isFinite(parsed) ? parsed : Date.now();
+    } else {
+      validId = Date.now();
+    }
     return {
-      id: (typeof id === 'number' && !isNaN(id)) ? id : Date.now(),
+      id: validId,
       text: sanitized,
       done: false
     };
