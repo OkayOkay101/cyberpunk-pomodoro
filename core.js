@@ -43,8 +43,8 @@
   },
 
   calculateProgressOffset(timeLeft, duration, circumference) {
-    if (!duration || duration <= 0 || isNaN(duration)) return 0;
-    if (isNaN(circumference) || circumference <= 0) return 0;
+    if (!duration || duration <= 0 || isNaN(duration) || !isFinite(duration)) return 0;
+    if (isNaN(circumference) || circumference <= 0 || !isFinite(circumference)) return 0;
     const safeTime = isNaN(timeLeft) ? 0 : timeLeft;
     const clamped = Math.max(0, Math.min(safeTime, duration));
     return circumference - (clamped / duration) * circumference;
@@ -180,9 +180,8 @@
   },
 
   formatStreakBadge(currentStreak) {
-    const valid = (typeof currentStreak === 'number' && !isNaN(currentStreak) && currentStreak >= 1)
-      ? Math.floor(currentStreak)
-      : 1;
+    const parsed = parseInt(currentStreak, 10);
+    const valid = (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
     return `⚡ STREAK: ${valid} DAY${valid > 1 ? 'S' : ''}`;
   },
 
@@ -195,7 +194,7 @@
   calculateRemainingSeconds(targetEndTimeMs, nowMs) {
     const target = Number(targetEndTimeMs);
     const now = Number(nowMs);
-    if (isNaN(target) || isNaN(now) || target <= now) return 0;
+    if (isNaN(target) || isNaN(now) || !isFinite(target) || !isFinite(now) || target <= now) return 0;
     return Math.max(0, Math.round((target - now) / 1000));
   },
 
