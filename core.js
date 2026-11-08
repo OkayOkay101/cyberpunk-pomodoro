@@ -157,6 +157,12 @@
   },
 
   validateCustomDuration(val, min, max, defaultVal) {
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (!/^\d+$/.test(trimmed)) return defaultVal;
+    } else if (typeof val !== 'number') {
+      return defaultVal;
+    }
     const num = parseInt(val, 10);
     if (isNaN(num) || num < min || num > max) return defaultVal;
     return num;
