@@ -559,19 +559,38 @@
       font-family: inherit;
       text-align: center;
     }
+    .theme-row {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
     .theme-swatches {
       display: flex;
       gap: 8px;
     }
     .theme-btn {
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #070913;
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .theme-btn:hover {
+      transform: scale(1.08);
     }
     .theme-btn.active {
       border-color: #fff;
+      box-shadow: 0 0 0 2px #070913, 0 0 10px #fff;
+    }
+    .theme-btn.active::after {
+      content: "✓";
     }
     .modal-footer {
       display: flex;
@@ -713,13 +732,13 @@
         <span>Long Break (นาที):</span>
         <input type="number" class="settings-input" id="cfgLongMin" min="1" max="60" value="15">
       </div>
-      <div class="settings-row">
-        <span>HUD Neon Theme:</span>
-        <div class="theme-swatches">
-          <button class="theme-btn active" data-theme="cyan" style="background: #00f0ff;" title="Cyan Matrix"></button>
-          <button class="theme-btn" data-theme="pink" style="background: #ff007f;" title="Neon Pink / Outrun"></button>
-          <button class="theme-btn" data-theme="yellow" style="background: #ffe600;" title="Night City Yellow"></button>
-          <button class="theme-btn" data-theme="green" style="background: #00ff66;" title="Emerald Hacker"></button>
+      <div class="settings-row theme-row">
+        <span id="themeLabel">HUD Neon Theme: <b id="activeThemeName">Cyan Matrix</b></span>
+        <div class="theme-swatches" role="group" aria-labelledby="themeLabel">
+          <button type="button" class="theme-btn active" data-theme="cyan" style="background: #00f0ff;" title="Cyan Matrix" aria-label="Cyan Matrix" aria-pressed="true"></button>
+          <button type="button" class="theme-btn" data-theme="pink" style="background: #ff007f;" title="Neon Pink / Outrun" aria-label="Neon Pink / Outrun" aria-pressed="false"></button>
+          <button type="button" class="theme-btn" data-theme="yellow" style="background: #ffe600;" title="Night City Yellow" aria-label="Night City Yellow" aria-pressed="false"></button>
+          <button type="button" class="theme-btn" data-theme="green" style="background: #00ff66;" title="Emerald Hacker" aria-label="Emerald Hacker" aria-pressed="false"></button>
         </div>
       </div>
       <div class="modal-footer">
@@ -1409,7 +1428,13 @@
       document.documentElement.style.setProperty('--accent', vars.primary);
       document.documentElement.style.setProperty('--border', vars.border);
       localStorage.setItem('cp_theme', theme);
-      themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+      themeBtns.forEach(b => {
+        const isActive = b.dataset.theme === theme;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-pressed', String(isActive));
+      });
+      const activeThemeName = document.getElementById('activeThemeName');
+      if (activeThemeName) activeThemeName.textContent = PomodoroCore.getThemeLabel(theme);
       if (currentMode === 'focus') progressFill.style.stroke = vars.primary;
     }
     applyTheme(localStorage.getItem('cp_theme') || 'cyan');

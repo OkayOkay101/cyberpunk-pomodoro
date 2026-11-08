@@ -95,6 +95,16 @@
     return themes[themeName] || themes.cyan;
   },
 
+  getThemeLabel(themeName) {
+    const labels = {
+      cyan: 'Cyan Matrix',
+      pink: 'Neon Pink / Outrun',
+      yellow: 'Night City Yellow',
+      green: 'Emerald Hacker'
+    };
+    return labels[themeName] || labels.cyan;
+  },
+
   serializeConfig(config) {
     return JSON.stringify(config);
   },
