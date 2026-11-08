@@ -435,6 +435,25 @@ function runUnitTests() {
     assertEqual(PomodoroCore.getNextTabIndex(0, 3, 'Space'), -1);
   });
 
+  // 36. Mode Session Labels Formatter
+  test('getModeSessionLabel() resolves session labels for each mode with fallback', () => {
+    assertEqual(PomodoroCore.getModeSessionLabel('focus', 1), 'SESSION 01 // DEEP WORK');
+    assertEqual(PomodoroCore.getModeSessionLabel('focus', 4), 'SESSION 04 // DEEP WORK');
+    assertEqual(PomodoroCore.getModeSessionLabel('shortBreak', 1), 'RECHARGE // SHORT BREAK');
+    assertEqual(PomodoroCore.getModeSessionLabel('longBreak', 4), 'REST // LONG BREAK');
+    assertEqual(PomodoroCore.getModeSessionLabel('unknown', 1), 'SESSION 01 // DEEP WORK');
+    assertEqual(PomodoroCore.getModeSessionLabel(null, 2), 'SESSION 02 // DEEP WORK');
+  });
+
+  // 37. Mode Stroke Color Resolver
+  test('getModeStroke() maps modes to theme CSS stroke variables with fallback', () => {
+    assertEqual(PomodoroCore.getModeStroke('focus'), 'var(--accent)');
+    assertEqual(PomodoroCore.getModeStroke('shortBreak'), 'var(--green)');
+    assertEqual(PomodoroCore.getModeStroke('longBreak'), 'var(--pink)');
+    assertEqual(PomodoroCore.getModeStroke('unknown'), 'var(--accent)');
+    assertEqual(PomodoroCore.getModeStroke(null), 'var(--accent)');
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');

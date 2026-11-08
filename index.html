@@ -1315,16 +1315,8 @@
         t.setAttribute('tabindex', isActive ? '0' : '-1');
       });
 
-      if (mode === 'focus') {
-        progressFill.style.stroke = 'var(--accent)';
-        sessionLabel.textContent = PomodoroCore.formatSessionLabel(cycleCount);
-      } else if (mode === 'shortBreak') {
-        progressFill.style.stroke = 'var(--green)';
-        sessionLabel.textContent = 'RECHARGE // SHORT BREAK';
-      } else {
-        progressFill.style.stroke = 'var(--pink)';
-        sessionLabel.textContent = 'REST // LONG BREAK';
-      }
+      progressFill.style.stroke = PomodoroCore.getModeStroke(mode);
+      sessionLabel.textContent = PomodoroCore.getModeSessionLabel(mode, cycleCount);
       updateDisplay(false);
 
       if (toastMessage) {
@@ -1462,9 +1454,7 @@
     resetCycleBtn.addEventListener('click', () => {
       cycleCount = 1;
       localStorage.setItem('cp_cycle', '1');
-      if (currentMode === 'focus') {
-        sessionLabel.textContent = PomodoroCore.formatSessionLabel(cycleCount);
-      }
+      sessionLabel.textContent = PomodoroCore.getModeSessionLabel(currentMode, cycleCount);
       playBeep('break_end');
       const origText = resetCycleBtn.textContent;
       resetCycleBtn.textContent = 'DONE!';
