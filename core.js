@@ -398,14 +398,42 @@
   },
 
   getNextTabIndex(currentIndex, totalTabs, key) {
-    const total = parseInt(totalTabs, 10);
-    const curr = parseInt(currentIndex, 10);
-    if (isNaN(total) || total <= 0 || isNaN(curr) || curr < 0 || curr >= total) return -1;
+    switch (key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'Home':
+      case 'End':
+        break;
+      default:
+        return -1;
+    }
+
+    let total;
+    if (typeof totalTabs === 'number') {
+      if (!isFinite(totalTabs)) return -1;
+      total = totalTabs | 0;
+      if (total <= 0) return -1;
+    } else {
+      total = parseInt(totalTabs, 10);
+      if (isNaN(total) || total <= 0) return -1;
+    }
+
+    let curr;
+    if (typeof currentIndex === 'number') {
+      if (!isFinite(currentIndex)) return -1;
+      curr = currentIndex | 0;
+      if (curr < 0 || curr >= total) return -1;
+    } else {
+      curr = parseInt(currentIndex, 10);
+      if (isNaN(curr) || curr < 0 || curr >= total) return -1;
+    }
+
     if (key === 'ArrowRight' || key === 'ArrowDown') return (curr + 1) % total;
     if (key === 'ArrowLeft' || key === 'ArrowUp') return (curr - 1 + total) % total;
     if (key === 'Home') return 0;
-    if (key === 'End') return total - 1;
-    return -1;
+    return total - 1;
   },
 
   getTimerStatus(isRunningOrParams, timeLeft, duration) {
@@ -459,6 +487,76 @@
     }
 
     return BREAK_NOTIFICATION;
+  },
+
+  calculateCompletedSession(modeOrParams, cycleCount, focusDuration, totalFocusMinsToday, currentStreak, todayStr) {
+    let mode = modeOrParams;
+    let cycle = cycleCount;
+    let duration = focusDuration;
+    let totalMins = totalFocusMinsToday;
+    let streak = currentStreak;
+    let today = todayStr;
+
+    if (modeOrParams && typeof modeOrParams === 'object') {
+      mode = modeOrParams.currentMode || modeOrParams.mode;
+      cycle = modeOrParams.cycleCount;
+      duration = modeOrParams.focusDuration;
+      totalMins = modeOrParams.totalFocusMinsToday;
+      streak = modeOrParams.currentStreak;
+      today = modeOrParams.todayStr || modeOrParams.today;
+    }
+
+    const safeCycle = PomodoroCore.parseCycleCount(cycle);
+    const safeMode = (typeof mode === 'string') ? mode : 'focus';
+
+    if (safeMode === 'focus') {
+      const nextMode = PomodoroCore.getNextMode('focus', safeCycle);
+      const nextCycleCount = safeCycle + 1;
+
+      const safeDuration = (typeof duration === 'number' && Number.isFinite(duration) && duration > 0)
+        ? duration
+        : (parseInt(duration, 10) > 0 ? parseInt(duration, 10) : 1500);
+      const addedFocusMins = Math.max(0, Math.round(safeDuration / 60));
+
+      const parsedTotal = parseInt(totalMins, 10);
+      const safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+      const nextTotalFocusMins = safeTotalMins + addedFocusMins;
+
+      const parsedStreak = parseInt(streak, 10);
+      const safeStreak = (!isNaN(parsedStreak) && parsedStreak >= 1) ? parsedStreak : 1;
+
+      const safeToday = (typeof today === 'string' && today.trim().length > 0)
+        ? today.trim()
+        : PomodoroCore.getLocalDateString();
+
+      const toastMessage = nextMode === 'longBreak' ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
+
+      return {
+        nextMode,
+        nextCycleCount,
+        addedFocusMins,
+        nextTotalFocusMins,
+        toastMessage,
+        storage: {
+          cp_focus_mins_today: String(nextTotalFocusMins),
+          cp_last_date: safeToday,
+          cp_streak: String(safeStreak),
+          cp_cycle: String(nextCycleCount)
+        }
+      };
+    }
+
+    const parsedTotal = parseInt(totalMins, 10);
+    const safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+
+    return {
+      nextMode: 'focus',
+      nextCycleCount: safeCycle,
+      addedFocusMins: 0,
+      nextTotalFocusMins: safeTotalMins,
+      toastMessage: 'FOCUS SESSION STARTED',
+      storage: {}
+    };
   }
   };
 
