@@ -493,6 +493,15 @@ function runUnitTests() {
       assertEqual(html.includes('aria-pressed="true"'), true, 'Active option is not exposed as pressed');
       assertEqual(html.includes('PomodoroCore.getThemeLabel(theme)'), true, 'Palette name is not kept in sync');
     });
+
+    test('settings modal provides accessible dialog role, labeling, and input bindings', () => {
+      assertEqual(html.includes('id="settingsModal" role="dialog"'), true, 'Modal is missing role="dialog"');
+      assertEqual(html.includes('aria-modal="true"'), true, 'Modal is missing aria-modal="true"');
+      assertEqual(html.includes('aria-labelledby="modalTitle"'), true, 'Modal is missing aria-labelledby');
+      assertEqual(html.includes('<label for="cfgFocusMin">'), true, 'Focus input is missing label');
+      assertEqual(html.includes('<label for="cfgShortMin">'), true, 'Short break input is missing label');
+      assertEqual(html.includes('<label for="cfgLongMin">'), true, 'Long break input is missing label');
+    });
   }
 
   return { passed, failed, total: passed + failed, results };

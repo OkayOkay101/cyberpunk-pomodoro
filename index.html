@@ -576,7 +576,7 @@
       font-size: 16px;
       letter-spacing: 2px;
       color: var(--accent);
-      margin-bottom: 16px;
+      margin: 0 0 16px 0;
       text-transform: uppercase;
     }
     .settings-row {
@@ -791,19 +791,19 @@
   </main>
 
   <!-- HUD Settings Modal -->
-  <div class="modal-overlay" id="settingsModal">
+  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
     <div class="modal-box">
-      <div class="modal-title">⚙️ SYSTEM CONFIGURATION</div>
+      <h2 class="modal-title" id="modalTitle">⚙️ SYSTEM CONFIGURATION</h2>
       <div class="settings-row">
-        <span>Focus Duration (นาที):</span>
+        <label for="cfgFocusMin">Focus Duration (นาที):</label>
         <input type="number" class="settings-input" id="cfgFocusMin" min="1" max="90" value="25">
       </div>
       <div class="settings-row">
-        <span>Short Break (นาที):</span>
+        <label for="cfgShortMin">Short Break (นาที):</label>
         <input type="number" class="settings-input" id="cfgShortMin" min="1" max="30" value="5">
       </div>
       <div class="settings-row">
-        <span>Long Break (นาที):</span>
+        <label for="cfgLongMin">Long Break (นาที):</label>
         <input type="number" class="settings-input" id="cfgLongMin" min="1" max="60" value="15">
       </div>
       <div class="settings-row theme-row">
@@ -1551,16 +1551,35 @@
       b.addEventListener('click', () => applyTheme(b.dataset.theme));
     });
 
+    function openSettingsModal() {
+      if (!settingsModal) return;
+      cfgFocusMin.value = (configDurations.minutes && configDurations.minutes.focus) || Math.round(configDurations.focus / 60);
+      cfgShortMin.value = (configDurations.minutes && configDurations.minutes.shortBreak) || Math.round(configDurations.shortBreak / 60);
+      cfgLongMin.value = (configDurations.minutes && configDurations.minutes.longBreak) || Math.round(configDurations.longBreak / 60);
+      settingsModal.classList.add('open');
+      settingsModal.setAttribute('aria-hidden', 'false');
+      if (cfgFocusMin) cfgFocusMin.focus();
+    }
+
+    function closeSettingsModal() {
+      if (!settingsModal) return;
+      settingsModal.classList.remove('open');
+      settingsModal.setAttribute('aria-hidden', 'true');
+      if (settingsBtn) settingsBtn.focus();
+    }
+
     if (settingsBtn) {
-      settingsBtn.addEventListener('click', () => {
-        cfgFocusMin.value = (configDurations.minutes && configDurations.minutes.focus) || Math.round(configDurations.focus / 60);
-        cfgShortMin.value = (configDurations.minutes && configDurations.minutes.shortBreak) || Math.round(configDurations.shortBreak / 60);
-        cfgLongMin.value = (configDurations.minutes && configDurations.minutes.longBreak) || Math.round(configDurations.longBreak / 60);
-        settingsModal.classList.add('open');
-      });
+      settingsBtn.addEventListener('click', openSettingsModal);
     }
     if (closeSettingsBtn) {
-      closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('open'));
+      closeSettingsBtn.addEventListener('click', closeSettingsModal);
+    }
+    if (settingsModal) {
+      settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+          closeSettingsModal();
+        }
+      });
     }
     if (saveSettingsBtn) {
       saveSettingsBtn.addEventListener('click', () => {
@@ -1575,7 +1594,7 @@
         localStorage.setItem('cp_cfg_long', resolved.storage.cp_cfg_long);
         refreshTabLabels();
         setMode(currentMode, configDurations[currentMode]);
-        settingsModal.classList.remove('open');
+        closeSettingsModal();
       });
     }
 
@@ -1613,7 +1632,7 @@
           fullscreenBtn.click();
           break;
         case 'closeModal':
-          if (settingsModal) settingsModal.classList.remove('open');
+          closeSettingsModal();
           break;
       }
     });
