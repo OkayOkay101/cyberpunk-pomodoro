@@ -75,6 +75,17 @@
     toastMessage: 'FOCUS MODE',
     cycleCount: i
   }));
+  const NUM_STRINGS = Array.from({ length: 1500 }, (_, i) => String(i));
+  const FOCUS_SESSION_LOOKUP = Array.from({ length: 101 }, (_, i) => {
+    const isLong = (i > 0 && i % 4 === 0);
+    const nextCycle = i + 1;
+    return Object.freeze({
+      nextMode: isLong ? 'longBreak' : 'shortBreak',
+      toastMessage: isLong ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED',
+      nextCycleCount: nextCycle,
+      cycleStr: String(nextCycle)
+    });
+  });
   const MS_PER_DAY = 86400000;
   const KEY_ACTIONS = Object.freeze(Object.assign(Object.create(null), {
     r: 'resetTimer',
@@ -534,46 +545,100 @@
   },
 
   calculateCompletedSession(modeOrParams, cycleCount, focusDuration, totalFocusMinsToday, currentStreak, todayStr) {
-    let mode = modeOrParams;
-    let cycle = cycleCount;
-    let duration = focusDuration;
-    let totalMins = totalFocusMinsToday;
-    let streak = currentStreak;
-    let today = todayStr;
+    let mode;
+    let cycle;
+    let duration;
+    let totalMins;
+    let streak;
+    let today;
 
-    if (modeOrParams && typeof modeOrParams === 'object') {
+    if (typeof modeOrParams === 'string') {
+      mode = modeOrParams;
+      cycle = cycleCount;
+      duration = focusDuration;
+      totalMins = totalFocusMinsToday;
+      streak = currentStreak;
+      today = todayStr;
+    } else if (modeOrParams && typeof modeOrParams === 'object') {
       mode = modeOrParams.currentMode || modeOrParams.mode;
       cycle = modeOrParams.cycleCount;
       duration = modeOrParams.focusDuration;
       totalMins = modeOrParams.totalFocusMinsToday;
       streak = modeOrParams.currentStreak;
       today = modeOrParams.todayStr || modeOrParams.today;
+    } else {
+      mode = modeOrParams;
+      cycle = cycleCount;
+      duration = focusDuration;
+      totalMins = totalFocusMinsToday;
+      streak = currentStreak;
+      today = todayStr;
     }
 
-    const safeCycle = PomodoroCore.parseCycleCount(cycle);
+    let safeCycle;
+    if (typeof cycle === 'number') {
+      safeCycle = (cycle >= 1 && Number.isFinite(cycle)) ? (cycle | 0) : 1;
+    } else {
+      const parsedCycle = parseInt(cycle, 10);
+      safeCycle = (!isNaN(parsedCycle) && parsedCycle >= 1) ? parsedCycle : 1;
+    }
+
     const safeMode = (typeof mode === 'string') ? mode : 'focus';
 
     if (safeMode === 'focus') {
-      const nextMode = PomodoroCore.getNextMode('focus', safeCycle);
-      const nextCycleCount = safeCycle + 1;
+      let nextMode;
+      let toastMessage;
+      let nextCycleCount;
+      let cycleStr;
 
-      const safeDuration = (typeof duration === 'number' && Number.isFinite(duration) && duration > 0)
-        ? duration
-        : (parseInt(duration, 10) > 0 ? parseInt(duration, 10) : 1500);
-      const addedFocusMins = Math.max(0, Math.round(safeDuration / 60));
+      if (safeCycle <= 100) {
+        const lookup = FOCUS_SESSION_LOOKUP[safeCycle];
+        nextMode = lookup.nextMode;
+        toastMessage = lookup.toastMessage;
+        nextCycleCount = lookup.nextCycleCount;
+        cycleStr = lookup.cycleStr;
+      } else {
+        const isLong = (safeCycle % 4 === 0);
+        nextMode = isLong ? 'longBreak' : 'shortBreak';
+        toastMessage = isLong ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
+        nextCycleCount = safeCycle + 1;
+        cycleStr = nextCycleCount < 1500 ? NUM_STRINGS[nextCycleCount] : String(nextCycleCount);
+      }
 
-      const parsedTotal = parseInt(totalMins, 10);
-      const safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+      let addedFocusMins;
+      if (typeof duration === 'number') {
+        addedFocusMins = (Number.isFinite(duration) && duration > 0) ? Math.round(duration / 60) : 25;
+      } else {
+        const parsedDur = parseInt(duration, 10);
+        addedFocusMins = (parsedDur > 0) ? Math.round(parsedDur / 60) : 25;
+      }
+
+      let safeTotalMins;
+      if (typeof totalMins === 'number') {
+        safeTotalMins = (totalMins >= 0 && Number.isFinite(totalMins)) ? (totalMins | 0) : 0;
+      } else {
+        const parsedTotal = parseInt(totalMins, 10);
+        safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+      }
       const nextTotalFocusMins = safeTotalMins + addedFocusMins;
 
-      const parsedStreak = parseInt(streak, 10);
-      const safeStreak = (!isNaN(parsedStreak) && parsedStreak >= 1) ? parsedStreak : 1;
+      let safeStreak;
+      if (typeof streak === 'number') {
+        safeStreak = (streak >= 1 && Number.isFinite(streak)) ? (streak | 0) : 1;
+      } else {
+        const parsedStreak = parseInt(streak, 10);
+        safeStreak = (!isNaN(parsedStreak) && parsedStreak >= 1) ? parsedStreak : 1;
+      }
 
-      const safeToday = (typeof today === 'string' && today.trim().length > 0)
-        ? today.trim()
-        : PomodoroCore.getLocalDateString();
-
-      const toastMessage = nextMode === 'longBreak' ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
+      let safeToday;
+      if (typeof today === 'string' && today.length > 0) {
+        const start = today.charCodeAt(0);
+        const end = today.charCodeAt(today.length - 1);
+        safeToday = (start > 32 && end > 32) ? today : today.trim();
+        if (safeToday.length === 0) safeToday = PomodoroCore.getLocalDateString();
+      } else {
+        safeToday = PomodoroCore.getLocalDateString();
+      }
 
       return {
         nextMode,
@@ -582,16 +647,21 @@
         nextTotalFocusMins,
         toastMessage,
         storage: {
-          cp_focus_mins_today: String(nextTotalFocusMins),
+          cp_focus_mins_today: nextTotalFocusMins < 1500 ? NUM_STRINGS[nextTotalFocusMins] : String(nextTotalFocusMins),
           cp_last_date: safeToday,
-          cp_streak: String(safeStreak),
-          cp_cycle: String(nextCycleCount)
+          cp_streak: safeStreak < 1500 ? NUM_STRINGS[safeStreak] : String(safeStreak),
+          cp_cycle: cycleStr
         }
       };
     }
 
-    const parsedTotal = parseInt(totalMins, 10);
-    const safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+    let safeTotalMins;
+    if (typeof totalMins === 'number') {
+      safeTotalMins = (totalMins >= 0 && Number.isFinite(totalMins)) ? (totalMins | 0) : 0;
+    } else {
+      const parsedTotal = parseInt(totalMins, 10);
+      safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+    }
 
     return {
       nextMode: 'focus',
