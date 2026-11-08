@@ -487,6 +487,76 @@
     }
 
     return BREAK_NOTIFICATION;
+  },
+
+  calculateCompletedSession(modeOrParams, cycleCount, focusDuration, totalFocusMinsToday, currentStreak, todayStr) {
+    let mode = modeOrParams;
+    let cycle = cycleCount;
+    let duration = focusDuration;
+    let totalMins = totalFocusMinsToday;
+    let streak = currentStreak;
+    let today = todayStr;
+
+    if (modeOrParams && typeof modeOrParams === 'object') {
+      mode = modeOrParams.currentMode || modeOrParams.mode;
+      cycle = modeOrParams.cycleCount;
+      duration = modeOrParams.focusDuration;
+      totalMins = modeOrParams.totalFocusMinsToday;
+      streak = modeOrParams.currentStreak;
+      today = modeOrParams.todayStr || modeOrParams.today;
+    }
+
+    const safeCycle = PomodoroCore.parseCycleCount(cycle);
+    const safeMode = (typeof mode === 'string') ? mode : 'focus';
+
+    if (safeMode === 'focus') {
+      const nextMode = PomodoroCore.getNextMode('focus', safeCycle);
+      const nextCycleCount = safeCycle + 1;
+
+      const safeDuration = (typeof duration === 'number' && Number.isFinite(duration) && duration > 0)
+        ? duration
+        : (parseInt(duration, 10) > 0 ? parseInt(duration, 10) : 1500);
+      const addedFocusMins = Math.max(0, Math.round(safeDuration / 60));
+
+      const parsedTotal = parseInt(totalMins, 10);
+      const safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+      const nextTotalFocusMins = safeTotalMins + addedFocusMins;
+
+      const parsedStreak = parseInt(streak, 10);
+      const safeStreak = (!isNaN(parsedStreak) && parsedStreak >= 1) ? parsedStreak : 1;
+
+      const safeToday = (typeof today === 'string' && today.trim().length > 0)
+        ? today.trim()
+        : PomodoroCore.getLocalDateString();
+
+      const toastMessage = nextMode === 'longBreak' ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
+
+      return {
+        nextMode,
+        nextCycleCount,
+        addedFocusMins,
+        nextTotalFocusMins,
+        toastMessage,
+        storage: {
+          cp_focus_mins_today: String(nextTotalFocusMins),
+          cp_last_date: safeToday,
+          cp_streak: String(safeStreak),
+          cp_cycle: String(nextCycleCount)
+        }
+      };
+    }
+
+    const parsedTotal = parseInt(totalMins, 10);
+    const safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+
+    return {
+      nextMode: 'focus',
+      nextCycleCount: safeCycle,
+      addedFocusMins: 0,
+      nextTotalFocusMins: safeTotalMins,
+      toastMessage: 'FOCUS SESSION STARTED',
+      storage: {}
+    };
   }
   };
 

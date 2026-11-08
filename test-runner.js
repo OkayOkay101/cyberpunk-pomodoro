@@ -559,6 +559,54 @@ function runUnitTests() {
     assertEqual(objInput.soundType, 'focus_end');
   });
 
+  // 42. Session Transition and Completion State Decoupling
+  test('calculateCompletedSession() handles mode transitions, cycle increments, and stats storage', () => {
+    const focus1 = PomodoroCore.calculateCompletedSession({
+      currentMode: 'focus',
+      cycleCount: 1,
+      focusDuration: 1500,
+      totalFocusMinsToday: 0,
+      currentStreak: 1,
+      todayStr: '2026-11-09'
+    });
+    assertEqual(focus1.nextMode, 'shortBreak');
+    assertEqual(focus1.nextCycleCount, 2);
+    assertEqual(focus1.addedFocusMins, 25);
+    assertEqual(focus1.nextTotalFocusMins, 25);
+    assertEqual(focus1.toastMessage, 'SHORT BREAK STARTED');
+    assertEqual(focus1.storage.cp_cycle, '2');
+    assertEqual(focus1.storage.cp_focus_mins_today, '25');
+
+    const focus4 = PomodoroCore.calculateCompletedSession({
+      currentMode: 'focus',
+      cycleCount: 4,
+      focusDuration: 1500,
+      totalFocusMinsToday: 75,
+      currentStreak: 1,
+      todayStr: '2026-11-09'
+    });
+    assertEqual(focus4.nextMode, 'longBreak');
+    assertEqual(focus4.nextCycleCount, 5);
+    assertEqual(focus4.toastMessage, 'LONG BREAK STARTED');
+    assertEqual(focus4.storage.cp_cycle, '5');
+
+    const breakEnd = PomodoroCore.calculateCompletedSession('shortBreak', 2, 1500, 25);
+    assertEqual(breakEnd.nextMode, 'focus');
+    assertEqual(breakEnd.nextCycleCount, 2);
+    assertEqual(breakEnd.addedFocusMins, 0);
+    assertEqual(breakEnd.toastMessage, 'FOCUS SESSION STARTED');
+
+    const corrupt = PomodoroCore.calculateCompletedSession({
+      currentMode: 'focus',
+      cycleCount: 'corrupted',
+      focusDuration: NaN,
+      totalFocusMinsToday: 'invalid'
+    });
+    assertEqual(corrupt.nextCycleCount, 2);
+    assertEqual(corrupt.addedFocusMins, 25);
+    assertEqual(corrupt.nextTotalFocusMins, 25);
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
