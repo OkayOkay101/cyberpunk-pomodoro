@@ -184,6 +184,7 @@ function runUnitTests() {
     assertEqual(PomodoroCore.calculateProgressOffset(1500, 0, C), 0, 'Zero duration yields 0');
     assertEqual(PomodoroCore.calculateProgressOffset(1500, -10, C), 0, 'Negative duration yields 0');
     assertEqual(PomodoroCore.calculateProgressOffset(1500, 1500, 0), 0, 'Zero circumference yields 0');
+    assertEqual(PomodoroCore.calculateProgressOffset(1500, Infinity, C), 0, 'Infinity duration yields 0');
   });
 
   // 18. HTML Sanitization Helper
@@ -208,6 +209,8 @@ function runUnitTests() {
   test('formatStreakBadge() and formatFocusTimeBadge() format stats HUD correctly', () => {
     assertEqual(PomodoroCore.formatStreakBadge(1), '⚡ STREAK: 1 DAY');
     assertEqual(PomodoroCore.formatStreakBadge(5), '⚡ STREAK: 5 DAYS');
+    assertEqual(PomodoroCore.formatStreakBadge('5'), '⚡ STREAK: 5 DAYS');
+    assertEqual(PomodoroCore.formatStreakBadge('1'), '⚡ STREAK: 1 DAY');
     assertEqual(PomodoroCore.formatStreakBadge(0), '⚡ STREAK: 1 DAY');
     assertEqual(PomodoroCore.formatStreakBadge(null), '⚡ STREAK: 1 DAY');
     assertEqual(PomodoroCore.formatStreakBadge('abc'), '⚡ STREAK: 1 DAY');
@@ -228,6 +231,8 @@ function runUnitTests() {
     assertEqual(PomodoroCore.calculateRemainingSeconds(now - 5000, now), 0, 'Past time clamps to 0');
     assertEqual(PomodoroCore.calculateRemainingSeconds(NaN, now), 0, 'NaN target yields 0');
     assertEqual(PomodoroCore.calculateRemainingSeconds(now + 10000, 'invalid'), 0, 'Invalid now yields 0');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(Infinity, now), 0, 'Infinity target yields 0');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(now + 10000, -Infinity), 0, '-Infinity now yields 0');
   });
 
   // 22. Document Title Formatting
