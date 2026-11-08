@@ -27,6 +27,10 @@
   const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   const PAD_TWO = Array.from({ length: 100 }, (_, i) => (i < 10 ? '0' + i : String(i)));
   const PERCENT_LOOKUP = Array.from({ length: 101 }, (_, i) => i + '%');
+  const STREAK_BADGES = Array.from({ length: 101 }, (_, i) => (
+    i <= 1 ? '⚡ STREAK: 1 DAY' : '⚡ STREAK: ' + i + ' DAYS'
+  ));
+  const FOCUS_BADGES = Array.from({ length: 1441 }, (_, i) => '🎯 ' + i + ' MINS TODAY');
   const TAB_LABELS = {
     focus: 'FOCUS',
     shortBreak: 'SHORT',
@@ -202,15 +206,29 @@
   },
 
   formatStreakBadge(currentStreak) {
+    if (typeof currentStreak === 'number') {
+      if (currentStreak <= 1) return STREAK_BADGES[1];
+      if (currentStreak <= 100) {
+        const intVal = currentStreak | 0;
+        if (intVal === currentStreak) return STREAK_BADGES[intVal];
+      }
+    }
     const parsed = parseInt(currentStreak, 10);
     const valid = (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
-    return `⚡ STREAK: ${valid} DAY${valid > 1 ? 'S' : ''}`;
+    return valid <= 100 ? STREAK_BADGES[valid] : '⚡ STREAK: ' + valid + ' DAYS';
   },
 
   formatFocusTimeBadge(minutes) {
+    if (typeof minutes === 'number') {
+      if (minutes <= 0) return FOCUS_BADGES[0];
+      if (minutes <= 1440) {
+        const intVal = minutes | 0;
+        if (intVal === minutes) return FOCUS_BADGES[intVal];
+      }
+    }
     const parsed = parseInt(minutes, 10);
     const valid = (!isNaN(parsed) && parsed >= 0) ? parsed : 0;
-    return `🎯 ${valid} MINS TODAY`;
+    return valid <= 1440 ? FOCUS_BADGES[valid] : '🎯 ' + valid + ' MINS TODAY';
   },
 
   calculateRemainingSeconds(targetEndTimeMs, nowMs) {
