@@ -31,6 +31,7 @@
     shortBreak: 'SHORT',
     longBreak: 'LONG'
   };
+  const MS_PER_DAY = 86400000;
   const PomodoroCore = {
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
@@ -69,11 +70,10 @@
       : 1;
     if (!lastDateStr || typeof lastDateStr !== 'string') return 1;
     if (lastDateStr === todayStr) return validStreak;
-    const lastDate = new Date(lastDateStr);
-    const today = new Date(todayStr);
-    const diffTime = today - lastDate;
+    const todayTime = typeof todayStr === 'string' ? Date.parse(todayStr) : new Date(todayStr).getTime();
+    const diffTime = todayTime - Date.parse(lastDateStr);
     if (isNaN(diffTime)) return 1;
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.round(diffTime / MS_PER_DAY);
     if (diffDays === 1) return validStreak + 1;
     if (diffDays > 1) return 1;
     return validStreak;
