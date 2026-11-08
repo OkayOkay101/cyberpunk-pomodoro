@@ -40,6 +40,16 @@
     longBreak: 'var(--pink)'
   });
   const MS_PER_DAY = 86400000;
+  const KEY_ACTIONS = Object.freeze(Object.assign(Object.create(null), {
+    r: 'resetTimer',
+    R: 'resetTimer',
+    s: 'skipMode',
+    S: 'skipMode',
+    m: 'toggleMute',
+    M: 'toggleMute',
+    f: 'toggleFullscreen',
+    F: 'toggleFullscreen'
+  }));
   const PomodoroCore = {
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
@@ -313,26 +323,27 @@
     const { key, code, targetTagName, isModalOpen, ctrlKey, metaKey, altKey } = params;
 
     if (isModalOpen) {
-      if (key === 'Escape') return 'closeModal';
-      return null;
+      return key === 'Escape' ? 'closeModal' : null;
     }
 
     if (ctrlKey || metaKey || altKey) {
       return null;
     }
 
-    const tag = (typeof targetTagName === 'string') ? targetTagName.toUpperCase() : '';
-    if (tag === 'INPUT' || tag === 'TEXTAREA') {
-      return null;
+    if (typeof targetTagName === 'string') {
+      if (targetTagName === 'INPUT' || targetTagName === 'TEXTAREA' ||
+          targetTagName === 'input' || targetTagName === 'textarea') {
+        return null;
+      }
+      const len = targetTagName.length;
+      if ((len === 5 && targetTagName.toUpperCase() === 'INPUT') ||
+          (len === 8 && targetTagName.toUpperCase() === 'TEXTAREA')) {
+        return null;
+      }
     }
 
     if (code === 'Space') return 'toggleTimer';
-    if (key === 'r' || key === 'R') return 'resetTimer';
-    if (key === 's' || key === 'S') return 'skipMode';
-    if (key === 'm' || key === 'M') return 'toggleMute';
-    if (key === 'f' || key === 'F') return 'toggleFullscreen';
-
-    return null;
+    return KEY_ACTIONS[key] || null;
   },
 
   getModeSessionLabel(mode, cycleCount) {

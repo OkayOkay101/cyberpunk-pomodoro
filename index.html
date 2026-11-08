@@ -135,6 +135,7 @@
       gap: 8px;
     }
     .glitch-title {
+      margin: 0;
       font-size: 20px;
       font-weight: 900;
       letter-spacing: 2px;
@@ -398,6 +399,13 @@
       flex-wrap: wrap;
       gap: 6px;
     }
+    .deck-title h2 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+    }
     .volume-control {
       display: flex;
       align-items: center;
@@ -652,7 +660,7 @@
   </style>
 </head>
 <body>
-  <div class="station-container">
+  <main class="station-container">
     <!-- Top HUD Toolbar -->
     <div class="top-toolbar">
       <div id="modeToast" class="mode-toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -671,7 +679,7 @@
 
     <!-- Header Row -->
     <div class="header-row">
-      <div class="glitch-title">⚡ CYBERPUNK FOCUS</div>
+      <h1 class="glitch-title">⚡ CYBERPUNK FOCUS</h1>
       <div class="status-badge">
         <span class="status-dot"></span>
         <span id="systemStatus" aria-live="polite">ONLINE // READY</span>
@@ -720,9 +728,9 @@
     <canvas class="visualizer-canvas" id="audioVisualizer" width="600" height="36" aria-label="เส้นคลื่นเสียง"></canvas>
 
     <!-- Ambient Sound Deck (Synthetic Web Audio) -->
-    <div class="deck-section">
+    <section class="deck-section" aria-labelledby="ambientHeading">
       <div class="deck-title">
-        <span>🎧 NEURAL AMBIENT GENERATOR</span>
+        <h2 id="ambientHeading">🎧 NEURAL AMBIENT GENERATOR</h2>
         <div class="volume-control">
           <button class="mute-btn" id="muteBtn" title="เปิด/ปิดเสียง (M)" aria-label="เปิดหรือปิดเสียง" aria-pressed="false">🔊</button>
           <span>VOL</span>
@@ -752,12 +760,12 @@
           <b>Cyber Storm</b>
         </button>
       </div>
-    </div>
+    </section>
 
     <!-- Mission Focus Bar & Checklist -->
-    <div class="deck-section">
+    <section class="deck-section" aria-labelledby="missionHeading">
       <div class="deck-title">
-        <span>🎯 MISSION OBJECTIVES & TASKS</span>
+        <h2 id="missionHeading">🎯 MISSION OBJECTIVES & TASKS</h2>
         <span style="font-size: 10px; color: var(--text-dim);">CHECKLIST PERSISTED</span>
       </div>
       <div class="mission-input-row">
@@ -765,8 +773,8 @@
         <button class="clear-mission-btn" id="clearMissionBtn" title="ล้างข้อความ" aria-label="ล้างข้อความภารกิจ">✕</button>
       </div>
       <div class="task-checklist" id="taskChecklist"></div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <!-- HUD Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
