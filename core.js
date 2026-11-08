@@ -25,13 +25,15 @@
   };
   const VALID_LABELS = Object.keys(LABELS);
   const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+  const PAD_TWO = Array.from({ length: 100 }, (_, i) => (i < 10 ? '0' + i : String(i)));
   const PomodoroCore = {
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
     const totalSecs = Math.floor(seconds);
     const mins = Math.floor(totalSecs / 60);
     const secs = totalSecs % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    const mStr = mins < 100 ? PAD_TWO[mins] : String(mins);
+    return mStr + ':' + PAD_TWO[secs];
   },
 
   calculateProgressOffset(timeLeft, duration, circumference) {
