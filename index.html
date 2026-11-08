@@ -1500,18 +1500,37 @@
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
-      if (document.activeElement === missionInput || document.activeElement.tagName === 'INPUT') return;
+      const isModalOpen = Boolean(settingsModal && settingsModal.classList.contains('open'));
+      const activeTag = document.activeElement ? document.activeElement.tagName : '';
+      const action = PomodoroCore.resolveKeyboardAction({
+        key: e.key,
+        code: e.code,
+        targetTagName: activeTag,
+        isModalOpen
+      });
 
-      if (e.code === 'Space') {
-        e.preventDefault(); toggleTimer();
-      } else if (e.key === 'r' || e.key === 'R') {
-        e.preventDefault(); handleResetAction();
-      } else if (e.key === 's' || e.key === 'S') {
-        e.preventDefault(); skipBtn.click();
-      } else if (e.key === 'm' || e.key === 'M') {
-        e.preventDefault(); toggleMute();
-      } else if (e.key === 'f' || e.key === 'F') {
-        e.preventDefault(); fullscreenBtn.click();
+      if (!action) return;
+      e.preventDefault();
+
+      switch (action) {
+        case 'toggleTimer':
+          toggleTimer();
+          break;
+        case 'resetTimer':
+          handleResetAction();
+          break;
+        case 'skipMode':
+          skipBtn.click();
+          break;
+        case 'toggleMute':
+          toggleMute();
+          break;
+        case 'toggleFullscreen':
+          fullscreenBtn.click();
+          break;
+        case 'closeModal':
+          if (settingsModal) settingsModal.classList.remove('open');
+          break;
       }
     });
 

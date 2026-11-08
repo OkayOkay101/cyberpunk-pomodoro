@@ -282,6 +282,29 @@
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  },
+
+  resolveKeyboardAction(params) {
+    if (!params || typeof params !== 'object') return null;
+    const { key, code, targetTagName, isModalOpen } = params;
+
+    if (isModalOpen) {
+      if (key === 'Escape') return 'closeModal';
+      return null;
+    }
+
+    const tag = (typeof targetTagName === 'string') ? targetTagName.toUpperCase() : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+      return null;
+    }
+
+    if (code === 'Space') return 'toggleTimer';
+    if (key === 'r' || key === 'R') return 'resetTimer';
+    if (key === 's' || key === 'S') return 'skipMode';
+    if (key === 'm' || key === 'M') return 'toggleMute';
+    if (key === 'f' || key === 'F') return 'toggleFullscreen';
+
+    return null;
   }
   };
 

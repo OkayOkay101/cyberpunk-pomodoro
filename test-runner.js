@@ -373,6 +373,19 @@ function runUnitTests() {
     assertEqual(customStr, '2026-01-15');
   });
 
+  // 33. Keyboard Shortcut Action Resolver
+  test('resolveKeyboardAction() maps shortcut keys and respects modal and input focus states', () => {
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'Space', key: ' ', targetTagName: 'BODY', isModalOpen: false }), 'toggleTimer');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyR', key: 'r', targetTagName: 'BODY', isModalOpen: false }), 'resetTimer');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyS', key: 's', targetTagName: 'BODY', isModalOpen: false }), 'skipMode');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyM', key: 'm', targetTagName: 'BODY', isModalOpen: false }), 'toggleMute');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyF', key: 'f', targetTagName: 'BODY', isModalOpen: false }), 'toggleFullscreen');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'Space', key: ' ', targetTagName: 'INPUT', isModalOpen: false }), null);
+    assertEqual(PomodoroCore.resolveKeyboardAction({ key: 'Escape', isModalOpen: true }), 'closeModal');
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'Space', key: ' ', isModalOpen: true }), null);
+    assertEqual(PomodoroCore.resolveKeyboardAction(null), null);
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
