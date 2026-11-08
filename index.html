@@ -680,9 +680,9 @@
 
     <!-- Mode Selector Tabs -->
     <div class="mode-tabs" role="tablist" aria-label="โหมดจับเวลา">
-      <button class="mode-tab active" data-mode="focus" id="tabFocus" role="tab" aria-selected="true" aria-label="โฟกัส">FOCUS (25M)</button>
-      <button class="mode-tab" data-mode="shortBreak" id="tabShort" role="tab" aria-selected="false" aria-label="พักสั้น">SHORT (5M)</button>
-      <button class="mode-tab" data-mode="longBreak" id="tabLong" role="tab" aria-selected="false" aria-label="พักยาว">LONG (15M)</button>
+      <button class="mode-tab active" data-mode="focus" id="tabFocus" role="tab" aria-selected="true" tabindex="0" aria-label="โฟกัส">FOCUS (25M)</button>
+      <button class="mode-tab" data-mode="shortBreak" id="tabShort" role="tab" aria-selected="false" tabindex="-1" aria-label="พักสั้น">SHORT (5M)</button>
+      <button class="mode-tab" data-mode="longBreak" id="tabLong" role="tab" aria-selected="false" tabindex="-1" aria-label="พักยาว">LONG (15M)</button>
     </div>
 
     <!-- Timer Ring -->
@@ -1304,6 +1304,7 @@
         const isActive = t.dataset.mode === mode;
         t.classList.toggle('active', isActive);
         t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        t.setAttribute('tabindex', isActive ? '0' : '-1');
       });
 
       if (mode === 'focus') {
@@ -1402,6 +1403,20 @@
         setMode(mode, configDurations[mode], toastMsg);
       });
     });
+
+    const modeTabsContainer = document.querySelector('.mode-tabs');
+    if (modeTabsContainer) {
+      modeTabsContainer.addEventListener('keydown', (e) => {
+        const tabs = Array.from(modeTabs);
+        const idx = tabs.indexOf(document.activeElement);
+        const nextIdx = PomodoroCore.getNextTabIndex(idx, tabs.length, e.key);
+        if (nextIdx !== -1) {
+          e.preventDefault();
+          tabs[nextIdx].focus();
+          tabs[nextIdx].click();
+        }
+      });
+    }
 
     toggleBtn.addEventListener('click', toggleTimer);
 

@@ -425,6 +425,16 @@ function runUnitTests() {
     assertEqual(PomodoroCore.resolveKeyboardAction({ key: 'Escape', isModalOpen: true, ctrlKey: false }), 'closeModal', 'Escape in modal still closes modal');
   });
 
+  // 32. Mode Tabs Keyboard Navigation
+  test('getNextTabIndex() handles arrow key and home/end navigation with wrapping', () => {
+    assertEqual(PomodoroCore.getNextTabIndex(0, 3, 'ArrowRight'), 1);
+    assertEqual(PomodoroCore.getNextTabIndex(2, 3, 'ArrowRight'), 0);
+    assertEqual(PomodoroCore.getNextTabIndex(0, 3, 'ArrowLeft'), 2);
+    assertEqual(PomodoroCore.getNextTabIndex(1, 3, 'Home'), 0);
+    assertEqual(PomodoroCore.getNextTabIndex(1, 3, 'End'), 2);
+    assertEqual(PomodoroCore.getNextTabIndex(0, 3, 'Space'), -1);
+  });
+
   // 31. Theme Selector UI Wiring (Node only; the browser suite renders the real markup)
   if (typeof require === 'function') {
     const fs = require('fs');
