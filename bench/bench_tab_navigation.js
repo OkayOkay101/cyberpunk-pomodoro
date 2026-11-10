@@ -56,64 +56,76 @@ for (let i = 0; i < 50000; i++) {
 }
 
 // Workload 1: Sequential Arrow Navigation (ArrowRight / ArrowLeft)
+let baseChecksum1 = 0;
 let t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baselineGetNextTabIndex(i % 3, 3, (i & 1) === 0 ? 'ArrowRight' : 'ArrowLeft');
+  baseChecksum1 += baselineGetNextTabIndex(i % 3, 3, (i & 1) === 0 ? 'ArrowRight' : 'ArrowLeft');
 }
 let t1 = performance.now();
 const baseArrows = t1 - t0;
 
+let optChecksum1 = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.getNextTabIndex(i % 3, 3, (i & 1) === 0 ? 'ArrowRight' : 'ArrowLeft');
+  optChecksum1 += PomodoroCore.getNextTabIndex(i % 3, 3, (i & 1) === 0 ? 'ArrowRight' : 'ArrowLeft');
 }
 t1 = performance.now();
 const optArrows = t1 - t0;
+if (baseChecksum1 !== optChecksum1) throw new Error(`Checksum mismatch Workload 1: baseline=${baseChecksum1}, opt=${optChecksum1}`);
 
 // Workload 2: ArrowRight (Frequent next-tab cycling)
+let baseChecksum2 = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baselineGetNextTabIndex(i % 3, 3, 'ArrowRight');
+  baseChecksum2 += baselineGetNextTabIndex(i % 3, 3, 'ArrowRight');
 }
 t1 = performance.now();
 const baseRight = t1 - t0;
 
+let optChecksum2 = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.getNextTabIndex(i % 3, 3, 'ArrowRight');
+  optChecksum2 += PomodoroCore.getNextTabIndex(i % 3, 3, 'ArrowRight');
 }
 t1 = performance.now();
 const optRight = t1 - t0;
+if (baseChecksum2 !== optChecksum2) throw new Error(`Checksum mismatch Workload 2: baseline=${baseChecksum2}, opt=${optChecksum2}`);
 
 // Workload 3: Home / End (Direct jump to boundary tabs)
+let baseChecksum3 = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baselineGetNextTabIndex(i % 3, 3, (i & 1) === 0 ? 'Home' : 'End');
+  baseChecksum3 += baselineGetNextTabIndex(i % 3, 3, (i & 1) === 0 ? 'Home' : 'End');
 }
 t1 = performance.now();
 const baseBoundary = t1 - t0;
 
+let optChecksum3 = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.getNextTabIndex(i % 3, 3, (i & 1) === 0 ? 'Home' : 'End');
+  optChecksum3 += PomodoroCore.getNextTabIndex(i % 3, 3, (i & 1) === 0 ? 'Home' : 'End');
 }
 t1 = performance.now();
 const optBoundary = t1 - t0;
+if (baseChecksum3 !== optChecksum3) throw new Error(`Checksum mismatch Workload 3: baseline=${baseChecksum3}, opt=${optChecksum3}`);
 
 // Workload 4: Unhandled UI Key Events (e.g. Tab traversal bypass)
+let baseChecksum4 = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baselineGetNextTabIndex(i % 3, 3, 'Tab');
+  baseChecksum4 += baselineGetNextTabIndex(i % 3, 3, 'Tab');
 }
 t1 = performance.now();
 const baseUnhandled = t1 - t0;
 
+let optChecksum4 = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.getNextTabIndex(i % 3, 3, 'Tab');
+  optChecksum4 += PomodoroCore.getNextTabIndex(i % 3, 3, 'Tab');
 }
 t1 = performance.now();
 const optUnhandled = t1 - t0;
+if (baseChecksum4 !== optChecksum4) throw new Error(`Checksum mismatch Workload 4: baseline=${baseChecksum4}, opt=${optChecksum4}`);
 
 console.log('\n--- Benchmark Results (5,000,000 iterations) ---');
 console.log(`Workload 1 (Arrow Nav):     Baseline: ${baseArrows.toFixed(2)}ms | Opt: ${optArrows.toFixed(2)}ms | Speedup: ${(((baseArrows - optArrows) / baseArrows) * 100).toFixed(1)}%`);
