@@ -132,6 +132,13 @@
   },
 
   calculateProgressOffset(timeLeft, duration, circumference) {
+    if (typeof timeLeft === 'number' && typeof duration === 'number' && typeof circumference === 'number') {
+      if (duration <= 0 || !Number.isFinite(duration)) return 0;
+      if (circumference <= 0 || !Number.isFinite(circumference)) return 0;
+      const t = timeLeft !== timeLeft ? 0 : timeLeft;
+      const clamped = t < 0 ? 0 : (t > duration ? duration : t);
+      return circumference - (clamped / duration) * circumference;
+    }
     if (!duration || duration <= 0 || isNaN(duration) || !isFinite(duration)) return 0;
     if (isNaN(circumference) || circumference <= 0 || !isFinite(circumference)) return 0;
     const safeTime = isNaN(timeLeft) ? 0 : timeLeft;
