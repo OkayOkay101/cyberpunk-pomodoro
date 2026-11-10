@@ -201,9 +201,16 @@
   },
 
   validateCustomDuration(val, min, max, defaultVal) {
-    const num = parseInt(val, 10);
-    if (isNaN(num) || num < min || num > max) return defaultVal;
-    return num;
+    if (typeof val !== 'string' && typeof val !== 'number') return defaultVal;
+    if (typeof val === 'number') {
+      if (!Number.isFinite(val) || val !== Math.floor(val)) return defaultVal;
+      return val >= min && val <= max ? val : defaultVal;
+    }
+    const trimmed = val.trim();
+    if (trimmed === '') return defaultVal;
+    if (!/^[+-]?\d+$/.test(trimmed)) return defaultVal;
+    const num = parseInt(trimmed, 10);
+    return num >= min && num <= max ? num : defaultVal;
   },
 
   resolveDurations(inputs) {
