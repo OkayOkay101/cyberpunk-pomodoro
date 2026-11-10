@@ -533,10 +533,16 @@
       return TIMER_STATUS_RUNNING;
     }
 
+    if (typeof time === 'number' && typeof dur === 'number') {
+      if (time !== time || dur !== dur) return TIMER_STATUS_READY;
+      if (time > 0 && time < dur) return TIMER_STATUS_PAUSED;
+      return TIMER_STATUS_READY;
+    }
+
     const safeTime = Number(time);
     const safeDur = Number(dur);
 
-    if (!isNaN(safeTime) && !isNaN(safeDur) && safeDur > 0 && safeTime > 0 && safeTime < safeDur) {
+    if (safeTime === safeTime && safeDur === safeDur && safeTime > 0 && safeTime < safeDur) {
       return TIMER_STATUS_PAUSED;
     }
 
