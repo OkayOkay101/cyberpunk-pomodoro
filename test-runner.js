@@ -100,6 +100,45 @@ function runUnitTests() {
     assertEqual(PomodoroCore.validateCustomDuration('abc', 1, 90, 25), 25, 'NaN defaults');
   });
 
+  // 8b. Custom Duration Strict Integer Validation
+  test('validateCustomDuration() strictly validates integer strings and rejects malformed input', () => {
+    // Valid numeric strings
+    assertEqual(PomodoroCore.validateCustomDuration('25', 1, 90, 25), 25, 'Valid string "25"');
+    assertEqual(PomodoroCore.validateCustomDuration('  25  ', 1, 90, 25), 25, 'Whitespace trimmed');
+    assertEqual(PomodoroCore.validateCustomDuration('+25', 1, 90, 25), 25, 'Leading plus accepted');
+    assertEqual(PomodoroCore.validateCustomDuration('05', 1, 90, 25), 5, 'Leading zero accepted');
+
+    // Invalid: trailing non-digits
+    assertEqual(PomodoroCore.validateCustomDuration('25px', 1, 90, 25), 25, 'Trailing px rejected');
+    assertEqual(PomodoroCore.validateCustomDuration('25abc', 1, 90, 25), 25, 'Trailing abc rejected');
+
+    // Invalid: decimals
+    assertEqual(PomodoroCore.validateCustomDuration('25.5', 1, 90, 25), 25, 'Decimal rejected');
+    assertEqual(PomodoroCore.validateCustomDuration('25.9', 1, 90, 25), 25, 'Decimal truncated rejected');
+    assertEqual(PomodoroCore.validateCustomDuration('0.5', 1, 90, 25), 25, 'Small decimal rejected');
+    assertEqual(PomodoroCore.validateCustomDuration('90.1', 1, 90, 25), 25, 'Decimal at max rejected');
+
+    // Invalid: other formats
+    assertEqual(PomodoroCore.validateCustomDuration('0x10', 1, 90, 25), 25, 'Hex rejected');
+    assertEqual(PomodoroCore.validateCustomDuration('1e2', 1, 90, 25), 25, 'Scientific notation rejected');
+    assertEqual(PomodoroCore.validateCustomDuration('25,5', 1, 90, 25), 25, 'Comma decimal rejected');
+
+    // Invalid types
+    assertEqual(PomodoroCore.validateCustomDuration(null, 1, 90, 25), 25, 'Null rejected');
+    assertEqual(PomodoroCore.validateCustomDuration(undefined, 1, 90, 25), 25, 'Undefined rejected');
+    assertEqual(PomodoroCore.validateCustomDuration(NaN, 1, 90, 25), 25, 'NaN rejected');
+    assertEqual(PomodoroCore.validateCustomDuration(Infinity, 1, 90, 25), 25, 'Infinity rejected');
+    assertEqual(PomodoroCore.validateCustomDuration(-Infinity, 1, 90, 25), 25, '-Infinity rejected');
+    assertEqual(PomodoroCore.validateCustomDuration({}, 1, 90, 25), 25, 'Object rejected');
+    assertEqual(PomodoroCore.validateCustomDuration([], 1, 90, 25), 25, 'Array rejected');
+    assertEqual(PomodoroCore.validateCustomDuration(() => {}, 1, 90, 25), 25, 'Function rejected');
+    assertEqual(PomodoroCore.validateCustomDuration(Symbol('test'), 1, 90, 25), 25, 'Symbol rejected');
+
+    // Float numbers rejected
+    assertEqual(PomodoroCore.validateCustomDuration(25.5, 1, 90, 25), 25, 'Float number rejected');
+    assertEqual(PomodoroCore.validateCustomDuration(25.0, 1, 90, 25), 25, 'Float 25.0 rejected');
+  });
+
   // 9. Theme Palette Resolver
   test('getThemeVariables() returns valid neon palettes for all themes', () => {
     const cyan = PomodoroCore.getThemeVariables('cyan');
