@@ -28,6 +28,17 @@ function baselineGetTimerStatus(isRunningOrParams, timeLeft, duration) {
   return { buttonText: 'START', statusText: 'ONLINE // READY' };
 }
 
+// Map a status result to a small integer code so checksums are numeric and
+// do not depend on string concatenation of objects.
+function statusCode(status) {
+  switch (status.buttonText) {
+    case 'PAUSE': return 1;
+    case 'RESUME': return 2;
+    case 'START': return 3;
+    default: throw new Error(`unexpected buttonText: ${status.buttonText}`);
+  }
+}
+
 // 1. Strict Equality Verification across exhaustive cases
 console.log('--- Strict Equality Verification ---');
 const baseNow = 1731110000000;
@@ -60,105 +71,82 @@ for (const t of testTargets) {
     }
   }
 }
-
 console.log(`✓ Strict equality verified across ${checkedCombinations} matrix cases.`);
+
+// Object-parameter form must also match baseline.
+for (const isRunning of testRunning) {
+  for (const t of testTargets) {
+    for (const d of testDurations) {
+      const params = { isRunning, timeLeft: t, duration: d };
+      const b = baselineGetTimerStatus(params);
+      const c = PomodoroCore.getTimerStatus(params);
+      if (JSON.stringify(b) !== JSON.stringify(c)) {
+        throw new Error(`object-form mismatch for ${JSON.stringify(params)}: expected ${JSON.stringify(b)}, got ${JSON.stringify(c)}`);
+      }
+    }
+  }
+}
+console.log('✓ Object-parameter form matches baseline.');
 
 // Randomized fuzz check across 100,000 cases
 console.log('--- Fuzz Verification ---');
-let fuzzPassed = 0;
 for (let i = 0; i < 100000; i++) {
   const t = Math.random() < 0.3 ? baseNow + Math.floor(Math.random() * 3000000) - 1500000 : (Math.random() < 0.6 ? String(baseNow + 10000) : (Math.random() < 0.8 ? NaN : Infinity));
   const d = Math.random() < 0.5 ? 1500 : (Math.random() < 0.8 ? '1500' : (Math.random() < 0.8 ? NaN : Infinity));
   const r = Math.random() < 0.5 ? true : false;
   const b = baselineGetTimerStatus(r, t, d);
   const c = PomodoroCore.getTimerStatus(r, t, d);
-  if (JSON.stringify(b) === JSON.stringify(c)) {
-    fuzzPassed++;
-  } else {
+  if (JSON.stringify(b) !== JSON.stringify(c)) {
     throw new Error(`fuzz mismatch for running=${r}, target=${t}, duration=${d}`);
   }
 }
-console.log(`✓ 100,000 fuzz cases passed.`);
+console.log('✓ 100,000 fuzz cases passed.');
 
-// 2. Performance Benchmarks
+// 2. Performance benchmarks (checksums are numeric status codes)
 console.log('\n--- Benchmark Results (1,000,000 iterations each) ---');
 const iters = 1000000;
 
-// Warmup
-for (let i = 0; i < 10000; i++) {
-  baselineGetTimerStatus(false, baseNow + 1500, 1500);
-  PomodoroCore.getTimerStatus(false, baseNow + 1500, 1500);
+function runWorkload(label, fn) {
+  // Warmup
+  let warm = 0;
+  for (let i = 0; i < 10000; i++) warm += statusCode(fn(i));
+
+  const t0 = performance.now();
+  let sum = 0;
+  for (let i = 0; i < iters; i++) sum += statusCode(fn(i));
+  return { label, ms: performance.now() - t0, sum };
 }
 
-// Workload 1: Numeric fast-path (running=false, native numbers) - primary hot path
-let sBaseNum = 0;
-let t0 = performance.now();
-for (let i = 0; i < iters; i++) {
-  sBaseNum += baselineGetTimerStatus(false, baseNow + 1500 - (i % 1500), 1500);
+function compare(name, baseFn, optFn) {
+  const base = runWorkload(`${name} baseline`, baseFn);
+  const opt = runWorkload(`${name} optimized`, optFn);
+  if (base.sum !== opt.sum) {
+    throw new Error(`Checksum mismatch in ${name}: baseline=${base.sum}, optimized=${opt.sum}`);
+  }
+  const speedup = ((base.ms - opt.ms) / base.ms) * 100;
+  console.log(`${name}: Baseline ${base.ms.toFixed(2)}ms | Optimized ${opt.ms.toFixed(2)}ms | Speedup: ${speedup.toFixed(1)}% (checksum ${base.sum})`);
 }
-let t1 = performance.now();
-const baseNumTime = t1 - t0;
 
-let sOptNum = 0;
-let t2 = performance.now();
-for (let i = 0; i < iters; i++) {
-  sOptNum += PomodoroCore.getTimerStatus(false, baseNow + 1500 - (i % 1500), 1500);
-}
-let t3 = performance.now();
-const optNumTime = t3 - t2;
+// Workload 1: native numbers, times spread across 1..duration so both PAUSED and READY branches run.
+const numDur = 1500;
+compare(
+  'Workload 1 (native numbers, mixed PAUSED/READY)',
+  (i) => baselineGetTimerStatus(false, (i % numDur) + 1, numDur),
+  (i) => PomodoroCore.getTimerStatus(false, (i % numDur) + 1, numDur),
+);
 
-if (sBaseNum !== sOptNum) throw new Error('Checksum mismatch in Workload 1 (numeric)');
-
-const numSpeedup = ((baseNumTime - optNumTime) / baseNumTime) * 100;
-console.log(`Workload 1 (Numeric Fast-Path): Baseline ${baseNumTime.toFixed(2)}ms | Optimized ${optNumTime.toFixed(2)}ms | Speedup: ${numSpeedup.toFixed(1)}%`);
-
-// Workload 2: String inputs (fallback path) - mixed types
-const mixedTargets = [baseNow + 25000, baseNow + 1500, baseNow, '25000'];
+// Workload 2: string inputs (fallback path), mixed types.
+const mixedTargets = [String(baseNow + 25000), String(900), '0', '25000'];
 const mixedDurations = ['1500', '300', '0', 'invalid'];
+compare(
+  'Workload 2 (string inputs)',
+  (i) => baselineGetTimerStatus(false, mixedTargets[i % 4], mixedDurations[i % 4]),
+  (i) => PomodoroCore.getTimerStatus(false, mixedTargets[i % 4], mixedDurations[i % 4]),
+);
 
-let sBaseStr = 0;
-let t4 = performance.now();
-for (let i = 0; i < iters; i++) {
-  sBaseStr += baselineGetTimerStatus(false, mixedTargets[i % mixedTargets.length], mixedDurations[i % mixedDurations.length]);
-}
-let t5 = performance.now();
-const baseStrTime = t5 - t4;
-
-let sOptStr = 0;
-let t6 = performance.now();
-for (let i = 0; i < iters; i++) {
-  sOptStr += PomodoroCore.getTimerStatus(false, mixedTargets[i % mixedTargets.length], mixedDurations[i % mixedDurations.length]);
-}
-let t7 = performance.now();
-const optStrTime = t7 - t6;
-
-if (sBaseStr !== sOptStr) throw new Error('Checksum mismatch in Workload 2 (string)');
-
-const strSpeedup = ((baseStrTime - optStrTime) / baseStrTime) * 100;
-console.log(`Workload 2 (String Inputs):    Baseline ${baseStrTime.toFixed(2)}ms | Optimized ${optStrTime.toFixed(2)}ms | Speedup: ${strSpeedup.toFixed(1)}%`);
-
-// Workload 3: Object inputs - secondary path
-const objRunning = true;
-const objTimeLeft = 500;
-const objDuration = 1500;
-
-let sBaseObj = 0;
-let t8 = performance.now();
-for (let i = 0; i < iters; i++) {
-  sBaseObj += baselineGetTimerStatus(objRunning, baseNow + 1500 - (i % 1500), 1500);
-}
-let t9 = performance.now();
-const baseObjTime = t9 - t8;
-
-let sOptObj = 0;
-let t10 = performance.now();
-for (let i = 0; i < iters; i++) {
-  sOptObj += PomodoroCore.getTimerStatus(objRunning, baseNow + 1500 - (i % 1500), 1500);
-}
-let t11 = performance.now();
-const optObjTime = t11 - t10;
-
-if (sBaseObj !== sOptObj) throw new Error('Checksum mismatch in Workload 3 (object)');
-
-const objSpeedup = ((baseObjTime - optObjTime) / baseObjTime) * 100;
-console.log(`Workload 3 (Object Inputs):    Baseline ${baseObjTime.toFixed(2)}ms | Optimized ${optObjTime.toFixed(2)}ms | Speedup: ${objSpeedup.toFixed(1)}%`);
+// Workload 3: object-parameter form (true object input), mixed running/paused/ready.
+compare(
+  'Workload 3 (object inputs)',
+  (i) => baselineGetTimerStatus({ isRunning: i % 3 === 0, timeLeft: (i % numDur) + 1, duration: numDur }),
+  (i) => PomodoroCore.getTimerStatus({ isRunning: i % 3 === 0, timeLeft: (i % numDur) + 1, duration: numDur }),
+);
