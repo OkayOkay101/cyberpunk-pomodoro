@@ -261,7 +261,7 @@
         return Array.isArray(parsed) ? parsed : defaults;
       }
       if (Array.isArray(parsed)) {
-        return parsed;
+        return defaults;
       }
       let hasDangerous = false;
       for (const key of Object.keys(parsed)) {
