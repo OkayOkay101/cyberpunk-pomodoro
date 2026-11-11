@@ -75,6 +75,39 @@ class TestKeyboardShortcuts(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_resolve_keyboard_action_preserves_native_space_activation(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const interactiveTags = ['BUTTON', 'button', 'SELECT', 'OPTION', 'A', 'SUMMARY', 'AUDIO', 'VIDEO'];
+        for (const targetTagName of interactiveTags) {
+            const actual = PomodoroCore.resolveKeyboardAction({
+                code: 'Space', key: ' ', targetTagName, isModalOpen: false
+            });
+            if (actual !== null) {
+                console.error(`Expected null for Space on ${targetTagName}, got ${actual}`);
+                process.exit(1);
+            }
+        }
+
+        const bodyAction = PomodoroCore.resolveKeyboardAction({
+            code: 'Space', key: ' ', targetTagName: 'BODY', isModalOpen: false
+        });
+        if (bodyAction !== 'toggleTimer') {
+            console.error(`Expected timer shortcut on BODY, got ${bodyAction}`);
+            process.exit(2);
+        }
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_resolve_keyboard_action_modal_behavior(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');

@@ -47,6 +47,10 @@ class TestResolveKeyboardActionPerformance(unittest.TestCase):
                 return null;
             }
 
+            if (code === 'Space' && ['BUTTON', 'SELECT', 'OPTION', 'A', 'AREA', 'SUMMARY', 'AUDIO', 'VIDEO'].includes(tag)) {
+                return null;
+            }
+
             if (code === 'Space') return 'toggleTimer';
             if (key === 'r' || key === 'R') return 'resetTimer';
             if (key === 's' || key === 'S') return 'skipMode';
@@ -59,6 +63,9 @@ class TestResolveKeyboardActionPerformance(unittest.TestCase):
         const cases = [
             // Standard shortcuts on common elements
             { key: ' ', code: 'Space', targetTagName: 'BODY', isModalOpen: false },
+            { key: ' ', code: 'Space', targetTagName: 'BUTTON', isModalOpen: false },
+            { key: ' ', code: 'Space', targetTagName: 'select', isModalOpen: false },
+            { key: ' ', code: 'Space', targetTagName: 'A', isModalOpen: false },
             { key: 'r', code: 'KeyR', targetTagName: 'BODY', isModalOpen: false },
             { key: 'R', code: 'KeyR', targetTagName: 'BUTTON', isModalOpen: false },
             { key: 's', code: 'KeyS', targetTagName: 'DIV', isModalOpen: false },

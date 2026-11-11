@@ -475,7 +475,19 @@
       }
     }
 
-    if (code === 'Space') return 'toggleTimer';
+    if (code === 'Space') {
+      if (targetTagName === 'BUTTON' || targetTagName === 'button' ||
+          targetTagName === 'SELECT' || targetTagName === 'select' ||
+          targetTagName === 'OPTION' || targetTagName === 'option' ||
+          targetTagName === 'A' || targetTagName === 'a' ||
+          targetTagName === 'AREA' || targetTagName === 'area' ||
+          targetTagName === 'SUMMARY' || targetTagName === 'summary' ||
+          targetTagName === 'AUDIO' || targetTagName === 'audio' ||
+          targetTagName === 'VIDEO' || targetTagName === 'video') {
+        return null;
+      }
+      return 'toggleTimer';
+    }
     return KEY_ACTIONS[key] || null;
   },
 
