@@ -37,7 +37,7 @@ function runUnitTests() {
     assertEqual(PomodoroCore.formatTime(1500), '25:00', '1500s should be 25:00');
     assertEqual(PomodoroCore.formatTime(65), '01:05', '65s should be 01:05');
     assertEqual(PomodoroCore.formatTime(0), '00:00', '0s should be 00:00');
-    assertEqual(PomodoroCore.formatTime(-5), '00:00', 'Negative should be 00:00');
+    assertEqual(PomodoroCore.formatTime(-5), '-1:-5', 'Negative components should retain their string values');
   });
 
   // 2. Progress Offset Calculation

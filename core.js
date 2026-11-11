@@ -123,12 +123,13 @@
   }));
   const PomodoroCore = {
   formatTime(seconds) {
-    if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return '00:00';
+    if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
     const totalSecs = Math.floor(seconds);
     const mins = Math.floor(totalSecs / 60);
     const secs = totalSecs % 60;
-    const mStr = mins < 100 ? PAD_TWO[mins] : String(mins);
-    return mStr + ':' + PAD_TWO[secs];
+    const mStr = Number.isInteger(mins) && mins >= 0 && mins < 100 ? PAD_TWO[mins] : String(mins);
+    const sStr = Number.isInteger(secs) && secs >= 0 && secs < 100 ? PAD_TWO[secs] : String(secs);
+    return mStr + ':' + sStr;
   },
 
   calculateProgressOffset(timeLeft, duration, circumference) {
