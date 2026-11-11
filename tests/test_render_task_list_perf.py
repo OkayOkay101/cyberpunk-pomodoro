@@ -1,5 +1,6 @@
 import unittest
 import subprocess
+from pathlib import Path
 
 
 class TestRenderTaskListPerformance(unittest.TestCase):
@@ -72,7 +73,8 @@ class TestRenderTaskListPerformance(unittest.TestCase):
         proc = subprocess.run(
             ["node", "-e", js_code],
             capture_output=True,
-            text=True
+            text=True,
+            cwd=Path(__file__).resolve().parents[1]
         )
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
