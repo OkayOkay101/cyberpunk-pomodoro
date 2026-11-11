@@ -1,5 +1,5 @@
 import sys
-import py_compile
+import tokenize
 from pathlib import Path
 
 def main():
@@ -7,7 +7,8 @@ def main():
     py_files = list(root.glob("tests/**/*.py")) + [Path(__file__)]
     for py_file in py_files:
         try:
-            py_compile.compile(str(py_file), doraise=True)
+            with tokenize.open(py_file) as source_file:
+                compile(source_file.read(), str(py_file), "exec")
         except Exception as e:
             print(f"Syntax error in {py_file}: {e}", file=sys.stderr)
             return 1
