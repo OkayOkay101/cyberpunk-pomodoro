@@ -16,22 +16,6 @@ function baselineCalculateStreak(lastDateStr, todayStr, currentStreak) {
   return validStreak;
 }
 
-const MS_PER_DAY = 86400000;
-function optimizedCalculateStreak(lastDateStr, todayStr, currentStreak) {
-  const validStreak = (typeof currentStreak === 'number' && !isNaN(currentStreak) && currentStreak >= 1)
-    ? Math.floor(currentStreak)
-    : 1;
-  if (!lastDateStr || typeof lastDateStr !== 'string') return 1;
-  if (lastDateStr === todayStr) return validStreak;
-  const todayTime = typeof todayStr === 'string' ? Date.parse(todayStr) : new Date(todayStr).getTime();
-  const diffTime = todayTime - Date.parse(lastDateStr);
-  if (isNaN(diffTime)) return 1;
-  const diffDays = Math.round(diffTime / MS_PER_DAY);
-  if (diffDays === 1) return validStreak + 1;
-  if (diffDays > 1) return 1;
-  return validStreak;
-}
-
 // 1. Strict Equality Verification across varied inputs
 const samples = [
   ['2026-11-07', '2026-11-08', 1],
@@ -59,7 +43,7 @@ const samples = [
 
 for (const [last, today, cur] of samples) {
   const base = baselineCalculateStreak(last, today, cur);
-  const opt = optimizedCalculateStreak(last, today, cur);
+  const opt = PomodoroCore.calculateStreak(last, today, cur);
   if (base !== opt) {
     throw new Error(`Output mismatch on [${last}, ${today}, ${cur}]: baseline="${base}", optimized="${opt}"`);
   }
@@ -72,7 +56,7 @@ const iters = 500000;
 // Warmup
 for (let i = 0; i < 20000; i++) {
   baselineCalculateStreak('2026-11-07', '2026-11-08', 5);
-  optimizedCalculateStreak('2026-11-07', '2026-11-08', 5);
+  PomodoroCore.calculateStreak('2026-11-07', '2026-11-08', 5);
 }
 
 // Workload A: Consecutive days (the common active streak update case)
@@ -81,7 +65,7 @@ for (let i = 0; i < iters; i++) baselineCalculateStreak('2026-11-07', '2026-11-0
 const baseConsecutive = performance.now() - t0;
 
 t0 = performance.now();
-for (let i = 0; i < iters; i++) optimizedCalculateStreak('2026-11-07', '2026-11-08', 5);
+for (let i = 0; i < iters; i++) PomodoroCore.calculateStreak('2026-11-07', '2026-11-08', 5);
 const optConsecutive = performance.now() - t0;
 
 // Workload B: Mixed days (consecutive, gap, same day, invalid)
@@ -95,7 +79,7 @@ const baseMixed = performance.now() - t0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
   const sample = samples[i % samples.length];
-  optimizedCalculateStreak(sample[0], sample[1], sample[2]);
+  PomodoroCore.calculateStreak(sample[0], sample[1], sample[2]);
 }
 const optMixed = performance.now() - t0;
 
