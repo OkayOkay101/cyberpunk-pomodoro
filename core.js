@@ -329,13 +329,13 @@
     if (typeof targetEndTimeMs === 'number' && typeof nowMs === 'number') {
       const diff = targetEndTimeMs - nowMs;
       if (diff <= 0 || !Number.isFinite(diff)) return 0;
-      return Math.round(diff / 1000);
+      return Math.ceil(diff / 1000);
     }
     const target = Number(targetEndTimeMs);
     const now = Number(nowMs);
     const diff = target - now;
     if (diff <= 0 || !Number.isFinite(diff)) return 0;
-    return Math.round(diff / 1000);
+    return Math.ceil(diff / 1000);
   },
 
   formatDocumentTitle(timeStr, isRunning) {

@@ -280,6 +280,8 @@ function runUnitTests() {
     const now = 1700000000000;
     assertEqual(PomodoroCore.calculateRemainingSeconds(now + 25000, now), 25, '25s future');
     assertEqual(PomodoroCore.calculateRemainingSeconds(now + 1500, now), 2, 'Rounds 1.5s to 2s');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(now + 499, now), 1, 'Positive remaining time stays above 0');
+    assertEqual(PomodoroCore.calculateRemainingSeconds(now + 1, now), 1, '1ms remaining stays above 0');
     assertEqual(PomodoroCore.calculateRemainingSeconds(now, now), 0, 'Current time yields 0');
     assertEqual(PomodoroCore.calculateRemainingSeconds(now - 5000, now), 0, 'Past time clamps to 0');
     assertEqual(PomodoroCore.calculateRemainingSeconds(NaN, now), 0, 'NaN target yields 0');
