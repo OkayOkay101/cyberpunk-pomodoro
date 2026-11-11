@@ -1,5 +1,38 @@
 const { PomodoroCore } = require('../core.js');
 
+// Independent baseline implementations (not using PomodoroCore)
+function baselineParseCycleCount(cycleCount) {
+  if (typeof cycleCount === 'number') {
+    if (cycleCount >= 1 && Number.isFinite(cycleCount)) {
+      return cycleCount | 0;
+    }
+    return 1;
+  }
+  const parsed = parseInt(cycleCount, 10);
+  return (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
+}
+
+function baselineGetNextMode(currentMode, cycleCount) {
+  if (currentMode === 'focus') {
+    const validCycle = parseInt(cycleCount, 10);
+    return (!isNaN(validCycle) && validCycle > 0 && validCycle % 4 === 0) ? 'longBreak' : 'shortBreak';
+  }
+  return 'focus';
+}
+
+const BASELINE_MODE_TOAST_MESSAGES = Object.freeze(Object.assign(Object.create(null), {
+  focus: 'FOCUS MODE',
+  shortBreak: 'SHORT BREAK',
+  longBreak: 'LONG BREAK'
+}));
+
+function baselineGetModeToastMessage(mode) {
+  if (typeof mode === 'string' && BASELINE_MODE_TOAST_MESSAGES[mode]) {
+    return BASELINE_MODE_TOAST_MESSAGES[mode];
+  }
+  return 'FOCUS MODE';
+}
+
 // Baseline implementation prior to fast-path and pre-computed lookup tables
 const baseline = {
   calculateSkipTransition(modeOrParams, cycleCount) {
@@ -11,11 +44,11 @@ const baseline = {
       cycle = modeOrParams.cycleCount;
     }
 
-    const safeCycle = PomodoroCore.parseCycleCount(cycle);
+    const safeCycle = baselineParseCycleCount(cycle);
 
     if (mode === 'focus') {
-      const nextMode = PomodoroCore.getNextMode('focus', safeCycle);
-      const toastMessage = PomodoroCore.getModeToastMessage(nextMode);
+      const nextMode = baselineGetNextMode('focus', safeCycle);
+      const toastMessage = baselineGetModeToastMessage(nextMode);
       return {
         nextMode,
         toastMessage,
