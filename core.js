@@ -291,6 +291,14 @@
     return (!isNaN(parsed) && parsed > 0) ? parsed : 0;
   },
 
+  refreshDailyStats(lastDateStr, todayStr, storedMins, storedStreak) {
+    return {
+      date: todayStr,
+      totalFocusMinsToday: PomodoroCore.calculateDailyFocusMins(lastDateStr, todayStr, storedMins),
+      currentStreak: PomodoroCore.calculateStreak(lastDateStr, todayStr, parseInt(storedStreak || '1', 10))
+    };
+  },
+
   formatStreakBadge(currentStreak) {
     if (typeof currentStreak === 'number') {
       if (currentStreak <= 1) return STREAK_BADGES[1];

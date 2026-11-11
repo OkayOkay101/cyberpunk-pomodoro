@@ -1240,6 +1240,7 @@
     // Stats & Streak Logic
     let lastActiveDate = localStorage.getItem('cp_last_date');
     const todayStr = PomodoroCore.getLocalDateString();
+    let statsDate = todayStr;
     let totalFocusMinsToday = PomodoroCore.calculateDailyFocusMins(lastActiveDate, todayStr, localStorage.getItem('cp_focus_mins_today'));
     let currentStreak = PomodoroCore.calculateStreak(lastActiveDate, todayStr, parseInt(localStorage.getItem('cp_streak') || '1', 10));
 
@@ -1380,13 +1381,26 @@
       playBeep(notif.soundType);
       notifySessionComplete(notif.title, notif.body);
 
+      const completionDate = PomodoroCore.getLocalDateString();
+      if (currentMode === 'focus' && statsDate !== completionDate) {
+        const refreshedStats = PomodoroCore.refreshDailyStats(
+          lastActiveDate,
+          completionDate,
+          localStorage.getItem('cp_focus_mins_today'),
+          localStorage.getItem('cp_streak')
+        );
+        totalFocusMinsToday = refreshedStats.totalFocusMinsToday;
+        currentStreak = refreshedStats.currentStreak;
+        statsDate = refreshedStats.date;
+      }
+
       const transition = PomodoroCore.calculateCompletedSession({
         currentMode,
         cycleCount,
         focusDuration: configDurations.focus,
         totalFocusMinsToday,
         currentStreak,
-        todayStr: PomodoroCore.getLocalDateString()
+        todayStr: completionDate
       });
 
       if (currentMode === 'focus') {
@@ -1394,6 +1408,8 @@
         localStorage.setItem('cp_focus_mins_today', transition.storage.cp_focus_mins_today);
         localStorage.setItem('cp_last_date', transition.storage.cp_last_date);
         localStorage.setItem('cp_streak', transition.storage.cp_streak);
+        lastActiveDate = transition.storage.cp_last_date;
+        statsDate = transition.storage.cp_last_date;
         updateStatsBadges();
 
         cycleCount = transition.nextCycleCount;
