@@ -55,12 +55,12 @@ class TestCalculateRemainingSecondsPerformance(unittest.TestCase):
         if (PomodoroCore.calculateRemainingSeconds(now + 60000, now) !== 60) process.exit(2);
         if (PomodoroCore.calculateRemainingSeconds(now + 1500000, now) !== 1500) process.exit(3);
 
-        // Half-second rounding boundaries
+        // Positive remaining time rounds up so completion cannot fire early
         if (PomodoroCore.calculateRemainingSeconds(now + 1500, now) !== 2) process.exit(4);
-        if (PomodoroCore.calculateRemainingSeconds(now + 1499, now) !== 1) process.exit(5);
+        if (PomodoroCore.calculateRemainingSeconds(now + 1499, now) !== 2) process.exit(5);
         if (PomodoroCore.calculateRemainingSeconds(now + 500, now) !== 1) process.exit(6);
-        if (PomodoroCore.calculateRemainingSeconds(now + 499, now) !== 0) process.exit(7);
-        if (PomodoroCore.calculateRemainingSeconds(now + 1, now) !== 0) process.exit(8);
+        if (PomodoroCore.calculateRemainingSeconds(now + 499, now) !== 1) process.exit(7);
+        if (PomodoroCore.calculateRemainingSeconds(now + 1, now) !== 1) process.exit(8);
 
         console.log('SUCCESS');
         """
@@ -138,7 +138,7 @@ class TestCalculateRemainingSecondsPerformance(unittest.TestCase):
           const target = Number(targetEndTimeMs);
           const now = Number(nowMs);
           if (isNaN(target) || isNaN(now) || !isFinite(target) || !isFinite(now) || target <= now) return 0;
-          return Math.max(0, Math.round((target - now) / 1000));
+          return Math.ceil((target - now) / 1000);
         }
 
         const baseNow = 1731110000000;
