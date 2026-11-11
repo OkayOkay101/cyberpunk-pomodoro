@@ -1437,6 +1437,7 @@
 
         if (isRunning) {
           isRunning = false;
+          timeLeft = PomodoroCore.calculateRemainingSeconds(targetEndTime, Date.now());
           clearInterval(timerId);
           timerId = null;
           updateTimerStatusUI();
