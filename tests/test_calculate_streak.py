@@ -1,5 +1,6 @@
-import unittest
+import os
 import subprocess
+import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -70,23 +71,19 @@ class TestCalculateStreak(unittest.TestCase):
 
     def test_streak_timezone_edge_case(self):
         """
-        Test for timezone/day boundary bug.
-        When lastDateStr and todayStr are YYYY-MM-DD strings from getLocalDateString(),
-        new Date() parses them as UTC midnight, which can cause off-by-one errors
-        in timezones behind UTC (e.g., Americas).
+        Verify streak behavior using local dates under a non-UTC timezone.
         """
         js_code = """
         const { PomodoroCore } = require('./core.js');
 
-        // Simulate the bug: date strings from getLocalDateString()
-        // In timezone UTC-5 (e.g., EST), local date 2026-11-08 00:00 is 2026-11-08 05:00 UTC
-        // new Date('2026-11-08') parses as 2026-11-08 00:00 UTC = 2026-11-07 19:00 EST
-        // So diffDays calculation can be wrong
-
-        // This test documents the expected behavior: streak should work correctly
-        // with local date strings (YYYY-MM-DD) regardless of timezone
-        const lastDate = '2026-11-07';
-        const today = '2026-11-08';
+        // These instants fall on different local dates in Los Angeles,
+        // although both are on November 8 in UTC.
+        const lastDate = PomodoroCore.getLocalDateString(new Date('2026-11-08T07:30:00Z'));
+        const today = PomodoroCore.getLocalDateString(new Date('2026-11-08T08:30:00Z'));
+        if (lastDate !== '2026-11-07' || today !== '2026-11-08') {
+            console.error('FAIL: expected consecutive Los Angeles local dates, got ' + lastDate + ' and ' + today);
+            process.exit(1);
+        }
 
         // Both dates are local date strings, streak should increment
         const streak = PomodoroCore.calculateStreak(lastDate, today, 1);
@@ -101,7 +98,8 @@ class TestCalculateStreak(unittest.TestCase):
             ["node", "-e", js_code],
             capture_output=True,
             text=True,
-            cwd=str(REPO_ROOT)
+            cwd=str(REPO_ROOT),
+            env={**os.environ, "TZ": "America/Los_Angeles"}
         )
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
