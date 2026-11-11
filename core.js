@@ -675,8 +675,9 @@
       } else {
         valid.push({ mode: entry.mode, completedAt: entry.completedAt });
       }
+      if (valid.length >= PomodoroCore.SESSION_HISTORY_LIMIT) break;
     }
-    return valid.slice(0, PomodoroCore.SESSION_HISTORY_LIMIT);
+    return valid;
   },
 
   recordCompletedSession(history, mode, completedAt, focusDuration) {
