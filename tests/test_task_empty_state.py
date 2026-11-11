@@ -1,9 +1,11 @@
 import unittest
 import subprocess
+from pathlib import Path
 
 
 class TestTaskChecklistEmptyState(unittest.TestCase):
     def test_empty_checklist_renders_guidance_message(self):
+        root = Path(__file__).resolve().parent.parent
         js_code = """
         const { PomodoroCore } = require('./core.js');
 
@@ -48,14 +50,13 @@ class TestTaskChecklistEmptyState(unittest.TestCase):
         proc = subprocess.run(
             ["node", "-e", js_code],
             capture_output=True,
-            text=True
+            text=True,
+            cwd=str(root)
         )
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
     def test_unrenderable_entries_fall_back_to_empty_state(self):
-        from pathlib import Path
-
         js_code = """
         const { PomodoroCore } = require('./core.js');
 
