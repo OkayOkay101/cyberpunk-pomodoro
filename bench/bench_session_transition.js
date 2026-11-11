@@ -1,5 +1,25 @@
 const { PomodoroCore } = require('../core.js');
 
+// Independent baseline implementations (not reusing PomodoroCore)
+function baselineParseCycleCount(cycleCount) {
+  if (typeof cycleCount === 'number') {
+    if (cycleCount >= 1 && Number.isFinite(cycleCount)) {
+      return cycleCount | 0;
+    }
+    return 1;
+  }
+  const parsed = parseInt(cycleCount, 10);
+  return (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
+}
+
+function baselineGetNextMode(currentMode, cycleCount) {
+  if (currentMode === 'focus') {
+    const validCycle = parseInt(cycleCount, 10);
+    return (!isNaN(validCycle) && validCycle > 0 && validCycle % 4 === 0) ? 'longBreak' : 'shortBreak';
+  }
+  return 'focus';
+}
+
 // Baseline implementation prior to fast-path and lookup table optimization
 const baseline = {
   calculateCompletedSession(modeOrParams, cycleCount, focusDuration, totalFocusMinsToday, currentStreak, todayStr) {
@@ -19,11 +39,11 @@ const baseline = {
       today = modeOrParams.todayStr || modeOrParams.today;
     }
 
-    const safeCycle = PomodoroCore.parseCycleCount(cycle);
+    const safeCycle = baselineParseCycleCount(cycle);
     const safeMode = (typeof mode === 'string') ? mode : 'focus';
 
     if (safeMode === 'focus') {
-      const nextMode = PomodoroCore.getNextMode('focus', safeCycle);
+      const nextMode = baselineGetNextMode('focus', safeCycle);
       const nextCycleCount = safeCycle + 1;
 
       const safeDuration = (typeof duration === 'number' && Number.isFinite(duration) && duration > 0)
