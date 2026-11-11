@@ -75,7 +75,11 @@ function parseStoredExp(storedValue) {
     return (Number.isFinite(storedValue) && storedValue > 0) ? Math.floor(storedValue) : 0;
   }
   if (typeof storedValue === 'string') {
-    const parsed = parseInt(storedValue.trim(), 10);
+    const trimmed = storedValue.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      return 0;
+    }
+    const parsed = parseInt(trimmed, 10);
     return (!isNaN(parsed) && parsed > 0) ? parsed : 0;
   }
   return 0;

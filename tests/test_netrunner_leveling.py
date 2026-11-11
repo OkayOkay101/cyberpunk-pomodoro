@@ -29,6 +29,8 @@ class TestNetrunnerLeveling(unittest.TestCase):
         if (calculateNetrunnerExp(null, undefined) !== 0) process.exit(2);
         if (calculateNetrunnerExp(-5, -100) !== 0) process.exit(3);
         if (calculateNetrunnerExp(NaN, Infinity) !== 0) process.exit(4);
+        if (calculateNetrunnerExp(2.9, 10.8) !== 60) process.exit(5);
+        if (calculateNetrunnerExp('2', '10') !== 0) process.exit(6);
 
         console.log('SUCCESS');
         """
@@ -41,23 +43,23 @@ class TestNetrunnerLeveling(unittest.TestCase):
         const { getNetrunnerRank } = require('./netrunner_leveling.js');
 
         const testCases = [
-            { exp: 0, expectedLvl: 1, expectedTitle: 'Script Kiddie' },
-            { exp: 99, expectedLvl: 1, expectedTitle: 'Script Kiddie' },
-            { exp: 100, expectedLvl: 2, expectedTitle: 'Wirehead' },
-            { exp: 299, expectedLvl: 2, expectedTitle: 'Wirehead' },
-            { exp: 300, expectedLvl: 3, expectedTitle: 'Cyber Jockey' },
-            { exp: 599, expectedLvl: 3, expectedTitle: 'Cyber Jockey' },
-            { exp: 600, expectedLvl: 4, expectedTitle: 'Netrunner' },
-            { exp: 999, expectedLvl: 4, expectedTitle: 'Netrunner' },
-            { exp: 1000, expectedLvl: 5, expectedTitle: 'Subnet Phantom' },
-            { exp: 1499, expectedLvl: 5, expectedTitle: 'Subnet Phantom' },
-            { exp: 1500, expectedLvl: 6, expectedTitle: 'Street Legend' },
-            { exp: 5000, expectedLvl: 6, expectedTitle: 'Street Legend' }
+            { exp: 0, expectedLvl: 1, expectedTitle: 'Script Kiddie', expectedProgress: 0 },
+            { exp: 99, expectedLvl: 1, expectedTitle: 'Script Kiddie', expectedProgress: 99 },
+            { exp: 100, expectedLvl: 2, expectedTitle: 'Wirehead', expectedProgress: 0 },
+            { exp: 299, expectedLvl: 2, expectedTitle: 'Wirehead', expectedProgress: 99 },
+            { exp: 300, expectedLvl: 3, expectedTitle: 'Cyber Jockey', expectedProgress: 0 },
+            { exp: 599, expectedLvl: 3, expectedTitle: 'Cyber Jockey', expectedProgress: 99 },
+            { exp: 600, expectedLvl: 4, expectedTitle: 'Netrunner', expectedProgress: 0 },
+            { exp: 999, expectedLvl: 4, expectedTitle: 'Netrunner', expectedProgress: 99 },
+            { exp: 1000, expectedLvl: 5, expectedTitle: 'Subnet Phantom', expectedProgress: 0 },
+            { exp: 1499, expectedLvl: 5, expectedTitle: 'Subnet Phantom', expectedProgress: 99 },
+            { exp: 1500, expectedLvl: 6, expectedTitle: 'Street Legend', expectedProgress: 100 },
+            { exp: 5000, expectedLvl: 6, expectedTitle: 'Street Legend', expectedProgress: 100 }
         ];
 
         for (const tc of testCases) {
             const rank = getNetrunnerRank(tc.exp);
-            if (rank.level !== tc.expectedLvl || rank.title !== tc.expectedTitle) {
+            if (rank.level !== tc.expectedLvl || rank.title !== tc.expectedTitle || rank.progressPercent !== tc.expectedProgress) {
                 console.error('FAIL on exp', tc.exp, 'expected', tc, 'got', rank);
                 process.exit(1);
             }
@@ -109,13 +111,21 @@ class TestNetrunnerLeveling(unittest.TestCase):
         if (parseStoredExp('450') !== 450) process.exit(1);
         if (parseStoredExp(120) !== 120) process.exit(2);
         if (parseStoredExp('  300  ') !== 300) process.exit(3);
+        if (parseStoredExp('0007') !== 7) process.exit(4);
 
-        if (parseStoredExp(null) !== 0) process.exit(4);
-        if (parseStoredExp(undefined) !== 0) process.exit(5);
-        if (parseStoredExp('') !== 0) process.exit(6);
-        if (parseStoredExp('invalid') !== 0) process.exit(7);
-        if (parseStoredExp(-50) !== 0) process.exit(8);
-        if (parseStoredExp(NaN) !== 0) process.exit(9);
+        if (parseStoredExp(null) !== 0) process.exit(5);
+        if (parseStoredExp(undefined) !== 0) process.exit(6);
+        if (parseStoredExp('') !== 0) process.exit(7);
+        if (parseStoredExp('invalid') !== 0) process.exit(8);
+        if (parseStoredExp('450xp') !== 0) process.exit(9);
+        if (parseStoredExp('1.5') !== 0) process.exit(10);
+        if (parseStoredExp('1e2') !== 0) process.exit(11);
+        if (parseStoredExp('   ') !== 0) process.exit(12);
+        if (parseStoredExp('-50') !== 0) process.exit(13);
+        if (parseStoredExp(-50) !== 0) process.exit(14);
+        if (parseStoredExp(NaN) !== 0) process.exit(15);
+        if (parseStoredExp(Infinity) !== 0) process.exit(16);
+        if (parseStoredExp({ exp: 450 }) !== 0) process.exit(17);
 
         console.log('SUCCESS');
         """
