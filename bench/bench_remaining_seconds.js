@@ -5,7 +5,7 @@ function baselineCalculateRemainingSeconds(targetEndTimeMs, nowMs) {
   const target = Number(targetEndTimeMs);
   const now = Number(nowMs);
   if (isNaN(target) || isNaN(now) || !isFinite(target) || !isFinite(now) || target <= now) return 0;
-  return Math.max(0, Math.round((target - now) / 1000));
+  return Math.max(0, Math.ceil((target - now) / 1000));
 }
 
 // 1. Strict Equality Verification across exhaustive cases
