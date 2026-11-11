@@ -53,6 +53,11 @@ console.log('✓ Equality verification: baseline and optimized output match exac
 
 // 2. Performance Benchmark
 const iters = 2000000;
+function volumeChecksum(value) {
+  let checksum = 0;
+  for (let i = 0; i < value.length; i++) checksum += value.charCodeAt(i);
+  return checksum;
+}
 
 // Warmup
 for (let i = 0; i < 50000; i++) {
@@ -65,21 +70,26 @@ for (let i = 0; i < 50000; i++) {
 // Workload A: Volume slider interaction (formatVolumePercent + getVolumeIcon on numeric volume values 0.00..1.00)
 const sliderValues = Array.from({ length: 101 }, (_, i) => i / 100);
 
+let baseSliderChecksum = 0;
 let t0 = performance.now();
 for (let i = 0; i < iters; i++) {
   const v = sliderValues[i % 101];
-  baselineFormatVolumePercent(v, false);
-  baselineGetVolumeIcon(v, false);
+  baseSliderChecksum += volumeChecksum(baselineFormatVolumePercent(v, false));
+  baseSliderChecksum += volumeChecksum(baselineGetVolumeIcon(v, false));
 }
 const baseSlider = performance.now() - t0;
 
+let optSliderChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
   const v = sliderValues[i % 101];
-  PomodoroCore.formatVolumePercent(v, false);
-  PomodoroCore.getVolumeIcon(v, false);
+  optSliderChecksum += volumeChecksum(PomodoroCore.formatVolumePercent(v, false));
+  optSliderChecksum += volumeChecksum(PomodoroCore.getVolumeIcon(v, false));
 }
 const optSlider = performance.now() - t0;
+if (baseSliderChecksum !== optSliderChecksum) {
+  throw new Error(`Checksum mismatch Workload A: baseline=${baseSliderChecksum}, opt=${optSliderChecksum}`);
+}
 
 // Workload B: Mixed active and muted states
 const mixedInputs = [
@@ -90,21 +100,26 @@ const mixedInputs = [
   { vol: 0.25, muted: true }
 ];
 
+let baseMixedChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
   const item = mixedInputs[i % mixedInputs.length];
-  baselineFormatVolumePercent(item.vol, item.muted);
-  baselineGetVolumeIcon(item.vol, item.muted);
+  baseMixedChecksum += volumeChecksum(baselineFormatVolumePercent(item.vol, item.muted));
+  baseMixedChecksum += volumeChecksum(baselineGetVolumeIcon(item.vol, item.muted));
 }
 const baseMixed = performance.now() - t0;
 
+let optMixedChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
   const item = mixedInputs[i % mixedInputs.length];
-  PomodoroCore.formatVolumePercent(item.vol, item.muted);
-  PomodoroCore.getVolumeIcon(item.vol, item.muted);
+  optMixedChecksum += volumeChecksum(PomodoroCore.formatVolumePercent(item.vol, item.muted));
+  optMixedChecksum += volumeChecksum(PomodoroCore.getVolumeIcon(item.vol, item.muted));
 }
 const optMixed = performance.now() - t0;
+if (baseMixedChecksum !== optMixedChecksum) {
+  throw new Error(`Checksum mismatch Workload B: baseline=${baseMixedChecksum}, opt=${optMixedChecksum}`);
+}
 
 // Workload C: clampVolume alone with numeric inputs
 t0 = performance.now();
