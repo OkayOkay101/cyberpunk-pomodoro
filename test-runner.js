@@ -664,6 +664,37 @@ function runUnitTests() {
     assertEqual(corrupt.nextTotalFocusMins, 25);
   });
 
+  // 43. Completed Session History
+  test('session history records completed modes, validates storage, and enforces its limit', () => {
+    const completedAt = '2026-11-12T10:30:00.000Z';
+    const focusHistory = PomodoroCore.recordCompletedSession([], 'focus', completedAt, 1500);
+    assertEqual(focusHistory.length, 1);
+    assertEqual(focusHistory[0].mode, 'focus');
+    assertEqual(focusHistory[0].completedAt, completedAt);
+    assertEqual(focusHistory[0].focusDuration, 1500);
+
+    const withBreak = PomodoroCore.recordCompletedSession(focusHistory, 'shortBreak', '2026-11-12T10:35:00.000Z', 1500);
+    assertEqual(withBreak[0].mode, 'shortBreak');
+    assertEqual(Object.prototype.hasOwnProperty.call(withBreak[0], 'focusDuration'), false);
+    assertEqual(PomodoroCore.formatSessionHistoryEntry(focusHistory[0]).startsWith('FOCUS · 25 MIN · '), true);
+
+    assertEqual(PomodoroCore.validateSessionHistory('{bad json').length, 0);
+    assertEqual(PomodoroCore.validateSessionHistory([
+      { mode: 'focus', completedAt: 'invalid', focusDuration: 1500 },
+      { mode: 'unknown', completedAt, focusDuration: 1500 },
+      { mode: 'focus', completedAt, focusDuration: -1 }
+    ]).length, 0);
+
+    const entries = Array.from({ length: PomodoroCore.SESSION_HISTORY_LIMIT + 5 }, (_, index) => ({
+      mode: 'focus',
+      completedAt: new Date(Date.UTC(2026, 0, 1, 0, index)).toISOString(),
+      focusDuration: 1500
+    }));
+    const limited = PomodoroCore.validateSessionHistory(entries);
+    assertEqual(limited.length, PomodoroCore.SESSION_HISTORY_LIMIT);
+    assertEqual(limited[0].completedAt, entries[0].completedAt);
+  });
+
   // 31. Mode Toast Message Resolution
   test('getModeToastMessage() maps modes to toast messages with safe fallback', () => {
     assertEqual(PomodoroCore.getModeToastMessage('focus'), 'FOCUS MODE', 'focus mode toast');

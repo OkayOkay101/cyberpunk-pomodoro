@@ -619,6 +619,51 @@
     return BREAK_NOTIFICATION;
   },
 
+  SESSION_HISTORY_LIMIT: 20,
+
+  validateSessionHistory(history) {
+    let entries = history;
+    if (typeof entries === 'string') {
+      try {
+        entries = JSON.parse(entries);
+      } catch (e) {
+        return [];
+      }
+    }
+    if (!Array.isArray(entries)) return [];
+
+    const valid = [];
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+      if (entry.mode !== 'focus' && entry.mode !== 'shortBreak' && entry.mode !== 'longBreak') continue;
+      if (typeof entry.completedAt !== 'string' || !Number.isFinite(Date.parse(entry.completedAt))) continue;
+
+      if (entry.mode === 'focus') {
+        if (typeof entry.focusDuration !== 'number' || !Number.isFinite(entry.focusDuration) || entry.focusDuration <= 0) continue;
+        valid.push({ mode: 'focus', completedAt: entry.completedAt, focusDuration: entry.focusDuration });
+      } else {
+        valid.push({ mode: entry.mode, completedAt: entry.completedAt });
+      }
+    }
+    return valid.slice(0, PomodoroCore.SESSION_HISTORY_LIMIT);
+  },
+
+  recordCompletedSession(history, mode, completedAt, focusDuration) {
+    const entries = PomodoroCore.validateSessionHistory(history);
+    if (mode !== 'focus' && mode !== 'shortBreak' && mode !== 'longBreak') return entries;
+    const entry = { mode, completedAt };
+    if (mode === 'focus') entry.focusDuration = focusDuration;
+    return PomodoroCore.validateSessionHistory([entry, ...entries]);
+  },
+
+  formatSessionHistoryEntry(entry) {
+    const modeLabel = entry.mode === 'focus' ? 'FOCUS' : (entry.mode === 'longBreak' ? 'LONG BREAK' : 'SHORT BREAK');
+    const duration = entry.mode === 'focus' ? ` · ${Math.round(entry.focusDuration / 60)} MIN` : '';
+    const timestamp = new Date(entry.completedAt).toLocaleString();
+    return `${modeLabel}${duration} · ${timestamp}`;
+  },
+
   calculateCompletedSession(modeOrParams, cycleCount, focusDuration, totalFocusMinsToday, currentStreak, todayStr) {
     let mode;
     let cycle;

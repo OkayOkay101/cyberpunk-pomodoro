@@ -120,6 +120,18 @@
       border-radius: 4px;
       color: var(--accent);
     }
+    .session-history-list {
+      list-style: none;
+      display: grid;
+      gap: 6px;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+    .session-history-list li {
+      border-left: 2px solid var(--accent);
+      padding: 4px 8px;
+      background: rgba(0, 240, 255, 0.04);
+    }
     .hud-tools {
       display: flex;
       gap: 6px;
@@ -806,6 +818,13 @@
       </div>
       <div class="task-checklist" id="taskChecklist"></div>
     </section>
+
+    <section class="deck-section" aria-labelledby="sessionHistoryHeading">
+      <div class="deck-title">
+        <h2 id="sessionHistoryHeading">🕒 RECENT SESSIONS</h2>
+      </div>
+      <ul class="session-history-list" id="sessionHistory" aria-live="polite" aria-relevant="additions text"></ul>
+    </section>
   </main>
 
   <!-- HUD Settings Modal -->
@@ -1234,6 +1253,7 @@
     const autoStartBtn = document.getElementById('autoStartBtn');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const taskChecklist = document.getElementById('taskChecklist');
+    const sessionHistoryElement = document.getElementById('sessionHistory');
 
     progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
 
@@ -1249,6 +1269,24 @@
       if (focusTimeBadge) focusTimeBadge.textContent = PomodoroCore.formatFocusTimeBadge(totalFocusMinsToday);
     }
     updateStatsBadges();
+
+    let sessionHistory = PomodoroCore.validateSessionHistory(localStorage.getItem('cp_session_history'));
+    function renderSessionHistory() {
+      if (!sessionHistoryElement) return;
+      sessionHistoryElement.textContent = '';
+      if (sessionHistory.length === 0) {
+        const emptyItem = document.createElement('li');
+        emptyItem.textContent = 'No completed sessions yet.';
+        sessionHistoryElement.appendChild(emptyItem);
+        return;
+      }
+      sessionHistory.slice(0, 5).forEach(entry => {
+        const item = document.createElement('li');
+        item.textContent = PomodoroCore.formatSessionHistoryEntry(entry);
+        sessionHistoryElement.appendChild(item);
+      });
+    }
+    renderSessionHistory();
 
     // Mission & Checklist
     let tasks = PomodoroCore.deserializeConfig(localStorage.getItem('cp_tasks'), [
@@ -1380,6 +1418,15 @@
       const notif = PomodoroCore.getSessionNotification(currentMode, cycleCount);
       playBeep(notif.soundType);
       notifySessionComplete(notif.title, notif.body);
+
+      sessionHistory = PomodoroCore.recordCompletedSession(
+        sessionHistory,
+        currentMode,
+        new Date().toISOString(),
+        currentMode === 'focus' ? configDurations.focus : undefined
+      );
+      localStorage.setItem('cp_session_history', JSON.stringify(sessionHistory));
+      renderSessionHistory();
 
       const completionDate = PomodoroCore.getLocalDateString();
       if (currentMode === 'focus' && statsDate !== completionDate) {
