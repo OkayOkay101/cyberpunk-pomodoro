@@ -441,6 +441,8 @@ function runUnitTests() {
     assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyM', key: 'm', targetTagName: 'BODY', isModalOpen: false }), 'toggleMute');
     assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'KeyF', key: 'f', targetTagName: 'BODY', isModalOpen: false }), 'toggleFullscreen');
     assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'Space', key: ' ', targetTagName: 'INPUT', isModalOpen: false }), null);
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'Space', key: ' ', targetTagName: 'BUTTON', isModalOpen: false }), null);
+    assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'Space', key: ' ', targetTagName: 'SELECT', isModalOpen: false }), null);
     assertEqual(PomodoroCore.resolveKeyboardAction({ key: 'Escape', isModalOpen: true }), 'closeModal');
     assertEqual(PomodoroCore.resolveKeyboardAction({ code: 'Space', key: ' ', isModalOpen: true }), null);
     assertEqual(PomodoroCore.resolveKeyboardAction(null), null);
