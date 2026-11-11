@@ -238,6 +238,42 @@ class TestSessionTransitionCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_refresh_daily_stats_when_date_changes(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        if (typeof PomodoroCore.refreshDailyStats !== 'function') {
+            console.error('FAIL: refreshDailyStats is not a function');
+            process.exit(1);
+        }
+
+        const nextDay = PomodoroCore.refreshDailyStats('2026-11-08', '2026-11-09', 50, 3);
+        if (nextDay.totalFocusMinsToday !== 0) process.exit(2);
+        if (nextDay.currentStreak !== 4) process.exit(3);
+        if (nextDay.date !== '2026-11-09') process.exit(4);
+
+        const completed = PomodoroCore.calculateCompletedSession({
+            currentMode: 'focus',
+            cycleCount: 1,
+            focusDuration: 1500,
+            totalFocusMinsToday: nextDay.totalFocusMinsToday,
+            currentStreak: nextDay.currentStreak,
+            todayStr: nextDay.date
+        });
+        if (completed.nextTotalFocusMins !== 25) process.exit(5);
+        if (completed.storage.cp_streak !== '4') process.exit(6);
+        if (completed.storage.cp_last_date !== '2026-11-09') process.exit(7);
+
+        const sameDay = PomodoroCore.refreshDailyStats('2026-11-09', '2026-11-09', 25, 4);
+        if (sameDay.totalFocusMinsToday !== 25) process.exit(8);
+        if (sameDay.currentStreak !== 4) process.exit(9);
+
+        console.log('SUCCESS');
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_index_html_wires_session_transition_core(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
@@ -253,10 +289,12 @@ class TestSessionTransitionCore(unittest.TestCase):
         # Verify that handleTimerComplete calls getLocalDateString() at completion time
         # instead of using the startup todayStr variable
         self.assertIn(
-            "todayStr: PomodoroCore.getLocalDateString()",
+            "const completionDate = PomodoroCore.getLocalDateString()",
             html,
             "index.html must recompute local date at session completion for midnight crossing correctness"
         )
+        self.assertIn("todayStr: completionDate", html)
+        self.assertIn("PomodoroCore.refreshDailyStats(", html)
 
 
 if __name__ == "__main__":
