@@ -33,18 +33,20 @@ const testTotals = [
   'abc', '', null, undefined, NaN, Infinity, -Infinity, {}, [], true, false
 ];
 
+let checkedComparisons = 0;
 for (const k of testKeys) {
   for (const c of testIndices) {
     for (const t of testTotals) {
       const base = baselineGetNextTabIndex(c, t, k);
       const opt = PomodoroCore.getNextTabIndex(c, t, k);
+      checkedComparisons++;
       if (base !== opt) {
         throw new Error(`mismatch for currentIndex=${JSON.stringify(c)}, totalTabs=${JSON.stringify(t)}, key=${JSON.stringify(k)}: expected ${base}, got ${opt}`);
       }
     }
   }
 }
-console.log('✓ Strict equality verified across 26,400 test cases.');
+console.log(`✓ Strict equality verified across ${checkedComparisons} test cases.`);
 
 // 2. Performance Benchmark
 const iters = 5000000;
