@@ -118,6 +118,33 @@ class TestGetModeSessionLabelPerformance(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Failed: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_session_labels_preserve_large_cycle_counts(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+        const cases = [2147483648, 2147483649, 4294967296];
+
+        for (const cycleCount of cases) {
+            const expected = `SESSION ${cycleCount} // DEEP WORK`;
+            if (PomodoroCore.formatSessionLabel(cycleCount) !== expected) {
+                console.error(`formatSessionLabel truncated ${cycleCount}`);
+                process.exit(1);
+            }
+            if (PomodoroCore.getModeSessionLabel('focus', cycleCount) !== expected) {
+                console.error(`getModeSessionLabel truncated ${cycleCount}`);
+                process.exit(2);
+            }
+            if (PomodoroCore.parseCycleCount(cycleCount) !== cycleCount) {
+                console.error(`parseCycleCount truncated ${cycleCount}`);
+                process.exit(3);
+            }
+        }
+
+        console.log('SUCCESS');
+        """
+        proc = self._run_node_script(js_code)
+        self.assertEqual(proc.returncode, 0, f"Failed: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

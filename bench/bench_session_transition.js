@@ -4,7 +4,7 @@ const { PomodoroCore } = require('../core.js');
 function baselineParseCycleCount(cycleCount) {
   if (typeof cycleCount === 'number') {
     if (cycleCount >= 1 && Number.isFinite(cycleCount)) {
-      return cycleCount | 0;
+      return Math.trunc(cycleCount);
     }
     return 1;
   }
