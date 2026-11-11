@@ -194,6 +194,20 @@ function runUnitTests() {
     assertEqual(PomodoroCore.formatSessionLabel(null), 'SESSION 01 // DEEP WORK');
   });
 
+  // 13b. Session Label Large Number Regression (32-bit overflow fix)
+  test('formatSessionLabel() handles large cycle counts above 2^31-1 without overflow', () => {
+    const large1 = 2147483648;
+    const large2 = 2147483649;
+    const large3 = 4294967296;
+    assertEqual(PomodoroCore.formatSessionLabel(large1), 'SESSION 2147483648 // DEEP WORK');
+    assertEqual(PomodoroCore.formatSessionLabel(large2), 'SESSION 2147483649 // DEEP WORK');
+    assertEqual(PomodoroCore.formatSessionLabel(large3), 'SESSION 4294967296 // DEEP WORK');
+    assertEqual(PomodoroCore.getModeSessionLabel('focus', large1), 'SESSION 2147483648 // DEEP WORK');
+    assertEqual(PomodoroCore.getModeSessionLabel('focus', large2), 'SESSION 2147483649 // DEEP WORK');
+    assertEqual(PomodoroCore.parseCycleCount(large1), large1);
+    assertEqual(PomodoroCore.parseCycleCount(large2), large2);
+  });
+
   // 14. Time Formatting with Fractional and Non-finite Numbers
   test('formatTime() handles fractional seconds and non-finite numbers safely', () => {
     assertEqual(PomodoroCore.formatTime(65.8), '01:05', '65.8s should truncate to 01:05');

@@ -177,11 +177,11 @@
 
   formatSessionLabel(cycleCount) {
     if (typeof cycleCount === 'number') {
-      if (cycleCount >= 1 && cycleCount <= 100 && (cycleCount | 0) === cycleCount) {
+      if (cycleCount >= 1 && cycleCount <= 100 && Math.trunc(cycleCount) === cycleCount) {
         return SESSION_LABELS[cycleCount];
       }
       if (cycleCount >= 1 && Number.isFinite(cycleCount)) {
-        const intVal = cycleCount | 0;
+        const intVal = Math.trunc(cycleCount);
         return intVal <= 100 ? SESSION_LABELS[intVal] : 'SESSION ' + intVal + ' // DEEP WORK';
       }
       return SESSION_LABELS[1];
@@ -295,7 +295,7 @@
     if (typeof currentStreak === 'number') {
       if (currentStreak <= 1) return STREAK_BADGES[1];
       if (currentStreak <= 100) {
-        const intVal = currentStreak | 0;
+        const intVal = Math.trunc(currentStreak);
         if (intVal === currentStreak) return STREAK_BADGES[intVal];
       }
     }
@@ -308,7 +308,7 @@
     if (typeof minutes === 'number') {
       if (minutes <= 0) return FOCUS_BADGES[0];
       if (minutes <= 1440) {
-        const intVal = minutes | 0;
+        const intVal = Math.trunc(minutes);
         if (intVal === minutes) return FOCUS_BADGES[intVal];
       }
     }
@@ -473,7 +473,7 @@
   getModeSessionLabel(mode, cycleCount) {
     if (typeof mode === 'string') {
       if (mode === 'focus') {
-        if (typeof cycleCount === 'number' && cycleCount >= 1 && cycleCount <= 100 && (cycleCount | 0) === cycleCount) {
+        if (typeof cycleCount === 'number' && cycleCount >= 1 && cycleCount <= 100 && Math.trunc(cycleCount) === cycleCount) {
           return SESSION_LABELS[cycleCount];
         }
       } else {
@@ -507,7 +507,7 @@
     let total;
     if (typeof totalTabs === 'number') {
       if (!isFinite(totalTabs)) return -1;
-      total = totalTabs | 0;
+      total = Math.trunc(totalTabs);
       if (total <= 0) return -1;
     } else {
       total = parseInt(totalTabs, 10);
@@ -517,7 +517,7 @@
     let curr;
     if (typeof currentIndex === 'number') {
       if (!isFinite(currentIndex)) return -1;
-      curr = currentIndex | 0;
+      curr = Math.trunc(currentIndex);
       if (curr < 0 || curr >= total) return -1;
     } else {
       curr = parseInt(currentIndex, 10);
@@ -566,7 +566,7 @@
   parseCycleCount(cycleCount) {
     if (typeof cycleCount === 'number') {
       if (cycleCount >= 1 && Number.isFinite(cycleCount)) {
-        return cycleCount | 0;
+        return Math.trunc(cycleCount);
       }
       return 1;
     }
@@ -631,7 +631,7 @@
 
     let safeCycle;
     if (typeof cycle === 'number') {
-      safeCycle = (cycle >= 1 && Number.isFinite(cycle)) ? (cycle | 0) : 1;
+      safeCycle = (cycle >= 1 && Number.isFinite(cycle)) ? Math.trunc(cycle) : 1;
     } else {
       const parsedCycle = parseInt(cycle, 10);
       safeCycle = (!isNaN(parsedCycle) && parsedCycle >= 1) ? parsedCycle : 1;
@@ -669,7 +669,7 @@
 
       let safeTotalMins;
       if (typeof totalMins === 'number') {
-        safeTotalMins = (totalMins >= 0 && Number.isFinite(totalMins)) ? (totalMins | 0) : 0;
+        safeTotalMins = (totalMins >= 0 && Number.isFinite(totalMins)) ? Math.trunc(totalMins) : 0;
       } else {
         const parsedTotal = parseInt(totalMins, 10);
         safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
@@ -678,7 +678,7 @@
 
       let safeStreak;
       if (typeof streak === 'number') {
-        safeStreak = (streak >= 1 && Number.isFinite(streak)) ? (streak | 0) : 1;
+        safeStreak = (streak >= 1 && Number.isFinite(streak)) ? Math.trunc(streak) : 1;
       } else {
         const parsedStreak = parseInt(streak, 10);
         safeStreak = (!isNaN(parsedStreak) && parsedStreak >= 1) ? parsedStreak : 1;
@@ -711,7 +711,7 @@
 
     let safeTotalMins;
     if (typeof totalMins === 'number') {
-      safeTotalMins = (totalMins >= 0 && Number.isFinite(totalMins)) ? (totalMins | 0) : 0;
+      safeTotalMins = (totalMins >= 0 && Number.isFinite(totalMins)) ? Math.trunc(totalMins) : 0;
     } else {
       const parsedTotal = parseInt(totalMins, 10);
       safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
