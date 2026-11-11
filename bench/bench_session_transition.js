@@ -1,5 +1,11 @@
 const { PomodoroCore } = require('../core.js');
 
+function transitionChecksum(transition) {
+  return transition.nextCycleCount + transition.addedFocusMins + transition.nextTotalFocusMins
+    + transition.nextMode.charCodeAt(0) + transition.toastMessage.charCodeAt(0)
+    + Object.keys(transition.storage).length;
+}
+
 // Independent baseline implementations (not reusing PomodoroCore)
 function baselineParseCycleCount(cycleCount) {
   if (typeof cycleCount === 'number') {
@@ -134,19 +140,22 @@ for (let i = 0; i < 50000; i++) {
 }
 
 // Workload 1: Alternating Positional Transitions (focus -> break -> focus across cycles 1..100)
+let basePosChecksum = 0;
 const t0 = performance.now();
 for (let i = 0; i < iters; i++) {
   const mode = (i & 1) === 0 ? 'focus' : 'shortBreak';
-  baseline.calculateCompletedSession(mode, (i % 100) + 1, 1500, (i % 100) * 25, 2, '2026-11-09');
+  basePosChecksum += transitionChecksum(baseline.calculateCompletedSession(mode, (i % 100) + 1, 1500, (i % 100) * 25, 2, '2026-11-09'));
 }
 const tBasePos = performance.now() - t0;
 
+let optPosChecksum = 0;
 const t1 = performance.now();
 for (let i = 0; i < iters; i++) {
   const mode = (i & 1) === 0 ? 'focus' : 'shortBreak';
-  PomodoroCore.calculateCompletedSession(mode, (i % 100) + 1, 1500, (i % 100) * 25, 2, '2026-11-09');
+  optPosChecksum += transitionChecksum(PomodoroCore.calculateCompletedSession(mode, (i % 100) + 1, 1500, (i % 100) * 25, 2, '2026-11-09'));
 }
 const tOptPos = performance.now() - t1;
+if (basePosChecksum !== optPosChecksum) throw new Error(`Checksum mismatch Workload 1: baseline=${basePosChecksum}, opt=${optPosChecksum}`);
 
 // Workload 2: Routine Focus Session Completion with Object Payload
 const objFocus = {
@@ -158,17 +167,20 @@ const objFocus = {
   todayStr: '2026-11-09'
 };
 
+let baseObjChecksum = 0;
 const t2 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baseline.calculateCompletedSession(objFocus);
+  baseObjChecksum += transitionChecksum(baseline.calculateCompletedSession(objFocus));
 }
 const tBaseObj = performance.now() - t2;
 
+let optObjChecksum = 0;
 const t3 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.calculateCompletedSession(objFocus);
+  optObjChecksum += transitionChecksum(PomodoroCore.calculateCompletedSession(objFocus));
 }
 const tOptObj = performance.now() - t3;
+if (baseObjChecksum !== optObjChecksum) throw new Error(`Checksum mismatch Workload 2: baseline=${baseObjChecksum}, opt=${optObjChecksum}`);
 
 console.log(`[Alternating Positional 1..100] Baseline: ${tBasePos.toFixed(2)}ms | Opt: ${tOptPos.toFixed(2)}ms | Speedup: ${(((tBasePos - tOptPos) / tBasePos) * 100).toFixed(1)}%`);
 console.log(`[Focus Object Payload]         Baseline: ${tBaseObj.toFixed(2)}ms | Opt: ${tOptObj.toFixed(2)}ms | Speedup: ${(((tBaseObj - tOptObj) / tBaseObj) * 100).toFixed(1)}%`);
