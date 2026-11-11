@@ -1343,6 +1343,47 @@
     let targetEndTime = null;
     let currentMode = 'focus';
     let cycleCount = PomodoroCore.parseCycleCount(localStorage.getItem('cp_cycle'));
+    const savedTimerState = PomodoroCore.parseTimerState(localStorage.getItem('cp_timer_state'), Date.now());
+    if (savedTimerState) {
+      currentMode = savedTimerState.mode;
+      currentDuration = savedTimerState.duration;
+      timeLeft = savedTimerState.timeLeft;
+      isRunning = savedTimerState.isRunning;
+      targetEndTime = savedTimerState.targetEndTime;
+      cycleCount = savedTimerState.cycleCount;
+    } else {
+      localStorage.removeItem('cp_timer_state');
+    }
+
+    function persistTimerState() {
+      if (timeLeft <= 0) {
+        localStorage.removeItem('cp_timer_state');
+        return;
+      }
+      localStorage.setItem('cp_timer_state', JSON.stringify({
+        mode: currentMode,
+        duration: currentDuration,
+        timeLeft,
+        isRunning,
+        targetEndTime: isRunning ? targetEndTime : null,
+        cycleCount
+      }));
+    }
+
+    function startTimerInterval() {
+      timerId = setInterval(() => {
+        const remaining = PomodoroCore.calculateRemainingSeconds(targetEndTime, Date.now());
+        if (remaining !== timeLeft || remaining === 0) {
+          timeLeft = remaining;
+          persistTimerState();
+          playTick();
+          updateDisplay(true);
+          if (timeLeft <= 0) {
+            handleTimerComplete();
+          }
+        }
+      }, 250);
+    }
 
     function refreshTabLabels() {
       document.getElementById('tabFocus').textContent = PomodoroCore.formatTabLabel('focus', configDurations.focus);
@@ -1379,6 +1420,8 @@
       isRunning = false;
       clearInterval(timerId);
       timerId = null;
+      targetEndTime = null;
+      persistTimerState();
       updateTimerStatusUI();
 
       if (resetConfirmTimer) {
@@ -1413,6 +1456,8 @@
       clearInterval(timerId);
       timerId = null;
       isRunning = false;
+      timeLeft = 0;
+      localStorage.removeItem('cp_timer_state');
       updateTimerStatusUI();
 
       const notif = PomodoroCore.getSessionNotification(currentMode, cycleCount);
@@ -1487,25 +1532,22 @@
           timeLeft = PomodoroCore.calculateRemainingSeconds(targetEndTime, Date.now());
           clearInterval(timerId);
           timerId = null;
+          targetEndTime = null;
+          if (timeLeft <= 0) {
+            localStorage.removeItem('cp_timer_state');
+            handleTimerComplete();
+          } else {
+            persistTimerState();
+          }
           updateTimerStatusUI();
           updateDisplay(false);
         } else {
           isRunning = true;
           updateTimerStatusUI();
           targetEndTime = Date.now() + timeLeft * 1000;
+          persistTimerState();
           updateDisplay(true);
-
-          timerId = setInterval(() => {
-            const remaining = PomodoroCore.calculateRemainingSeconds(targetEndTime, Date.now());
-            if (remaining !== timeLeft || remaining === 0) {
-              timeLeft = remaining;
-              playTick();
-              updateDisplay(true);
-              if (timeLeft <= 0) {
-                handleTimerComplete();
-              }
-            }
-          }, 250);
+          startTimerInterval();
         }
       } finally {
         isProcessingToggle = false;
@@ -1554,6 +1596,7 @@
         resetBtn.classList.remove('confirming');
       }
       setMode(currentMode, currentDuration);
+      localStorage.removeItem('cp_timer_state');
     }
     resetBtn.addEventListener('click', handleResetAction);
 
@@ -1567,6 +1610,7 @@
     resetCycleBtn.addEventListener('click', () => {
       cycleCount = 1;
       localStorage.setItem('cp_cycle', '1');
+      persistTimerState();
       sessionLabel.textContent = PomodoroCore.getModeSessionLabel(currentMode, cycleCount);
       playBeep('break_end');
       const origText = resetCycleBtn.textContent;
@@ -1764,7 +1808,17 @@
       }
     });
 
+    modeTabs.forEach(tab => {
+      const isActive = tab.dataset.mode === currentMode;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      tab.setAttribute('tabindex', isActive ? '0' : '-1');
+    });
+    progressFill.style.stroke = PomodoroCore.getModeStroke(currentMode);
+    sessionLabel.textContent = PomodoroCore.getModeSessionLabel(currentMode, cycleCount);
+    updateTimerStatusUI();
     updateDisplay(false);
+    if (isRunning) startTimerInterval();
   </script>
 </body>
 </html>
