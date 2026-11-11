@@ -55,18 +55,36 @@ class TestSettingsModalAccessibility(unittest.TestCase):
                       "Missing focus() call on first focusable element (cfgFocusMin) when modal opens")
 
     def test_settings_modal_focus_trap_tab_navigation(self):
-        """Test that Tab key traps focus inside the modal."""
+        """Test that Tab and Shift+Tab wrap at the modal's focus boundaries."""
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
-        # Should have keydown handler for focus trap
-        self.assertIn('keydown', html.lower(),
-                      "Missing keydown event listener for focus trap")
-        self.assertIn('Tab', html,
-                      "Missing Tab key handling for focus trap")
+        handler_match = re.search(
+            r'function trapFocusInModal\(e\) \{([\s\S]*?)\n    \}', html
+        )
+        self.assertIsNotNone(handler_match, "Missing trapFocusInModal handler")
+        handler = handler_match.group(1)
 
-        # Should handle Shift+Tab for reverse navigation
-        self.assertIn('shiftKey', html,
-                      "Missing shiftKey check for reverse Tab navigation")
+        self.assertIn("settingsModal.classList.contains('open')", handler,
+                      "Focus trap should only run while the settings modal is open")
+        self.assertIn("if (e.key !== 'Tab') return", handler,
+                      "Focus trap should only handle Tab key navigation")
+        self.assertIn("settingsModal.querySelectorAll(", handler,
+                      "Focusable elements should be selected from the settings modal")
+        self.assertRegex(
+            handler,
+            r'if \(e\.shiftKey\) \{\s*'
+            r'if \(document\.activeElement === firstElement\) \{\s*'
+            r'e\.preventDefault\(\);\s*lastElement\.focus\(\);',
+            "Shift+Tab from the first element should wrap focus to the last element",
+        )
+        self.assertRegex(
+            handler,
+            r'else \{\s*if \(document\.activeElement === lastElement\) \{\s*'
+            r'e\.preventDefault\(\);\s*firstElement\.focus\(\);',
+            "Tab from the last element should wrap focus to the first element",
+        )
+        self.assertIn("settingsModal.addEventListener('keydown', trapFocusInModal)", html,
+                      "Focus trap keydown handler should be attached to the modal")
 
     def test_settings_modal_focus_restore_on_close(self):
         """Test that focus returns to settings button when modal closes."""
