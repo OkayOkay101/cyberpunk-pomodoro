@@ -6,6 +6,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestCalculateStreakPerformance(unittest.TestCase):
+    def test_streak_benchmark_uses_production_implementation(self):
+        benchmark = (REPO_ROOT / "bench_streak.js").read_text(encoding="utf-8")
+
+        self.assertNotIn("optimizedCalculateStreak", benchmark)
+        self.assertEqual(
+            benchmark.count("PomodoroCore.calculateStreak("),
+            4,
+            "Equality check, warmup, and both benchmark workloads should use production calculateStreak",
+        )
+
     def test_calculate_streak_no_unnecessary_date_instantiation(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
