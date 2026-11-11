@@ -290,6 +290,37 @@ function runUnitTests() {
     assertEqual(PomodoroCore.calculateRemainingSeconds(now + 10000, -Infinity), 0, '-Infinity now yields 0');
   });
 
+  // Timer state persistence and reload restoration
+  test('parseTimerState() restores valid running and paused sessions and rejects expired or malformed data', () => {
+    const now = 1000000;
+    const running = PomodoroCore.parseTimerState(JSON.stringify({
+      mode: 'focus', duration: 1500, timeLeft: 1200, isRunning: true,
+      targetEndTime: now + 45000, cycleCount: 3
+    }), now);
+    assertEqual(running.mode, 'focus');
+    assertEqual(running.timeLeft, 45, 'Running time is recalculated from the saved end time');
+    assertEqual(running.cycleCount, 3);
+
+    const paused = PomodoroCore.parseTimerState(JSON.stringify({
+      mode: 'shortBreak', duration: 300, timeLeft: 91, isRunning: false,
+      targetEndTime: null, cycleCount: 2
+    }), now);
+    assertEqual(paused.mode, 'shortBreak');
+    assertEqual(paused.timeLeft, 91, 'Paused remaining time stays unchanged');
+    assertEqual(paused.isRunning, false);
+
+    assertEqual(PomodoroCore.parseTimerState(JSON.stringify({
+      mode: 'focus', duration: 1500, timeLeft: 1, isRunning: true,
+      targetEndTime: now, cycleCount: 1
+    }), now), null, 'Expired timer state is discarded');
+    assertEqual(PomodoroCore.parseTimerState('{bad json', now), null, 'Malformed JSON is discarded');
+    assertEqual(PomodoroCore.parseTimerState(JSON.stringify({ mode: 'unknown' }), now), null, 'Invalid shape is discarded');
+    assertEqual(PomodoroCore.parseTimerState(JSON.stringify({
+      mode: 'focus', duration: 1500, timeLeft: 0, isRunning: false,
+      targetEndTime: null, cycleCount: 1
+    }), now), null, 'Reset sessions are not restored');
+  });
+
   // 22. Document Title Formatting
   test('formatDocumentTitle() reflects paused vs running state and time display', () => {
     assertEqual(PomodoroCore.formatDocumentTitle('25:00', true), '(25:00) CYBERPUNK FOCUS');

@@ -339,6 +339,36 @@
     return Math.ceil(diff / 1000);
   },
 
+  parseTimerState(json, nowMs) {
+    let saved;
+    try {
+      saved = typeof json === 'string' ? JSON.parse(json) : null;
+    } catch (e) {
+      return null;
+    }
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return null;
+
+    const mode = saved.mode;
+    const duration = saved.duration;
+    const limits = { focus: 5400, shortBreak: 1800, longBreak: 3600 };
+    const minDuration = 60;
+    if (!Object.prototype.hasOwnProperty.call(limits, mode) ||
+        !Number.isInteger(duration) || duration < minDuration || duration > limits[mode] ||
+        !Number.isInteger(saved.timeLeft) || saved.timeLeft < 0 || saved.timeLeft > duration ||
+        typeof saved.isRunning !== 'boolean' ||
+        !Number.isInteger(saved.cycleCount) || saved.cycleCount < 1) return null;
+    if (!saved.isRunning && saved.timeLeft === 0) return null;
+
+    const cycleCount = PomodoroCore.parseCycleCount(saved.cycleCount);
+    if (saved.isRunning) {
+      if (typeof saved.targetEndTime !== 'number' || !Number.isFinite(saved.targetEndTime)) return null;
+      const timeLeft = PomodoroCore.calculateRemainingSeconds(saved.targetEndTime, nowMs);
+      if (timeLeft <= 0 || timeLeft > duration) return null;
+      return { mode, duration, timeLeft, isRunning: true, targetEndTime: saved.targetEndTime, cycleCount };
+    }
+    return { mode, duration, timeLeft: saved.timeLeft, isRunning: false, targetEndTime: null, cycleCount };
+  },
+
   formatDocumentTitle(timeStr, isRunning) {
     const safeTime = (typeof timeStr === 'string' && timeStr.trim().length > 0) ? timeStr.trim() : '00:00';
     const statePrefix = isRunning ? '' : '[PAUSED] ';
