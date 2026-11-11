@@ -104,11 +104,9 @@ class TestGetModeSessionLabelPerformance(unittest.TestCase):
         if (PomodoroCore.getModeSessionLabel('focus', NaN) !== 'SESSION 01 // DEEP WORK') process.exit(21);
         if (PomodoroCore.getModeSessionLabel('focus', 4.8) !== 'SESSION 04 // DEEP WORK') process.exit(22);
 
-        // Identity check: must return reference-equal string for identical standard cycle
-        const refA = PomodoroCore.getModeSessionLabel('focus', 5);
-        const refB = PomodoroCore.getModeSessionLabel('focus', 5);
-        if (refA !== refB) {
-            console.error('FAIL: getModeSessionLabel returned different string instances for cycle 5');
+        // Verify the lookup value for a cached cycle label
+        if (PomodoroCore.getModeSessionLabel('focus', 5) !== 'SESSION 05 // DEEP WORK') {
+            console.error('FAIL: getModeSessionLabel returned an incorrect label for cycle 5');
             process.exit(23);
         }
 
