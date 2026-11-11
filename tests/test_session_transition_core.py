@@ -247,6 +247,17 @@ class TestSessionTransitionCore(unittest.TestCase):
             "index.html must use PomodoroCore.calculateCompletedSession to decouple session completion state transition"
         )
 
+    def test_index_html_recomputes_date_at_session_completion(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+
+        # Verify that handleTimerComplete calls getLocalDateString() at completion time
+        # instead of using the startup todayStr variable
+        self.assertIn(
+            "todayStr: PomodoroCore.getLocalDateString()",
+            html,
+            "index.html must recompute local date at session completion for midnight crossing correctness"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
