@@ -89,37 +89,11 @@ The repository includes a comprehensive, zero-dependency unit test suite in [`te
 ### Running Unit Tests via CLI (Node.js)
 ```bash
 node test-runner.js
-# Output: Unit Tests Completed: 26/26 passed, 0 failed.
+# Output: Unit Tests Completed: 47/47 passed, 0 failed.
 ```
 
 ### Running Unit Tests in Browser
-Simply open `test.html` or click the **🧪 TESTS** button in the web HUD header to view real-time passing status across all 26 core module tests:
-1. `formatTime()` - Formats MM:SS cleanly.
-2. `calculateProgressOffset()` - Accurate circular SVG dashoffset mapping.
-3. `getNextMode()` - Correct 4th cycle long break progression.
-4. `clampVolume()` - Enforces safe audio thresholds (0.0 to 1.0).
-5. `calculateStreak()` - Validates consecutive day streak increments and reset logic.
-6. `formatSessionLabel()` - Formats double-digit padded session labels.
-7. `sanitizeMission()` - Trims whitespace and caps text at 80 characters.
-8. `validateCustomDuration()` - Guards minimum and maximum timer boundaries.
-9. `getThemeVariables()` - Resolves neon CSS palette variables for all 4 themes.
-10. `storage roundtrip` - Confirms JSON serialization and deserialization safety.
-11. `deserializeConfig()` - Preserves Array instance and elements during array deserialization.
-12. `deserializeConfig()` - Safely rejects primitive/corrupted payloads and falls back to defaults.
-13. `formatSessionLabel()` - Resilient handling of non-numeric, negative, and NaN cycle inputs.
-14. `formatTime()` - Clean truncation of fractional seconds and non-finite numbers.
-15. `getNextMode()` - Guards against zero or negative cycle counts.
-16. `calculateStreak()` - Safely resets on corrupted dates and recovers from invalid streak values.
-17. `calculateProgressOffset()` - Handles NaN timeLeft and non-positive circle circumferences.
-18. `escapeHtml()` - Escapes HTML special characters to prevent stored XSS and UI breakout.
-19. `calculateDailyFocusMins()` - Resets focus minutes to 0 on date change or missing date, preventing indefinite carry-over.
-20. `formatStreakBadge()` & `formatFocusTimeBadge()` - Pure formatting of HUD stats badges with boundary protection.
-21. `calculateRemainingSeconds()` - Accurate countdown math guarding against NaN and negative intervals.
-22. `formatDocumentTitle()` - Formats browser window title reflecting paused vs running state.
-23. `formatTabLabel()` - Converts duration seconds to minutes and formats mode tab headers.
-24. `calculateMuteToggle()` - Pure calculation of mute toggle states and audio volume restoration.
-25. `formatVolumePercent()` & `getVolumeIcon()` - Resolves HUD volume percentage and dynamic speaker icon.
-26. `createTaskItem()` & `toggleTaskItem()` - Immutable task object creation and status toggling.
+Simply open `test.html` or click the **🧪 TESTS** button in the web HUD header to view real-time passing status across all 47 core module tests covering time formatting, cycle management, audio controls, task management, streak tracking, theme handling, keyboard shortcuts, and more.
 
 ---
 
