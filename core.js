@@ -10,12 +10,12 @@
     global.PomodoroCore = api.PomodoroCore;
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  const THEMES = {
-    cyan: { border: '#1f294d', primary: '#00f0ff', accent: '#ff0055' },
-    pink: { border: '#4d1f3d', primary: '#ff007f', accent: '#00f0ff' },
-    yellow: { border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' },
-    green: { border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' }
-  };
+  const THEMES = Object.freeze({
+    cyan: Object.freeze({ border: '#1f294d', primary: '#00f0ff', accent: '#ff0055' }),
+    pink: Object.freeze({ border: '#4d1f3d', primary: '#ff007f', accent: '#00f0ff' }),
+    yellow: Object.freeze({ border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' }),
+    green: Object.freeze({ border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' })
+  });
   const VALID_THEMES = Object.keys(THEMES);
   const LABELS = {
     cyan: 'Cyan Matrix',
