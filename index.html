@@ -1567,6 +1567,7 @@
     const cfgShortMin = document.getElementById('cfgShortMin');
     const cfgLongMin = document.getElementById('cfgLongMin');
     const themeBtns = document.querySelectorAll('.theme-btn');
+    let lastFocusedElement = null;
 
     function applyTheme(theme) {
       const vars = PomodoroCore.getThemeVariables(theme);
@@ -1588,33 +1589,77 @@
       b.addEventListener('click', () => applyTheme(b.dataset.theme));
     });
 
+    function openSettingsModal() {
+      lastFocusedElement = document.activeElement;
+      cfgFocusMin.value = (configDurations.minutes && configDurations.minutes.focus) || Math.round(configDurations.focus / 60);
+      cfgShortMin.value = (configDurations.minutes && configDurations.minutes.shortBreak) || Math.round(configDurations.shortBreak / 60);
+      cfgLongMin.value = (configDurations.minutes && configDurations.minutes.longBreak) || Math.round(configDurations.longBreak / 60);
+      settingsModal.classList.add('open');
+      cfgFocusMin.focus();
+    }
+
+    function closeSettingsModal() {
+      settingsModal.classList.remove('open');
+      if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+        lastFocusedElement.focus();
+      }
+      lastFocusedElement = null;
+    }
+
+    function trapFocusInModal(e) {
+      if (!settingsModal.classList.contains('open')) return;
+      if (e.key !== 'Tab') return;
+
+      const focusableElements = settingsModal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    }
+
     if (settingsBtn) {
-      settingsBtn.addEventListener('click', () => {
-        cfgFocusMin.value = (configDurations.minutes && configDurations.minutes.focus) || Math.round(configDurations.focus / 60);
-        cfgShortMin.value = (configDurations.minutes && configDurations.minutes.shortBreak) || Math.round(configDurations.shortBreak / 60);
-        cfgLongMin.value = (configDurations.minutes && configDurations.minutes.longBreak) || Math.round(configDurations.longBreak / 60);
-        settingsModal.classList.add('open');
-      });
+      settingsBtn.addEventListener('click', openSettingsModal);
     }
     if (closeSettingsBtn) {
-      closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('open'));
+      closeSettingsBtn.addEventListener('click', closeSettingsModal);
     }
-    if (saveSettingsBtn) {
-      saveSettingsBtn.addEventListener('click', () => {
-        const resolved = PomodoroCore.resolveDurations({
-          focus: cfgFocusMin.value,
-          shortBreak: cfgShortMin.value,
-          longBreak: cfgLongMin.value
-        });
-        configDurations = resolved;
-        localStorage.setItem('cp_cfg_focus', resolved.storage.cp_cfg_focus);
-        localStorage.setItem('cp_cfg_short', resolved.storage.cp_cfg_short);
-        localStorage.setItem('cp_cfg_long', resolved.storage.cp_cfg_long);
-        refreshTabLabels();
-        setMode(currentMode, configDurations[currentMode]);
-        settingsModal.classList.remove('open');
+    function saveSettings() {
+      const focusMin = parseInt(cfgFocusMin.value, 10);
+      const shortMin = parseInt(cfgShortMin.value, 10);
+      const longMin = parseInt(cfgLongMin.value, 10);
+
+      const newDurations = PomodoroCore.resolveDurations({
+        focus: focusMin,
+        shortBreak: shortMin,
+        longBreak: longMin
       });
+
+      configDurations = newDurations;
+      localStorage.setItem('cp_cfg_focus', newDurations.storage.cp_cfg_focus);
+      localStorage.setItem('cp_cfg_short', newDurations.storage.cp_cfg_short);
+      localStorage.setItem('cp_cfg_long', newDurations.storage.cp_cfg_long);
+      refreshTabLabels();
+      setMode(currentMode, configDurations[currentMode]);
+      closeSettingsModal();
     }
+
+    if (saveSettingsBtn) {
+      saveSettingsBtn.addEventListener('click', saveSettings);
+    }
+
+    settingsModal.addEventListener('keydown', trapFocusInModal);
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
@@ -1650,7 +1695,7 @@
           fullscreenBtn.click();
           break;
         case 'closeModal':
-          if (settingsModal) settingsModal.classList.remove('open');
+          closeSettingsModal();
           break;
       }
     });
