@@ -1,8 +1,19 @@
 import unittest
 import subprocess
-import json
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
 
 class TestEscapeHtmlPerformance(unittest.TestCase):
+    def _run_node_script(self, script: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["node", "-e", script],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+
     def test_escape_html_fast_path_and_equality(self):
         js_code = """
         const { PomodoroCore } = require('./test-runner.js');
@@ -35,11 +46,7 @@ class TestEscapeHtmlPerformance(unittest.TestCase):
         }
         console.log('SUCCESS');
         """
-        proc = subprocess.run(
-            ["node", "-e", js_code],
-            capture_output=True,
-            text=True
-        )
+        proc = self._run_node_script(js_code)
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
