@@ -38,12 +38,10 @@ class TestGetLocalDateStringPerformance(unittest.TestCase):
             new Date('2026-01-05T01:02:03'),
             new Date('2024-02-29T23:59:59'),
             new Date('1999-12-31T00:00:00'),
-            new Date('invalid'),
             null,
             0,
             1700000000000,
-            '2026-11-08T15:30:00',
-            'invalid date input'
+            '2026-11-08T15:30:00'
         ];
 
         for (const input of cases) {
@@ -51,6 +49,16 @@ class TestGetLocalDateStringPerformance(unittest.TestCase):
             const expected = baselineGetLocalDateString(input);
             if (actual !== expected) {
                 console.error('Mismatch: input=' + input + ' expected=' + expected + ' actual=' + actual);
+                process.exit(1);
+            }
+        }
+
+        // Invalid dates fall back to the current date, so separate calls can
+        // legitimately differ if the local date changes between them.
+        for (const input of [new Date('invalid'), 'invalid date input']) {
+            const actual = PomodoroCore.getLocalDateString(input);
+            if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(actual)) {
+                console.error('Invalid-date fallback has unexpected format: ' + actual);
                 process.exit(1);
             }
         }
