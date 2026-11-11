@@ -54,6 +54,9 @@ console.log('✓ Strict equality verified across all edge cases.');
 
 // 2. Performance Benchmark
 const iters = 3000000;
+function badgeChecksum(badge) {
+  return badge.length + badge.charCodeAt(0) + badge.charCodeAt(badge.length - 1);
+}
 
 // Warmup
 for (let i = 0; i < 50000; i++) {
@@ -64,71 +67,83 @@ for (let i = 0; i < 50000; i++) {
 }
 
 // Workload 1: Routine HUD update (both badges called on stats sync)
+let baseHUDChecksum = 0;
 let t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baselineFormatStreakBadge((i % 30) + 1);
-  baselineFormatFocusTimeBadge((i % 12) * 25);
+  baseHUDChecksum += badgeChecksum(baselineFormatStreakBadge((i % 30) + 1));
+  baseHUDChecksum += badgeChecksum(baselineFormatFocusTimeBadge((i % 12) * 25));
 }
 let t1 = performance.now();
 const baseHUD = t1 - t0;
 
+let optHUDChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.formatStreakBadge((i % 30) + 1);
-  PomodoroCore.formatFocusTimeBadge((i % 12) * 25);
+  optHUDChecksum += badgeChecksum(PomodoroCore.formatStreakBadge((i % 30) + 1));
+  optHUDChecksum += badgeChecksum(PomodoroCore.formatFocusTimeBadge((i % 12) * 25));
 }
 t1 = performance.now();
 const optHUD = t1 - t0;
+if (baseHUDChecksum !== optHUDChecksum) throw new Error(`Checksum mismatch Workload 1: baseline=${baseHUDChecksum}, opt=${optHUDChecksum}`);
 
 // Workload 2: formatStreakBadge alone (1..100)
+let baseStreakChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baselineFormatStreakBadge((i % 30) + 1);
+  baseStreakChecksum += badgeChecksum(baselineFormatStreakBadge((i % 30) + 1));
 }
 t1 = performance.now();
 const baseStreak = t1 - t0;
 
+let optStreakChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.formatStreakBadge((i % 30) + 1);
+  optStreakChecksum += badgeChecksum(PomodoroCore.formatStreakBadge((i % 30) + 1));
 }
 t1 = performance.now();
 const optStreak = t1 - t0;
+if (baseStreakChecksum !== optStreakChecksum) throw new Error(`Checksum mismatch Workload 2: baseline=${baseStreakChecksum}, opt=${optStreakChecksum}`);
 
 // Workload 3: formatFocusTimeBadge alone (0..300 mins)
+let baseFocusChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baselineFormatFocusTimeBadge((i % 12) * 25);
+  baseFocusChecksum += badgeChecksum(baselineFormatFocusTimeBadge((i % 12) * 25));
 }
 t1 = performance.now();
 const baseFocus = t1 - t0;
 
+let optFocusChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.formatFocusTimeBadge((i % 12) * 25);
+  optFocusChecksum += badgeChecksum(PomodoroCore.formatFocusTimeBadge((i % 12) * 25));
 }
 t1 = performance.now();
 const optFocus = t1 - t0;
+if (baseFocusChecksum !== optFocusChecksum) throw new Error(`Checksum mismatch Workload 3: baseline=${baseFocusChecksum}, opt=${optFocusChecksum}`);
 
 // Workload 4: Mixed input workload (strings, out-of-range, null, negative)
 const mixedStreak = [1, 5, '5', '1', 0, -2, null, 'abc', 50, 150];
 const mixedFocus = [0, 50, '75', -20, null, 120, 1440, 2000];
 
+let baseMixedChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  baselineFormatStreakBadge(mixedStreak[i % mixedStreak.length]);
-  baselineFormatFocusTimeBadge(mixedFocus[i % mixedFocus.length]);
+  baseMixedChecksum += badgeChecksum(baselineFormatStreakBadge(mixedStreak[i % mixedStreak.length]));
+  baseMixedChecksum += badgeChecksum(baselineFormatFocusTimeBadge(mixedFocus[i % mixedFocus.length]));
 }
 t1 = performance.now();
 const baseMixed = t1 - t0;
 
+let optMixedChecksum = 0;
 t0 = performance.now();
 for (let i = 0; i < iters; i++) {
-  PomodoroCore.formatStreakBadge(mixedStreak[i % mixedStreak.length]);
-  PomodoroCore.formatFocusTimeBadge(mixedFocus[i % mixedFocus.length]);
+  optMixedChecksum += badgeChecksum(PomodoroCore.formatStreakBadge(mixedStreak[i % mixedStreak.length]));
+  optMixedChecksum += badgeChecksum(PomodoroCore.formatFocusTimeBadge(mixedFocus[i % mixedFocus.length]));
 }
 t1 = performance.now();
 const optMixed = t1 - t0;
+if (baseMixedChecksum !== optMixedChecksum) throw new Error(`Checksum mismatch Workload 4: baseline=${baseMixedChecksum}, opt=${optMixedChecksum}`);
 
 console.log('\n--- Benchmark Results (3,000,000 iterations) ---');
 console.log(`Workload 1 (HUD sync stats):    Baseline: ${baseHUD.toFixed(2)}ms | Opt: ${optHUD.toFixed(2)}ms | Speedup: ${(((baseHUD - optHUD) / baseHUD) * 100).toFixed(1)}%`);
