@@ -110,7 +110,9 @@
       
       if (typeof runUnitTests === 'function') {
         const res = runUnitTests();
-        summary.textContent = `PASS: ${res.passed} / ${res.total} (100% SUCCESS)`;
+        summary.textContent = res.failed === 0
+          ? `PASS: ${res.passed} / ${res.total} (100% SUCCESS)`
+          : `FAIL: ${res.failed} / ${res.total} FAILED (${res.passed} PASSED)`;
         testList.innerHTML = res.results.map((t, idx) => `
           <div class="test-item">
             <span><b>#${idx + 1}</b> ${t.name}</span>
