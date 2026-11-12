@@ -30,7 +30,7 @@ class TestRenderTaskListPerformance(unittest.TestCase):
         <div class="task-item ${task.done ? 'done' : ''}" data-id="${escapeHtml(String(task.id))}">
           <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="${safeText}">
           <span>${safeText}</span>
-          <button type="button" class="task-remove" aria-label="Remove task: ${safeText}">×</button>
+          <button type="button" class="task-remove" aria-label="ลบภารกิจ: ${safeText}">×</button>
         </div>
       `;
             }).join('');

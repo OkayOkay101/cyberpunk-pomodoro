@@ -13,7 +13,7 @@ class TestTaskDeleteAccessibility(unittest.TestCase):
             const { PomodoroCore } = require('./core.js');
             const html = PomodoroCore.renderTaskList([{ id: 4, text: 'Review & ship', done: false }]);
             if (!html.includes('<button type=\"button\" class=\"task-remove\"')) process.exit(1);
-            if (!html.includes('aria-label=\"Remove task: Review &amp; ship\"')) process.exit(2);
+            if (!html.includes('aria-label=\"ลบภารกิจ: Review &amp; ship\"')) process.exit(2);
             console.log('SUCCESS');
             """],
             capture_output=True,

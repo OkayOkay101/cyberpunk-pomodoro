@@ -576,7 +576,7 @@
         <div class="task-item ${doneClass}" data-id="${safeId}">
           <input type="checkbox" ${checked} aria-label="${safeText}">
           <span>${safeText}</span>
-          <button type="button" class="task-remove" aria-label="Remove task: ${safeText}">×</button>
+          <button type="button" class="task-remove" aria-label="ลบภารกิจ: ${safeText}">×</button>
         </div>
       `;
     }
