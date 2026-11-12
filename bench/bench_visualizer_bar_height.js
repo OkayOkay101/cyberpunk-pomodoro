@@ -1,6 +1,6 @@
 const { performance } = require('perf_hooks');
 
-const dataArray = Uint8Array.from({ length: 32 }, (_, index) => (index * 37) % 256);
+const dataArray = Uint8Array.from({ length: 128 }, (_, index) => (index * 37) % 256);
 const canvasHeight = 100;
 
 function baselineHeights() {
