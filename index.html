@@ -1731,7 +1731,9 @@
         const label = isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'โหมดเต็มจอ';
         fullscreenBtn.title = label;
         fullscreenBtn.setAttribute('aria-label', label);
+        fullscreenBtn.setAttribute('aria-pressed', String(isFullscreen));
       };
+      updateFullscreenButton();
       document.addEventListener('fullscreenchange', updateFullscreenButton);
       fullscreenBtn.addEventListener('click', () => {
         if (!document.fullscreenElement) {
