@@ -55,6 +55,24 @@ class TestTimerAndHUDCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_hud_badges_fall_back_for_symbol_inputs(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        if (PomodoroCore.formatStreakBadge(Symbol('invalid')) !== '⚡ STREAK: 1 DAY') process.exit(1);
+        if (PomodoroCore.formatFocusTimeBadge(Symbol('invalid')) !== '🎯 0 MINS TODAY') process.exit(2);
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_calculate_remaining_seconds_non_finite_boundaries(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
