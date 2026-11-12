@@ -176,6 +176,7 @@
   },
 
   formatSessionLabel(cycleCount) {
+    if (typeof cycleCount === 'symbol') return SESSION_LABELS[1];
     if (typeof cycleCount === 'number') {
       if (cycleCount >= 1 && cycleCount <= 100 && Math.trunc(cycleCount) === cycleCount) {
         return SESSION_LABELS[cycleCount];

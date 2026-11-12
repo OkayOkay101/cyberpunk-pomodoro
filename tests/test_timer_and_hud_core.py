@@ -206,6 +206,7 @@ class TestTimerAndHUDCore(unittest.TestCase):
         if (PomodoroCore.formatSessionLabel(-2) !== 'SESSION 01 // DEEP WORK') process.exit(7);
         if (PomodoroCore.formatSessionLabel(null) !== 'SESSION 01 // DEEP WORK') process.exit(8);
         if (PomodoroCore.formatSessionLabel('abc') !== 'SESSION 01 // DEEP WORK') process.exit(9);
+        if (PomodoroCore.formatSessionLabel(Symbol('invalid')) !== 'SESSION 01 // DEEP WORK') process.exit(10);
 
         console.log('SUCCESS');
         """
