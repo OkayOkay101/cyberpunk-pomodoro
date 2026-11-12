@@ -148,6 +148,7 @@
 
   getNextMode(currentMode, cycleCount) {
     if (currentMode === 'focus') {
+      if (typeof cycleCount === 'symbol') return 'shortBreak';
       const validCycle = parseInt(cycleCount, 10);
       return (!isNaN(validCycle) && validCycle > 0 && validCycle % 4 === 0) ? 'longBreak' : 'shortBreak';
     }

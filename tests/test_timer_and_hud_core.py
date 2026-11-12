@@ -190,6 +190,24 @@ class TestTimerAndHUDCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_get_next_mode_falls_back_for_symbol_cycle_count(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        if (PomodoroCore.getNextMode('focus', Symbol('invalid')) !== 'shortBreak') process.exit(1);
+        if (PomodoroCore.getNextMode('shortBreak', Symbol('invalid')) !== 'focus') process.exit(2);
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_format_document_title_states(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
