@@ -141,3 +141,8 @@
 
 **Learning:** `recordCompletedSession()` first validates and normalizes stored history, then prepends one session and runs the full validator again. The new record can be checked directly with the same date, mode, and focus-duration rules; because the existing array is already normalized and bounded, trimming it to 19 and prepending the valid entry preserves the exact output while avoiding a second scan and allocation pass.
 **Action:** Validate the new entry directly and reuse the normalized history array in `recordCompletedSession()`. A workload with 20 history entries across 100,000 calls per round (median of 7 rounds) improved from 698.69ms to 376.50ms (46.1%), with exact baseline equality across valid/invalid inputs and a 20-entry history.
+
+## 2026-11-12 - Direct Netrunner rank threshold selection
+
+**Learning:** `getNetrunnerRank()` scanned all six ranks backwards and clamped progress even though the selected rank guarantees progress is within its range. Selecting by ascending thresholds and calculating the in-range progress directly avoids the scan and redundant clamp.
+**Action:** Replaced the threshold loop with direct rank selection and removed the redundant progress clamp. On active progression EXP values (0–1,499), 256 mixed values × 1,000,000 calls per round (median of 7 rounds) improved from 83.04ms to 60.72ms (26.9% faster); exact output equality was verified across all 10,013 progression and edge values, and a regression test was added.

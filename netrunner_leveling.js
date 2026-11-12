@@ -31,13 +31,12 @@ function getNetrunnerRank(exp) {
     ? Math.floor(exp)
     : 0;
 
-  let currentRank = RANKS[0];
-  for (let i = RANKS.length - 1; i >= 0; i--) {
-    if (safeExp >= RANKS[i].minExp) {
-      currentRank = RANKS[i];
-      break;
-    }
-  }
+  const currentRank = safeExp < 100 ? RANKS[0]
+    : safeExp < 300 ? RANKS[1]
+      : safeExp < 600 ? RANKS[2]
+        : safeExp < 1000 ? RANKS[3]
+          : safeExp < 1500 ? RANKS[4]
+            : RANKS[5];
 
   let nextLevelExp = null;
   let progressPercent = 100;
@@ -46,7 +45,7 @@ function getNetrunnerRank(exp) {
     nextLevelExp = currentRank.maxExp + 1;
     const range = nextLevelExp - currentRank.minExp;
     const gained = safeExp - currentRank.minExp;
-    progressPercent = Math.min(100, Math.max(0, Math.floor((gained / range) * 100)));
+    progressPercent = Math.floor((gained / range) * 100);
   }
 
   return Object.freeze({

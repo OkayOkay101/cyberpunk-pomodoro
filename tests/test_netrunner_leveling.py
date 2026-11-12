@@ -75,6 +75,59 @@ class TestNetrunnerLeveling(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_rank_lookup_matches_original_for_progression_and_edge_values(self):
+        js_code = """
+        const { getNetrunnerRank, RANKS } = require('./netrunner_leveling.js');
+
+        function baselineGetNetrunnerRank(exp) {
+            const safeExp = (typeof exp === 'number' && Number.isFinite(exp) && exp > 0)
+                ? Math.floor(exp)
+                : 0;
+            let currentRank = RANKS[0];
+            for (let i = RANKS.length - 1; i >= 0; i--) {
+                if (safeExp >= RANKS[i].minExp) {
+                    currentRank = RANKS[i];
+                    break;
+                }
+            }
+            let nextLevelExp = null;
+            let progressPercent = 100;
+            if (currentRank.maxExp !== Infinity) {
+                nextLevelExp = currentRank.maxExp + 1;
+                const range = nextLevelExp - currentRank.minExp;
+                const gained = safeExp - currentRank.minExp;
+                progressPercent = Math.min(100, Math.max(0, Math.floor((gained / range) * 100)));
+            }
+            return Object.freeze({
+                level: currentRank.level,
+                title: currentRank.title,
+                badge: currentRank.badge,
+                currentExp: safeExp,
+                minExp: currentRank.minExp,
+                maxExp: currentRank.maxExp,
+                nextLevelExp,
+                progressPercent
+            });
+        }
+
+        const cases = Array.from({ length: 10001 }, (_, exp) => exp).concat([
+            -1, NaN, Infinity, -Infinity, 0.9, 99.9, 100.9, 299.9, 599.9,
+            999.9, 1499.9, Number.MAX_SAFE_INTEGER
+        ]);
+        for (const exp of cases) {
+            const actual = getNetrunnerRank(exp);
+            const expected = baselineGetNetrunnerRank(exp);
+            if (JSON.stringify(actual) !== JSON.stringify(expected) || !Object.isFrozen(actual)) {
+                console.error('Rank mismatch for EXP', exp, 'expected', expected, 'got', actual);
+                process.exit(1);
+            }
+        }
+        console.log('SUCCESS');
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_format_netrunner_status(self):
         js_code = """
         const { formatNetrunnerStatus } = require('./netrunner_leveling.js');
