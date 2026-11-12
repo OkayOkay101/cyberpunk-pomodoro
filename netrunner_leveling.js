@@ -71,7 +71,9 @@ function parseStoredExp(storedValue) {
     return 0;
   }
   if (typeof storedValue === 'number') {
-    return (Number.isFinite(storedValue) && storedValue > 0) ? Math.floor(storedValue) : 0;
+    return (Number.isFinite(storedValue) && storedValue > 0 && storedValue <= Number.MAX_SAFE_INTEGER)
+      ? Math.floor(storedValue)
+      : 0;
   }
   if (typeof storedValue === 'string') {
     const trimmed = storedValue.trim();
@@ -79,7 +81,7 @@ function parseStoredExp(storedValue) {
       return 0;
     }
     const parsed = parseInt(trimmed, 10);
-    return (Number.isFinite(parsed) && parsed > 0) ? parsed : 0;
+    return (Number.isSafeInteger(parsed) && parsed > 0) ? parsed : 0;
   }
   return 0;
 }
