@@ -1409,9 +1409,12 @@
     }
 
     function refreshTabLabels() {
-      document.getElementById('tabFocus').textContent = PomodoroCore.formatTabLabel('focus', configDurations.focus);
-      document.getElementById('tabShort').textContent = PomodoroCore.formatTabLabel('shortBreak', configDurations.shortBreak);
-      document.getElementById('tabLong').textContent = PomodoroCore.formatTabLabel('longBreak', configDurations.longBreak);
+      const tabs = [['tabFocus', 'focus', 'โฟกัส'], ['tabShort', 'shortBreak', 'พักสั้น'], ['tabLong', 'longBreak', 'พักยาว']];
+      tabs.forEach(([id, mode, label]) => {
+        const tab = document.getElementById(id);
+        tab.textContent = PomodoroCore.formatTabLabel(mode, configDurations[mode]);
+        tab.setAttribute('aria-label', `${label} ${configDurations[mode]} นาที`);
+      });
     }
     refreshTabLabels();
 

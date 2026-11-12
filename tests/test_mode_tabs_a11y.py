@@ -23,6 +23,15 @@ class TestModeTabsAccessibility(unittest.TestCase):
             self.assertIn('tabindex="-1"', match.group(0),
                           f"#{tab_id} must have initial tabindex='-1'")
 
+    def test_mode_tab_accessible_names_include_current_duration(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        refresh = html[html.index("function refreshTabLabels()"):
+                       html.index("function updateTimerStatusUI()")]
+
+        self.assertIn("tab.setAttribute('aria-label', `${label} ${configDurations[mode]} นาที`)", refresh)
+        for label in ['โฟกัส', 'พักสั้น', 'พักยาว']:
+            self.assertIn(f"'{label}'", refresh)
+
     def test_setmode_updates_tabindex_for_roving_focus(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
