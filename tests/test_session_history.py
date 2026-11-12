@@ -141,6 +141,14 @@ class TestSessionHistory(unittest.TestCase):
         self.assertIn("localStorage.setItem('cp_session_history'", html)
         self.assertIn("PomodoroCore.recordCompletedSession", html)
 
+    def test_empty_history_guides_users_and_announces_status(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("emptyItem.className = 'session-history-empty'", html)
+        self.assertIn("emptyItem.setAttribute('role', 'status')", html)
+        self.assertIn("Complete a focus session to see it here.", html)
+        self.assertIn(".session-history-list .session-history-empty", html)
+
 
 if __name__ == "__main__":
     unittest.main()

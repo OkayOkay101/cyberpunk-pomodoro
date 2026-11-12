@@ -132,6 +132,10 @@
       padding: 4px 8px;
       background: rgba(0, 240, 255, 0.04);
     }
+    .session-history-list .session-history-empty {
+      border: 1px dashed var(--border);
+      text-align: center;
+    }
     .hud-tools {
       display: flex;
       gap: 6px;
@@ -1276,7 +1280,9 @@
       sessionHistoryElement.textContent = '';
       if (sessionHistory.length === 0) {
         const emptyItem = document.createElement('li');
-        emptyItem.textContent = 'No completed sessions yet.';
+        emptyItem.className = 'session-history-empty';
+        emptyItem.setAttribute('role', 'status');
+        emptyItem.textContent = 'No completed sessions yet. Complete a focus session to see it here.';
         sessionHistoryElement.appendChild(emptyItem);
         return;
       }
