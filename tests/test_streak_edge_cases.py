@@ -6,6 +6,34 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestStreakEdgeCases(unittest.TestCase):
+    def test_non_finite_stored_streak_falls_back_to_one(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const oversizedStoredStreak = '9'.repeat(400);
+        const refreshed = PomodoroCore.refreshDailyStats(
+          '2026-11-08', '2026-11-08', '25', oversizedStoredStreak
+        );
+        if (refreshed.currentStreak !== 1) {
+            console.error('FAIL: non-finite stored streak should fall back to 1, got ' + refreshed.currentStreak);
+            process.exit(1);
+        }
+        if (PomodoroCore.calculateStreak('2026-11-07', '2026-11-08', Infinity) !== 2) {
+            console.error('FAIL: non-finite streak should use fallback 1 before incrementing');
+            process.exit(2);
+        }
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_streak_future_last_date_does_not_increment(self):
         """
         If lastDateStr is in the future (data corruption or timezone issue),

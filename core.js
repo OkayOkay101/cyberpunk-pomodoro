@@ -162,7 +162,7 @@
   },
 
   calculateStreak(lastDateStr, todayStr, currentStreak) {
-    const validStreak = (typeof currentStreak === 'number' && !isNaN(currentStreak) && currentStreak >= 1)
+    const validStreak = (typeof currentStreak === 'number' && Number.isFinite(currentStreak) && currentStreak >= 1)
       ? Math.floor(currentStreak)
       : 1;
     if (!lastDateStr || typeof lastDateStr !== 'string') return 1;
@@ -787,7 +787,7 @@
         safeStreak = (streak >= 1 && Number.isFinite(streak)) ? Math.trunc(streak) : 1;
       } else {
         const parsedStreak = parseInt(streak, 10);
-        safeStreak = (!isNaN(parsedStreak) && parsedStreak >= 1) ? parsedStreak : 1;
+        safeStreak = (!isNaN(parsedStreak) && Number.isFinite(parsedStreak) && parsedStreak >= 1) ? parsedStreak : 1;
       }
 
       let safeToday;
