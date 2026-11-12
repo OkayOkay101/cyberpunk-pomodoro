@@ -1309,16 +1309,16 @@
     function renderTasks() {
       if (!taskChecklist) return;
       taskChecklist.innerHTML = PomodoroCore.renderTaskList(tasks);
-
-      taskChecklist.querySelectorAll('input[type="checkbox"]').forEach(box => {
-        box.addEventListener('change', (e) => {
-          const id = parseInt(e.target.closest('.task-item').dataset.id, 10);
-          tasks = PomodoroCore.toggleTaskItem(tasks, id, e.target.checked);
-          localStorage.setItem('cp_tasks', JSON.stringify(tasks));
-          renderTasks();
-        });
-      });
     }
+    taskChecklist.addEventListener('change', (e) => {
+      if (!e.target.matches('input[type="checkbox"]')) return;
+      const item = e.target.closest('.task-item');
+      if (!item) return;
+      const id = parseInt(item.dataset.id, 10);
+      tasks = PomodoroCore.toggleTaskItem(tasks, id, e.target.checked);
+      localStorage.setItem('cp_tasks', JSON.stringify(tasks));
+      renderTasks();
+    });
     renderTasks();
 
     let savedMission = localStorage.getItem('cp_mission');
