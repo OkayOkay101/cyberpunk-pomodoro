@@ -42,7 +42,9 @@ class TestFormatTimePerformance(unittest.TestCase):
             [-Infinity, '00:00'],
             ['abc', '00:00'],
             [null, '00:00'],
-            [undefined, '00:00']
+            [undefined, '00:00'],
+            [Symbol('invalid'), '00:00'],
+            [1n, '00:00']
         ];
 
         for (const [input, expected] of cases) {

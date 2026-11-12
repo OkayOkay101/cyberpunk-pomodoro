@@ -121,6 +121,7 @@
   }));
   const PomodoroCore = {
   formatTime(seconds) {
+    if (typeof seconds === 'symbol' || typeof seconds === 'bigint') return '00:00';
     if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
     const totalSecs = Math.floor(seconds);
     const mins = Math.floor(totalSecs / 60);
