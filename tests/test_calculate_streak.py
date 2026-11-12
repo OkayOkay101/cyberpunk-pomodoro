@@ -148,6 +148,14 @@ class TestCalculateStreak(unittest.TestCase):
             process.exit(6);
         }
 
+        // Corrupted persisted values must not be partially parsed as real minutes.
+        for (const invalid of ['45junk', '1e2', '45.5', '9'.repeat(400)]) {
+            if (PomodoroCore.calculateDailyFocusMins('2026-11-08', '2026-11-08', invalid) !== 0) {
+                console.error('FAIL: expected 0 mins for malformed stored value', invalid);
+                process.exit(7);
+            }
+        }
+
         console.log('SUCCESS');
         """
         proc = subprocess.run(
