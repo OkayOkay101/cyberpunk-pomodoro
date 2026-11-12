@@ -1683,7 +1683,9 @@
       const updateFullscreenButton = () => {
         const isFullscreen = Boolean(document.fullscreenElement);
         fullscreenBtn.textContent = isFullscreen ? '⛶ EXIT FULL' : '⛶ FULL';
-        fullscreenBtn.setAttribute('aria-label', isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'โหมดเต็มจอ');
+        const label = isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'โหมดเต็มจอ';
+        fullscreenBtn.title = label;
+        fullscreenBtn.setAttribute('aria-label', label);
       };
       document.addEventListener('fullscreenchange', updateFullscreenButton);
       fullscreenBtn.addEventListener('click', () => {
