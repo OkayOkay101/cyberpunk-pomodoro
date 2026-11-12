@@ -194,7 +194,9 @@
 
   sanitizeMission(text) {
     if (!text || typeof text !== 'string') return '';
-    return Array.from(text.trim()).slice(0, 80).join('');
+    const trimmed = text.trim();
+    if (trimmed.length <= 80) return trimmed;
+    return Array.from(trimmed).slice(0, 80).join('');
   },
 
   escapeHtml(text) {
