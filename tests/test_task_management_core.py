@@ -51,6 +51,20 @@ class TestTaskManagementCore(unittest.TestCase):
         const unicodeBoundary = 'A'.repeat(79) + '😀B';
         if (PomodoroCore.sanitizeMission(unicodeBoundary) !== 'A'.repeat(79) + '😀') process.exit(17);
 
+        // 2b. Short input fast-path must preserve trimming and exact Unicode output.
+        for (const shortText of ['  concise mission  ', '  café 雨 🌃  ', '  A'.repeat(20) + '  ']) {
+            const expected = Array.from(shortText.trim()).slice(0, 80).join('');
+            if (PomodoroCore.sanitizeMission(shortText) !== expected) process.exit(18);
+        }
+        const originalArrayFrom = Array.from;
+        Array.from = () => { throw new Error('short mission should not be expanded to code points'); };
+        try {
+            if (PomodoroCore.sanitizeMission('  concise mission  ') !== 'concise mission') process.exit(19);
+            if (PomodoroCore.sanitizeMission('  café 雨 🌃  ') !== 'café 雨 🌃') process.exit(20);
+        } finally {
+            Array.from = originalArrayFrom;
+        }
+
         // 3. Null, undefined, empty, and whitespace-only
         if (PomodoroCore.sanitizeMission(null) !== '') process.exit(7);
         if (PomodoroCore.sanitizeMission(undefined) !== '') process.exit(8);

@@ -126,3 +126,8 @@
 
 **Learning:** `validateSessionHistory()` returns at most 20 valid records but previously scanned and allocated sanitized copies for every later entry before discarding them with `slice()`. For oversized histories this performs work proportional to the entire input despite a fixed-size output.
 **Action:** Stop the validation loop immediately after collecting `SESSION_HISTORY_LIMIT` records and return that already-bounded array. A 10,000-valid-entry workload (200 calls, median of 5 rounds) improved from 330.60ms to 0.65ms (~99.8%), with output equality and exactly 20 indexed history reads verified.
+
+## 2026-11-12 - Skip code-point expansion for short missions
+
+**Learning:** `sanitizeMission()` converted every trimmed mission to a code-point array and joined it again, even though ordinary titles already fit within the 80-code-point limit. Checking the UTF-16 length first avoids the array allocation in this common case; over-limit strings still use code-point slicing to preserve surrogate pairs.
+**Action:** Return the trimmed string directly when its UTF-16 length is at most 80, retaining the existing `Array.from(...).slice(0, 80)` behavior for longer titles. On four representative titles across 250,000 calls × 5 rounds, median runtime improved from 139.72ms to 67.04ms (52.0%) with exact output equality.
