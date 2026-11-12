@@ -146,3 +146,8 @@
 
 **Learning:** `getNetrunnerRank()` scanned all six ranks backwards and clamped progress even though the selected rank guarantees progress is within its range. Selecting by ascending thresholds and calculating the in-range progress directly avoids the scan and redundant clamp.
 **Action:** Replaced the threshold loop with direct rank selection and removed the redundant progress clamp. On active progression EXP values (0–1,499), 256 mixed values × 1,000,000 calls per round (median of 7 rounds) improved from 83.04ms to 60.72ms (26.9% faster); exact output equality was verified across all 10,013 progression and edge values, and a regression test was added.
+
+## 2026-11-12 - Direct theme-name dispatch
+
+**Learning:** `getThemeVariables()` and `getThemeLabel()` searched a four-name array with `.includes()` on every call, including frequent theme reads during rendering. Exact string dispatch avoids allocating/reading the key list and preserves the cyan fallback for every unsupported input.
+**Action:** Replaced `VALID_THEMES.includes()` and `VALID_LABELS.includes()` checks with direct theme-name comparisons and removed the now-unused key arrays. For 3,000,000 calls across five common/invalid inputs (median of 7 rounds), theme-variable lookup improved from 46.16ms to 20.93ms (54.6%) and label lookup from 41.35ms to 18.21ms (56.0%); exact output equality was verified.

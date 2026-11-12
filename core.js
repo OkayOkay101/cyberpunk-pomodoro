@@ -16,14 +16,12 @@
     yellow: Object.freeze({ border: '#4d431f', primary: '#ffe600', accent: '#00f0ff' }),
     green: Object.freeze({ border: '#1f4d2f', primary: '#00ff66', accent: '#ffe600' })
   });
-  const VALID_THEMES = Object.keys(THEMES);
   const LABELS = {
     cyan: 'Cyan Matrix',
     pink: 'Neon Pink / Outrun',
     yellow: 'Night City Yellow',
     green: 'Emerald Hacker'
   };
-  const VALID_LABELS = Object.keys(LABELS);
   const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   const PAD_TWO = Array.from({ length: 100 }, (_, i) => (i < 10 ? '0' + i : String(i)));
   const PERCENT_LOOKUP = Array.from({ length: 101 }, (_, i) => i + '%');
@@ -242,13 +240,23 @@
   },
 
   getThemeVariables(themeName) {
-    const safeTheme = (typeof themeName === 'string' && VALID_THEMES.includes(themeName)) ? themeName : 'cyan';
-    return THEMES[safeTheme];
+    if (typeof themeName === 'string') {
+      if (themeName === 'cyan') return THEMES.cyan;
+      if (themeName === 'pink') return THEMES.pink;
+      if (themeName === 'yellow') return THEMES.yellow;
+      if (themeName === 'green') return THEMES.green;
+    }
+    return THEMES.cyan;
   },
 
   getThemeLabel(themeName) {
-    const safeTheme = (typeof themeName === 'string' && VALID_LABELS.includes(themeName)) ? themeName : 'cyan';
-    return LABELS[safeTheme];
+    if (typeof themeName === 'string') {
+      if (themeName === 'cyan') return LABELS.cyan;
+      if (themeName === 'pink') return LABELS.pink;
+      if (themeName === 'yellow') return LABELS.yellow;
+      if (themeName === 'green') return LABELS.green;
+    }
+    return LABELS.cyan;
   },
 
   serializeConfig(config) {
