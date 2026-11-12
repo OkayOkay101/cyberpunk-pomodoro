@@ -771,7 +771,7 @@
     <!-- Controls -->
     <div class="btn-row">
       <button class="btn btn-secondary" id="resetBtn" aria-label="รีเซ็ตเวลา">RESET</button>
-      <button class="btn btn-primary" id="toggleBtn" aria-label="เริ่มหรือหยุดตัวจับเวลา">START</button>
+      <button class="btn btn-primary" id="toggleBtn" aria-label="เริ่มตัวจับเวลา">START</button>
       <button class="btn btn-secondary" id="skipBtn" aria-label="ข้ามไปยังรอบถัดไป">SKIP &gt;&gt;</button>
     </div>
 
@@ -1420,7 +1420,10 @@
 
     function updateTimerStatusUI() {
       const status = PomodoroCore.getTimerStatus(isRunning, timeLeft, currentDuration);
-      if (toggleBtn) toggleBtn.textContent = status.buttonText;
+      if (toggleBtn) {
+        toggleBtn.textContent = status.buttonText;
+        toggleBtn.setAttribute('aria-label', status.buttonText === 'PAUSE' ? 'หยุดตัวจับเวลา' : status.buttonText === 'RESUME' ? 'เล่นตัวจับเวลาต่อ' : 'เริ่มตัวจับเวลา');
+      }
       if (systemStatus) systemStatus.textContent = status.statusText;
     }
 

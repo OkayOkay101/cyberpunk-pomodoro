@@ -178,6 +178,11 @@ class TestTimerStatusCore(unittest.TestCase):
             "index.html must use PomodoroCore.getTimerStatus to decouple timer control status"
         )
 
+    def test_timer_button_accessible_name_tracks_its_action(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="toggleBtn" aria-label="เริ่มตัวจับเวลา"', html)
+        self.assertIn("toggleBtn.setAttribute('aria-label', status.buttonText === 'PAUSE' ? 'หยุดตัวจับเวลา' : status.buttonText === 'RESUME' ? 'เล่นตัวจับเวลาต่อ' : 'เริ่มตัวจับเวลา')", html)
+
 
 if __name__ == "__main__":
     unittest.main()
