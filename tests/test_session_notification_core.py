@@ -41,6 +41,7 @@ class TestSessionNotificationCore(unittest.TestCase):
         if (PomodoroCore.parseCycleCount(null) !== 1) process.exit(11);
         if (PomodoroCore.parseCycleCount(undefined) !== 1) process.exit(12);
         if (PomodoroCore.parseCycleCount('corrupted') !== 1) process.exit(13);
+        if (PomodoroCore.parseCycleCount('9'.repeat(400)) !== 1) process.exit(14);
 
         console.log('SUCCESS');
         """

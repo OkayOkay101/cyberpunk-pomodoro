@@ -628,7 +628,7 @@
       return 1;
     }
     const parsed = parseInt(cycleCount, 10);
-    return (!isNaN(parsed) && parsed >= 1) ? parsed : 1;
+    return (!isNaN(parsed) && Number.isFinite(parsed) && parsed >= 1) ? parsed : 1;
   },
 
   getSessionNotification(modeOrParams, cycleCount) {
