@@ -47,6 +47,10 @@ class TestTaskManagementCore(unittest.TestCase):
         if (PomodoroCore.sanitizeMission(s81) !== 'C'.repeat(80)) process.exit(5);
         if (PomodoroCore.sanitizeMission(s120).length !== 80) process.exit(6);
 
+        // 2. Truncating at the 80-character boundary must not split a Unicode surrogate pair.
+        const unicodeBoundary = 'A'.repeat(79) + '😀B';
+        if (PomodoroCore.sanitizeMission(unicodeBoundary) !== 'A'.repeat(79) + '😀') process.exit(17);
+
         // 3. Null, undefined, empty, and whitespace-only
         if (PomodoroCore.sanitizeMission(null) !== '') process.exit(7);
         if (PomodoroCore.sanitizeMission(undefined) !== '') process.exit(8);
