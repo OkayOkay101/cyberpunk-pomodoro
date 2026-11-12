@@ -25,6 +25,14 @@ class TestSettingsModalAccessibility(unittest.TestCase):
         self.assertIn("SYSTEM CONFIGURATION", title_match.group(1),
                       "Modal heading does not contain 'SYSTEM CONFIGURATION'")
 
+    def test_settings_modal_fits_short_viewports_with_internal_scrolling(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+
+        modal_styles = re.search(r"\.modal-box\s*\{([^}]*)\}", html)
+        self.assertIsNotNone(modal_styles, ".modal-box styles not found")
+        self.assertIn("max-height: 100%", modal_styles.group(1))
+        self.assertIn("overflow-y: auto", modal_styles.group(1))
+
     def test_settings_modal_action_buttons_have_accessible_labels(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
