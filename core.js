@@ -465,7 +465,7 @@
         !Number.isInteger(duration) || duration < minDuration || duration > limits[mode] ||
         !Number.isInteger(saved.timeLeft) || saved.timeLeft < 0 || saved.timeLeft > duration ||
         typeof saved.isRunning !== 'boolean' ||
-        !Number.isInteger(saved.cycleCount) || saved.cycleCount < 1) return null;
+        !Number.isSafeInteger(saved.cycleCount) || saved.cycleCount < 1) return null;
     if (!saved.isRunning && saved.timeLeft === 0) return null;
 
     const cycleCount = PomodoroCore.parseCycleCount(saved.cycleCount);
