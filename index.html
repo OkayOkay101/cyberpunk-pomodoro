@@ -872,6 +872,12 @@
           <button type="button" class="theme-btn" data-theme="green" style="background: #00ff66;" title="Emerald Hacker" aria-label="Emerald Hacker" aria-pressed="false" data-label="Emerald Hacker"></button>
         </div>
       </div>
+      <div class="settings-row">
+        <button type="button" class="btn btn-secondary" id="exportDataBtn" aria-label="ส่งออกข้อมูลสำรอง">EXPORT DATA</button>
+        <label class="btn btn-secondary" for="importDataInput">IMPORT DATA</label>
+        <input type="file" id="importDataInput" accept="application/json,.json" aria-label="เลือกไฟล์ข้อมูลสำรอง">
+      </div>
+      <p id="dataBackupStatus" role="status" aria-live="polite"></p>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="closeSettingsBtn" aria-label="ยกเลิกการตั้งค่า">CANCEL</button>
         <button class="btn btn-primary" id="saveSettingsBtn" aria-label="บันทึกการตั้งค่า">SAVE</button>
@@ -1805,6 +1811,40 @@
 
     if (saveSettingsBtn) {
       saveSettingsBtn.addEventListener('click', saveSettings);
+    }
+
+    const exportDataBtn = document.getElementById('exportDataBtn');
+    const importDataInput = document.getElementById('importDataInput');
+    const dataBackupStatus = document.getElementById('dataBackupStatus');
+    if (exportDataBtn) {
+      exportDataBtn.addEventListener('click', () => {
+        const backup = PomodoroCore.createDataBackup(localStorage);
+        const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'cyberpunk-pomodoro-backup.json';
+        link.click();
+        URL.revokeObjectURL(url);
+        if (dataBackupStatus) dataBackupStatus.textContent = 'ข้อมูลสำรองถูกส่งออกแล้ว';
+      });
+    }
+    if (importDataInput) {
+      importDataInput.addEventListener('change', async () => {
+        const file = importDataInput.files && importDataInput.files[0];
+        if (!file) return;
+        try {
+          const backup = await file.text();
+          if (!PomodoroCore.restoreDataBackup(localStorage, backup, Date.now())) {
+            if (dataBackupStatus) dataBackupStatus.textContent = 'ไม่สามารถนำเข้าได้: ไฟล์สำรองไม่ถูกต้องหรือไม่รองรับ';
+            importDataInput.value = '';
+            return;
+          }
+          if (dataBackupStatus) dataBackupStatus.textContent = 'นำเข้าข้อมูลสำเร็จ กำลังโหลดหน้าใหม่';
+          window.location.reload();
+        } catch (e) {
+          if (dataBackupStatus) dataBackupStatus.textContent = 'ไม่สามารถอ่านไฟล์สำรองได้';
+        }
+      });
     }
 
     settingsModal.addEventListener('keydown', trapFocusInModal);
