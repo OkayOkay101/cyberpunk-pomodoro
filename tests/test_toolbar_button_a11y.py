@@ -50,6 +50,13 @@ class TestToolbarButtonAccessibility(unittest.TestCase):
             self.assertIn('aria-pressed="', button_html,
                           f"Toggle button {btn_id} missing aria-pressed attribute")
 
+    def test_fullscreen_button_has_visible_text_label(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        match = re.search(r'<button[^>]*id="fullscreenBtn"[^>]*>(.*?)</button>', html)
+
+        self.assertIsNotNone(match, "Fullscreen button not found")
+        self.assertIn("FULL", match.group(1), "Fullscreen button needs a visible label")
+
     def test_javascript_updates_aria_pressed_on_toggle(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
