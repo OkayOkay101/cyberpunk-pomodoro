@@ -80,7 +80,7 @@ function parseStoredExp(storedValue) {
       return 0;
     }
     const parsed = parseInt(trimmed, 10);
-    return (!isNaN(parsed) && parsed > 0) ? parsed : 0;
+    return (Number.isFinite(parsed) && parsed > 0) ? parsed : 0;
   }
   return 0;
 }

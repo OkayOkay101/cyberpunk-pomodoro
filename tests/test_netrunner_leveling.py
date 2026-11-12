@@ -126,6 +126,7 @@ class TestNetrunnerLeveling(unittest.TestCase):
         if (parseStoredExp(NaN) !== 0) process.exit(15);
         if (parseStoredExp(Infinity) !== 0) process.exit(16);
         if (parseStoredExp({ exp: 450 }) !== 0) process.exit(17);
+        if (parseStoredExp('9'.repeat(400)) !== 0) process.exit(18);
 
         console.log('SUCCESS');
         """
