@@ -382,6 +382,7 @@
       position: fixed;
       top: 80px;
       left: 50%;
+      max-width: calc(100vw - 32px);
       transform: translateX(-50%) translateY(-20px);
       background: var(--panel);
       border: 1px solid var(--accent);
@@ -398,7 +399,7 @@
       transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
       z-index: 200;
       text-align: center;
-      white-space: nowrap;
+      white-space: normal;
     }
     .mode-toast.show {
       opacity: 1;
