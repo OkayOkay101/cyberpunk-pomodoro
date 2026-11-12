@@ -168,6 +168,7 @@
       : 1;
     if (!lastDateStr || typeof lastDateStr !== 'string') return 1;
     if (lastDateStr === todayStr) return validStreak;
+    if (typeof todayStr === 'symbol') return 1;
     const todayTime = typeof todayStr === 'string' ? Date.parse(todayStr) : new Date(todayStr).getTime();
     const diffTime = todayTime - Date.parse(lastDateStr);
     if (isNaN(diffTime)) return 1;
