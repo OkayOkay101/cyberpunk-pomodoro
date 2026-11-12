@@ -119,6 +119,13 @@ class TestTaskChecklistEmptyState(unittest.TestCase):
         self.assertIn('maxlength="80"', match.group(0))
         self.assertIn("ไม่เกิน 80 ตัวอักษร", match.group(0))
 
+    def test_mission_input_has_persistent_add_instruction(self):
+        root = Path(__file__).resolve().parent.parent
+        html = (root / "index.html").read_text(encoding="utf-8")
+        match = re.search(r'<input[^>]*id="missionInput"[^>]*>', html)
+        self.assertIn('aria-describedby="missionInputHint"', match.group(0))
+        self.assertRegex(html, r'<span[^>]*id="missionInputHint"[^>]*>[^<]*กด Enter เพื่อเพิ่ม[^<]*</span>')
+
 
 if __name__ == "__main__":
     unittest.main()
