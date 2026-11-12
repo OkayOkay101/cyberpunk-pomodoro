@@ -941,6 +941,10 @@
       const ctx = canvas.getContext('2d');
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
+      const barHeights = new Float64Array(256);
+      for (let value = 0; value < barHeights.length; value++) {
+        barHeights[value] = (value / 255) * canvas.height;
+      }
 
       function renderFrame() {
         requestAnimationFrame(renderFrame);
@@ -954,7 +958,7 @@
         ctx.fillStyle = primaryColor;
 
         for (let i = 0; i < bufferLength; i++) {
-          const barHeight = (dataArray[i] / 255) * canvas.height;
+          const barHeight = barHeights[dataArray[i]];
           ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
           x += barWidth;
         }

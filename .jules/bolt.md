@@ -171,3 +171,8 @@
 
 **Learning:** `renderTasks()` replaced the task-list HTML and then attached a new `change` callback to every checkbox on each render. A single listener on the persistent checklist container handles delegated events for newly-rendered inputs and avoids allocating/registering per-checkbox callbacks repeatedly.
 **Action:** Replaced per-render checkbox listener registration with one delegated `change` handler. For a 100-checkbox/10,000-render workload across 7 measured rounds, listener setup+render improved from 83.05ms to 0.11ms (99.9% faster), while the compared checked-state output matched and registrations dropped from 7,000,000 to 1.
+
+## 2026-11-12 - Precompute audio visualizer bar heights
+
+**Learning:** `startVisualizer()` recalculated `(byte / 255) * canvas.height` for every frequency bin on every animation frame, even though frequency samples are always 8-bit values and canvas height is fixed for the visualizer lifetime. A 256-entry height table replaces repeated division and multiplication with indexed reads.
+**Action:** Precomputed all 256 possible bar heights once in `startVisualizer()` and used the table in the render loop. A 32-bar calculation workload across 1,000,000 frames per round (median of 9 rounds) measured 34.53ms → 26.87ms (22.2%), 33.93ms → 26.95ms (20.6%), and 34.88ms → 27.20ms (22.0%) in three repeat runs; exact height/output equality was verified for every byte value and sum checksum.
