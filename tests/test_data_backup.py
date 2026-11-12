@@ -124,6 +124,36 @@ class TestDataBackup(unittest.TestCase):
         assert.notStrictEqual(PomodoroCore.validateDataBackup(unique, Date.now()), null);
         """)
 
+    def test_import_counts_emoji_code_points_for_mission_and_tasks(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const storage = {
+          getItem() { return null; },
+          setItem() {},
+          removeItem() {}
+        };
+        for (const count of [40, 60, 80]) {
+          const emoji = '😀'.repeat(count);
+          for (const data of [
+            { cp_mission: emoji },
+            { cp_tasks: JSON.stringify([{ id: 1, text: emoji, done: false }]) }
+          ]) {
+            const backup = JSON.stringify({ version: 1, data });
+            assert.strictEqual(PomodoroCore.restoreDataBackup(storage, backup), true,
+              `${count} emoji should be accepted`);
+          }
+        }
+        for (const data of [
+          { cp_mission: '😀'.repeat(81) },
+          { cp_tasks: JSON.stringify([{ id: 1, text: '😀'.repeat(81), done: false }]) }
+        ]) {
+          const backup = JSON.stringify({ version: 1, data });
+          assert.strictEqual(PomodoroCore.restoreDataBackup(storage, backup), false,
+            '81 emoji should be rejected');
+        }
+        """)
+
     def test_settings_modal_exposes_export_and_import_controls(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
