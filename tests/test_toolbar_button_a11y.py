@@ -56,6 +56,8 @@ class TestToolbarButtonAccessibility(unittest.TestCase):
 
         self.assertIsNotNone(match, "Fullscreen button not found")
         self.assertIn("FULL", match.group(1), "Fullscreen button needs a visible label")
+        self.assertIn("EXIT FULL", html, "Fullscreen button needs an exit label while fullscreen is active")
+        self.assertIn("fullscreenchange", html, "Fullscreen button label must follow fullscreen state")
 
     def test_javascript_updates_aria_pressed_on_toggle(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
