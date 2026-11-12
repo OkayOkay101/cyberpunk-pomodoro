@@ -146,7 +146,7 @@ class TestSessionHistory(unittest.TestCase):
 
         self.assertIn("emptyItem.className = 'session-history-empty'", html)
         self.assertIn("emptyItem.setAttribute('role', 'status')", html)
-        self.assertIn("Complete a focus session to see it here.", html)
+        self.assertIn("ยังไม่มีประวัติเซสชัน — ทำเซสชันโฟกัสให้เสร็จเพื่อดูรายการที่นี่", html)
         self.assertIn(".session-history-list .session-history-empty", html)
 
 
