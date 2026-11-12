@@ -83,6 +83,19 @@ class TestNextTabIndexPerformance(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Failed: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_next_tab_index_rejects_symbol_inputs_without_throwing(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        if (PomodoroCore.getNextTabIndex(Symbol('index'), 3, 'ArrowRight') !== -1) process.exit(1);
+        if (PomodoroCore.getNextTabIndex(0, Symbol('count'), 'ArrowRight') !== -1) process.exit(2);
+
+        console.log('SUCCESS');
+        """
+        proc = self._run_node_script(js_code)
+        self.assertEqual(proc.returncode, 0, f"Failed: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_next_tab_index_exhaustive_baseline_equality(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
