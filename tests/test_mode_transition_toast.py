@@ -28,6 +28,12 @@ class TestModeTransitionToast(unittest.TestCase):
         self.assertIn('opacity: 0', html, "Mode toast initial opacity not found")
         self.assertIn('opacity: 1', html, "Mode toast show opacity not found")
 
+    def test_mode_toast_wraps_within_narrow_viewports(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        toast_style = html.split('.mode-toast {', 1)[1].split('}', 1)[0]
+        self.assertIn('max-width: calc(100vw - 32px);', toast_style)
+        self.assertIn('white-space: normal;', toast_style)
+
     def test_show_mode_toast_function_exists(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
