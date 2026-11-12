@@ -201,6 +201,28 @@ class TestSessionTransitionCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_calculate_completed_session_rejects_overflowing_cycle_string(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const result = PomodoroCore.calculateCompletedSession({
+            currentMode: 'focus',
+            cycleCount: '9'.repeat(400),
+            focusDuration: 1500,
+            totalFocusMinsToday: 0,
+            todayStr: '2026-11-09'
+        });
+
+        if (result.nextCycleCount !== 2) process.exit(1);
+        if (result.storage.cp_cycle !== '2') process.exit(2);
+        if (!Number.isFinite(result.nextCycleCount)) process.exit(3);
+
+        console.log('SUCCESS');
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_calculate_completed_session_positional_and_object_arguments(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');

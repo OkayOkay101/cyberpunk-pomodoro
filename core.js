@@ -740,8 +740,7 @@
     if (typeof cycle === 'number') {
       safeCycle = (cycle >= 1 && Number.isFinite(cycle)) ? Math.trunc(cycle) : 1;
     } else {
-      const parsedCycle = parseInt(cycle, 10);
-      safeCycle = (!isNaN(parsedCycle) && parsedCycle >= 1) ? parsedCycle : 1;
+      safeCycle = PomodoroCore.parseCycleCount(cycle);
     }
 
     const safeMode = (typeof mode === 'string') ? mode : 'focus';
