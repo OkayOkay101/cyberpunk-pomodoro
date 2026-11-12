@@ -28,7 +28,7 @@ class TestRenderTaskListPerformance(unittest.TestCase):
                 const safeText = escapeHtml(task.text);
                 return `
         <div class="task-item ${task.done ? 'done' : ''}" data-id="${escapeHtml(String(task.id))}">
-          <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="${safeText}">
+          <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="ทำเครื่องหมายภารกิจว่าเสร็จ: ${safeText}">
           <span>${safeText}</span>
           <button type="button" class="task-remove" aria-label="ลบภารกิจ: ${safeText}">×</button>
         </div>

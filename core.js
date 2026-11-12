@@ -598,7 +598,7 @@
       const safeId = PomodoroCore.escapeHtml(String(task.id));
       html += `
         <div class="task-item ${doneClass}" data-id="${safeId}">
-          <input type="checkbox" ${checked} aria-label="${safeText}">
+          <input type="checkbox" ${checked} aria-label="ทำเครื่องหมายภารกิจว่าเสร็จ: ${safeText}">
           <span>${safeText}</span>
           <button type="button" class="task-remove" aria-label="ลบภารกิจ: ${safeText}">×</button>
         </div>

@@ -20,7 +20,7 @@ function baselineRenderTaskList(tasks) {
     const safeText = escapeHtml(task.text);
     return `
         <div class="task-item ${task.done ? 'done' : ''}" data-id="${escapeHtml(String(task.id))}">
-          <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="${safeText}">
+          <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="ทำเครื่องหมายภารกิจว่าเสร็จ: ${safeText}">
           <span>${safeText}</span>
         </div>
       `;
