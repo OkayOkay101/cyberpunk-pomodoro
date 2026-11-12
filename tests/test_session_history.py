@@ -216,6 +216,9 @@ class TestSessionHistory(unittest.TestCase):
         self.assertIn("emptyItem.setAttribute('role', 'status')", html)
         self.assertIn("ยังไม่มีประวัติเซสชัน — ทำเซสชันโฟกัสให้เสร็จเพื่อดูรายการที่นี่", html)
         self.assertIn(".session-history-list .session-history-empty", html)
+        empty_style = html.split(".session-history-list .session-history-empty {", 1)[1].split("}", 1)[0]
+        self.assertIn("padding: 10px 12px;", empty_style)
+        self.assertIn("border-radius: 4px;", empty_style)
 
 
 if __name__ == "__main__":
