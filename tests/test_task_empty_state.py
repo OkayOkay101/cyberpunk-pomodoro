@@ -103,6 +103,13 @@ class TestTaskChecklistEmptyState(unittest.TestCase):
         self.assertIn("PomodoroCore.renderTaskList(tasks)", html)
         self.assertNotIn('<script src="test-runner.js"></script>', html)
 
+    def test_long_task_text_wraps_inside_checklist(self):
+        root = Path(__file__).resolve().parent.parent
+        html = (root / "index.html").read_text(encoding="utf-8")
+        self.assertIn(".task-item > span {", html)
+        self.assertIn("min-width: 0;", html)
+        self.assertIn("overflow-wrap: anywhere;", html)
+
 
 if __name__ == "__main__":
     unittest.main()
