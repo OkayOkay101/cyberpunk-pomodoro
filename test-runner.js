@@ -611,6 +611,7 @@ function runUnitTests() {
     assertEqual(PomodoroCore.parseCycleCount(null), 1, 'Null cycle falls back to 1');
     assertEqual(PomodoroCore.parseCycleCount(undefined), 1, 'Undefined cycle falls back to 1');
     assertEqual(PomodoroCore.parseCycleCount('corrupted'), 1, 'String cycle falls back to 1');
+    assertEqual(PomodoroCore.parseCycleCount('9007199254740993'), 1, 'Unsafe integer string falls back to 1');
   });
 
   // 41. Session Completion Notification & Audio Decoupling

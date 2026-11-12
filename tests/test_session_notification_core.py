@@ -34,6 +34,9 @@ class TestSessionNotificationCore(unittest.TestCase):
         if (PomodoroCore.parseCycleCount('5') !== 5) process.exit(6);
         if (PomodoroCore.parseCycleCount('08') !== 8) process.exit(7);
 
+        // Strings beyond the safe integer range must not round to a different cycle.
+        if (PomodoroCore.parseCycleCount('9007199254740993') !== 1) process.exit(15);
+
         // Boundary fallbacks: 0, negative numbers, NaN, null, undefined, strings
         if (PomodoroCore.parseCycleCount(0) !== 1) process.exit(8);
         if (PomodoroCore.parseCycleCount(-3) !== 1) process.exit(9);
