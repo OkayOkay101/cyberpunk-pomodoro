@@ -1794,6 +1794,10 @@
 
     function trapFocusInModal(e) {
       if (!settingsModal.classList.contains('open')) return;
+      if (e.key === 'Escape') {
+        closeSettingsModal();
+        return;
+      }
       if (e.key !== 'Tab') return;
 
       const focusableElements = settingsModal.querySelectorAll(

@@ -104,6 +104,12 @@ class TestSettingsModalAccessibility(unittest.TestCase):
         self.assertIn('settingsBtn', html,
                       "settingsBtn reference not found for focus restoration")
 
+    def test_settings_modal_closes_on_escape(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        handler = re.search(r'function trapFocusInModal\(e\) \{([\s\S]*?)\n    \}', html)
+        self.assertIsNotNone(handler, "Missing trapFocusInModal handler")
+        self.assertRegex(handler.group(1), r"if \(e\.key === 'Escape'\) \{\s*closeSettingsModal\(\);\s*return;")
+
     def test_settings_modal_save_button_saves_settings_before_close(self):
         """Test that saveSettingsBtn saves duration values and theme before closing modal."""
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
