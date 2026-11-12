@@ -139,6 +139,7 @@
       const clamped = t < 0 ? 0 : (t > duration ? duration : t);
       return circumference - (clamped / duration) * circumference;
     }
+    if ([timeLeft, duration, circumference].some(value => typeof value === 'symbol' || typeof value === 'bigint')) return 0;
     if (!duration || duration <= 0 || isNaN(duration) || !isFinite(duration)) return 0;
     if (isNaN(circumference) || circumference <= 0 || !isFinite(circumference)) return 0;
     const safeTime = isNaN(timeLeft) ? 0 : timeLeft;
