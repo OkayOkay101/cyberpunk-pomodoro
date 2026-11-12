@@ -629,6 +629,10 @@
       return TIMER_STATUS_READY;
     }
 
+    if (typeof time === 'symbol' || typeof dur === 'symbol') {
+      return TIMER_STATUS_READY;
+    }
+
     const safeTime = Number(time);
     const safeDur = Number(dur);
 

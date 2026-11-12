@@ -121,6 +121,30 @@ class TestTimerStatusCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_get_timer_status_falls_back_for_symbol_time_values(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+        const ready = { buttonText: 'START', statusText: 'ONLINE // READY' };
+
+        for (const status of [
+          PomodoroCore.getTimerStatus(false, Symbol('time'), 1500),
+          PomodoroCore.getTimerStatus(false, 500, Symbol('duration')),
+          PomodoroCore.getTimerStatus({ isRunning: false, timeLeft: Symbol('time'), duration: 1500 }),
+          PomodoroCore.getTimerStatus({ isRunning: false, timeLeft: 500, duration: Symbol('duration') })
+        ]) {
+          if (status.buttonText !== ready.buttonText || status.statusText !== ready.statusText) process.exit(1);
+        }
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_get_timer_status_referential_caching(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
