@@ -6,6 +6,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestDynamicContentAriaLive(unittest.TestCase):
+    def test_timer_updates_do_not_interrupt_screen_reader_users(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+
+        timer_match = re.search(r'<div[^>]*id="timeDisplay"[^>]*>', html)
+        self.assertIsNotNone(timer_match, "#timeDisplay not found")
+        self.assertIn('role="timer"', timer_match.group(0))
+        self.assertIn('aria-live="off"', timer_match.group(0),
+                      "Per-second timer updates should not be announced continuously")
+
     def test_stats_badges_have_aria_live(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
