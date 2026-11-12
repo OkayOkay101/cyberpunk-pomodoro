@@ -1730,9 +1730,9 @@
       const updateFullscreenButton = () => {
         const isFullscreen = Boolean(document.fullscreenElement);
         fullscreenBtn.textContent = isFullscreen ? '⛶ EXIT FULL' : '⛶ FULL';
-        const label = isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'โหมดเต็มจอ';
-        fullscreenBtn.title = label;
-        fullscreenBtn.setAttribute('aria-label', label);
+        // ปุ่มสลับสถานะ: ชื่อคงที่ ใช้ aria-pressed บอกสถานะเพียงอย่างเดียว (ไม่ให้ชื่อกับสถานะซ้ำกัน)
+        fullscreenBtn.title = 'โหมดเต็มจอ';
+        fullscreenBtn.setAttribute('aria-label', 'โหมดเต็มจอ');
         fullscreenBtn.setAttribute('aria-pressed', String(isFullscreen));
       };
       updateFullscreenButton();
@@ -1796,11 +1796,12 @@
 
     function trapFocusInModal(e) {
       if (!settingsModal.classList.contains('open')) return;
-      if (e.key === 'Escape') {
+      const action = PomodoroCore.getSettingsModalKeyAction(e.key);
+      if (action === 'close') {
         closeSettingsModal();
         return;
       }
-      if (e.key !== 'Tab') return;
+      if (action !== 'trap') return;
 
       const focusableElements = settingsModal.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -1872,8 +1873,19 @@
         if (!file) return;
         try {
           const backup = await file.text();
-          if (!PomodoroCore.restoreDataBackup(localStorage, backup, Date.now())) {
+          if (!PomodoroCore.validateDataBackup(backup, Date.now())) {
             if (dataBackupStatus) dataBackupStatus.textContent = 'ไม่สามารถนำเข้าได้: ไฟล์สำรองไม่ถูกต้องหรือไม่รองรับ';
+            importDataInput.value = '';
+            return;
+          }
+          // นำเข้าจะเขียนทับข้อมูลปัจจุบันทั้งหมด จึงต้องยืนยันก่อนเสมอ
+          if (!window.confirm('การนำเข้าจะแทนที่ข้อมูลปัจจุบันทั้งหมด (ตั้งค่า ภารกิจ ประวัติ และสถิติ) ต้องการดำเนินการต่อหรือไม่?')) {
+            if (dataBackupStatus) dataBackupStatus.textContent = 'ยกเลิกการนำเข้าแล้ว ข้อมูลเดิมยังอยู่';
+            importDataInput.value = '';
+            return;
+          }
+          if (!PomodoroCore.restoreDataBackup(localStorage, backup, Date.now())) {
+            if (dataBackupStatus) dataBackupStatus.textContent = 'นำเข้าไม่สำเร็จ ข้อมูลเดิมถูกคงไว้ (พื้นที่จัดเก็บอาจเต็ม)';
             importDataInput.value = '';
             return;
           }

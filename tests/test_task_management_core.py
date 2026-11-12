@@ -302,6 +302,24 @@ class TestTaskManagementCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_remove_task_item_removes_only_first_match_when_ids_collide(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+        const tasks = [
+          { id: 5, text: 'First', done: false },
+          { id: 5, text: 'Second', done: false },
+          { id: 6, text: 'Third', done: false }
+        ];
+        const after = PomodoroCore.removeTaskItem(tasks, 5);
+        if (after.length !== 2) process.exit(1);
+        if (after[0].text !== 'Second' || after[1].text !== 'Third') process.exit(2);
+        if (tasks.length !== 3) process.exit(3);
+        console.log('SUCCESS');
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

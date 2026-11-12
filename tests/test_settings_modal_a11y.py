@@ -1,4 +1,5 @@
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -74,8 +75,8 @@ class TestSettingsModalAccessibility(unittest.TestCase):
 
         self.assertIn("settingsModal.classList.contains('open')", handler,
                       "Focus trap should only run while the settings modal is open")
-        self.assertIn("if (e.key !== 'Tab') return", handler,
-                      "Focus trap should only handle Tab key navigation")
+        self.assertIn("if (action !== 'trap') return", handler,
+                      "Focus trap should only handle Tab key navigation (via getSettingsModalKeyAction)")
         self.assertIn("settingsModal.querySelectorAll(", handler,
                       "Focusable elements should be selected from the settings modal")
         self.assertRegex(
@@ -104,11 +105,29 @@ class TestSettingsModalAccessibility(unittest.TestCase):
         self.assertIn('settingsBtn', html,
                       "settingsBtn reference not found for focus restoration")
 
-    def test_settings_modal_closes_on_escape(self):
+    def test_settings_modal_escape_and_tab_actions_behave_correctly(self):
+        # พฤติกรรมจริง: Escape ปิด modal, Tab ใช้ดักโฟกัส, ปุ่มอื่นไม่ทำอะไร
+        proc = subprocess.run(
+            ["node", "-e", """
+            const assert = require('assert');
+            const { PomodoroCore } = require('./core.js');
+            assert.strictEqual(PomodoroCore.getSettingsModalKeyAction('Escape'), 'close');
+            assert.strictEqual(PomodoroCore.getSettingsModalKeyAction('Tab'), 'trap');
+            assert.strictEqual(PomodoroCore.getSettingsModalKeyAction('Enter'), null);
+            assert.strictEqual(PomodoroCore.getSettingsModalKeyAction('a'), null);
+            console.log('SUCCESS');
+            """],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
-        handler = re.search(r'function trapFocusInModal\(e\) \{([\s\S]*?)\n    \}', html)
-        self.assertIsNotNone(handler, "Missing trapFocusInModal handler")
-        self.assertRegex(handler.group(1), r"if \(e\.key === 'Escape'\) \{\s*closeSettingsModal\(\);\s*return;")
+        self.assertIn("PomodoroCore.getSettingsModalKeyAction(e.key)", html,
+                      "trapFocusInModal must use the tested key-action helper")
+        self.assertIn("closeSettingsModal();", html)
 
     def test_settings_modal_save_button_saves_settings_before_close(self):
         """Test that saveSettingsBtn saves duration values and theme before closing modal."""

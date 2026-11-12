@@ -57,15 +57,17 @@ class TestToolbarButtonAccessibility(unittest.TestCase):
         self.assertIsNotNone(match, "Fullscreen button not found")
         self.assertIn("FULL", match.group(1), "Fullscreen button needs a visible label")
         self.assertIn("EXIT FULL", html, "Fullscreen button needs an exit label while fullscreen is active")
-        self.assertIn("fullscreenchange", html, "Fullscreen button label must follow fullscreen state")
-        self.assertIn("fullscreenBtn.title = label", html,
-                      "Fullscreen button tooltip must follow fullscreen state")
+        self.assertIn("fullscreenchange", html, "Fullscreen button must re-sync on fullscreen change")
 
-    def test_fullscreen_button_exposes_pressed_state(self):
+    def test_fullscreen_button_has_constant_name_and_pressed_state(self):
+        # ปุ่มสลับสถานะ: ชื่อต้องคงที่ สถานะบอกด้วย aria-pressed เท่านั้น (ไม่ให้ชื่อกับสถานะซ้ำกัน)
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
         match = re.search(r'<button[^>]*id="fullscreenBtn"[^>]*>', html)
 
         self.assertIsNotNone(match, "Fullscreen button not found")
+        self.assertIn("fullscreenBtn.setAttribute('aria-label', 'โหมดเต็มจอ')", html)
+        self.assertNotIn("setAttribute('aria-label', label)", html,
+                         "aria-label must not change with fullscreen state")
         self.assertIn("fullscreenBtn.setAttribute('aria-pressed', String(isFullscreen))", html)
         self.assertIn("updateFullscreenButton();", html)
 
