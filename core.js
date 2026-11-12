@@ -301,6 +301,94 @@
     }
   },
 
+  DATA_BACKUP_VERSION: 1,
+  DATA_BACKUP_KEYS: Object.freeze([
+    'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_theme', 'cp_volume', 'cp_muted',
+    'cp_tick', 'cp_autostart', 'cp_tasks', 'cp_mission', 'cp_cycle', 'cp_timer_state',
+    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_streak'
+  ]),
+
+  createDataBackup(storage) {
+    const data = {};
+    for (const key of PomodoroCore.DATA_BACKUP_KEYS) {
+      data[key] = storage.getItem(key);
+    }
+    return { version: PomodoroCore.DATA_BACKUP_VERSION, exportedAt: new Date().toISOString(), data };
+  },
+
+  validateDataBackup(backup, nowMs) {
+    let parsed = backup;
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (e) {
+        return null;
+      }
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) ||
+        parsed.version !== PomodoroCore.DATA_BACKUP_VERSION || !parsed.data ||
+        typeof parsed.data !== 'object' || Array.isArray(parsed.data)) return null;
+    if (Object.keys(parsed).some(key => key !== 'version' && key !== 'exportedAt' && key !== 'data') ||
+        (parsed.exportedAt !== undefined && (typeof parsed.exportedAt !== 'string' || !Number.isFinite(Date.parse(parsed.exportedAt))))) return null;
+
+    const data = parsed.data;
+    const keys = Object.keys(data);
+    if (keys.length === 0 || keys.some(key => !PomodoroCore.DATA_BACKUP_KEYS.includes(key))) return null;
+    const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+      Number.isFinite(Date.parse(value + 'T00:00:00.000Z')) && new Date(value + 'T00:00:00.000Z').toISOString().slice(0, 10) === value;
+    for (const key of keys) {
+      const value = data[key];
+      if (value === null) continue;
+      if (typeof value !== 'string') return null;
+      if (key === 'cp_cfg_focus' && PomodoroCore.validateCustomDuration(value, 1, 90, null) === null) return null;
+      if (key === 'cp_cfg_short' && PomodoroCore.validateCustomDuration(value, 1, 30, null) === null) return null;
+      if (key === 'cp_cfg_long' && PomodoroCore.validateCustomDuration(value, 1, 60, null) === null) return null;
+      if (key === 'cp_theme' && !['cyan', 'pink', 'yellow', 'green'].includes(value)) return null;
+      if (key === 'cp_volume' && (!/^(?:0(?:\.\d+)?|1(?:\.0+)?)$/.test(value) || Number(value) < 0 || Number(value) > 1)) return null;
+      if ((key === 'cp_muted' || key === 'cp_tick' || key === 'cp_autostart') && value !== 'true' && value !== 'false') return null;
+      if (key === 'cp_tasks') {
+        let tasks;
+        try { tasks = JSON.parse(value); } catch (e) { return null; }
+        if (!Array.isArray(tasks) || tasks.some(task => !task || typeof task !== 'object' || Array.isArray(task) ||
+            Object.keys(task).some(field => field !== 'id' && field !== 'text' && field !== 'done') ||
+            !((typeof task.id === 'string' && task.id.trim() !== '') || (typeof task.id === 'number' && Number.isFinite(task.id))) ||
+            typeof task.text !== 'string' || task.text.length > 80 || typeof task.done !== 'boolean')) return null;
+      }
+      if (key === 'cp_mission' && value.length > 80) return null;
+      if (key === 'cp_cycle' && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < 1)) return null;
+      if (key === 'cp_timer_state') {
+        let timer;
+        try { timer = JSON.parse(value); } catch (e) { return null; }
+        if (!timer || typeof timer !== 'object' || Array.isArray(timer) ||
+            Object.keys(timer).some(field => !['mode', 'duration', 'timeLeft', 'isRunning', 'targetEndTime', 'cycleCount'].includes(field)) ||
+            !PomodoroCore.parseTimerState(value, nowMs === undefined ? Date.now() : nowMs)) return null;
+      }
+      if (key === 'cp_session_history') {
+        let history;
+        try { history = JSON.parse(value); } catch (e) { return null; }
+        if (!Array.isArray(history) || history.length > PomodoroCore.SESSION_HISTORY_LIMIT ||
+            PomodoroCore.validateSessionHistory(history).length !== history.length || history.some(entry =>
+              Object.keys(entry).some(field => field !== 'mode' && field !== 'completedAt' && field !== 'focusDuration') ||
+              (entry.mode === 'focus' ? Object.keys(entry).length !== 3 : Object.keys(entry).length !== 2))) return null;
+      }
+      if ((key === 'cp_last_date') && !validDate(value)) return null;
+      if ((key === 'cp_focus_mins_today' || key === 'cp_streak') &&
+          (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < (key === 'cp_streak' ? 1 : 0))) return null;
+    }
+    return { version: parsed.version, data: { ...data } };
+  },
+
+  restoreDataBackup(storage, backup, nowMs) {
+    const validated = PomodoroCore.validateDataBackup(backup, nowMs);
+    if (!validated) return false;
+    for (const key of Object.keys(validated.data)) {
+      const value = validated.data[key];
+      if (value === null) storage.removeItem(key);
+      else storage.setItem(key, value);
+    }
+    return true;
+  },
+
   calculateDailyFocusMins(lastDateStr, todayStr, storedMins) {
     if (!lastDateStr || lastDateStr !== todayStr) return 0;
     if (typeof storedMins === 'number') {
