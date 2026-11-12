@@ -18,7 +18,7 @@ class TestVisualizerBarHeightLookup(unittest.TestCase):
         self.assertIn("const barHeight = barHeights[dataArray[i]];", visualizer)
         self.assertNotIn("(dataArray[i] / 255) * canvas.height", visualizer)
 
-    def test_visualizer_bar_height_lookup_preserves_output(self):
+    def test_visualizer_bar_height_lookup_preserves_output_and_improves_frame_work(self):
         proc = subprocess.run(
             ["node", "bench/bench_visualizer_bar_height.js"],
             capture_output=True,
@@ -28,6 +28,8 @@ class TestVisualizerBarHeightLookup(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         results = json.loads(proc.stdout)
         self.assertTrue(results["outputEquality"])
+        # เกณฑ์หลวมกว่าเดิม (เดิม 20%) เพราะเวลาวัดผันตามเครื่อง; ยังจับการถดถอยที่ไม่ได้ผลจริงได้
+        self.assertGreaterEqual(results["improvementPercent"], 5)
 
 
 if __name__ == "__main__":
