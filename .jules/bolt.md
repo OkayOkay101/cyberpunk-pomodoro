@@ -131,3 +131,13 @@
 
 **Learning:** `sanitizeMission()` converted every trimmed mission to a code-point array and joined it again, even though ordinary titles already fit within the 80-code-point limit. Checking the UTF-16 length first avoids the array allocation in this common case; over-limit strings still use code-point slicing to preserve surrogate pairs.
 **Action:** Return the trimmed string directly when its UTF-16 length is at most 80, retaining the existing `Array.from(...).slice(0, 80)` behavior for longer titles. On four representative titles across 250,000 calls × 5 rounds, median runtime improved from 139.72ms to 67.04ms (52.0%) with exact output equality.
+
+## 2026-11-12 - No change for document title formatting
+
+**Learning:** Combining the two `trim()` calls in `formatDocumentTitle()` did not improve the representative workload meaningfully; routine formatting performance was within benchmark noise and below the 20% acceptance threshold.
+**Action:** Kept production code unchanged after measuring 24.19ms baseline vs. 23.85ms for one million calls per round (5 representative inputs, median of 7 rounds); output checksums matched exactly.
+
+## 2026-11-12 - Avoid duplicate session history validation
+
+**Learning:** `recordCompletedSession()` first validates and normalizes stored history, then prepends one session and runs the full validator again. The new record can be checked directly with the same date, mode, and focus-duration rules; because the existing array is already normalized and bounded, trimming it to 19 and prepending the valid entry preserves the exact output while avoiding a second scan and allocation pass.
+**Action:** Validate the new entry directly and reuse the normalized history array in `recordCompletedSession()`. A workload with 20 history entries across 100,000 calls per round (median of 7 rounds) improved from 698.69ms to 376.50ms (46.1%), with exact baseline equality across valid/invalid inputs and a 20-entry history.

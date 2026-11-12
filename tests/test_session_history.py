@@ -6,6 +6,74 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestSessionHistory(unittest.TestCase):
+    def test_record_completed_session_validates_once_and_matches_baseline(self):
+        js_code = r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+
+        function baselineRecordCompletedSession(history, mode, completedAt, focusDuration) {
+          const entries = PomodoroCore.validateSessionHistory(history);
+          if (mode !== 'focus' && mode !== 'shortBreak' && mode !== 'longBreak') return entries;
+          const entry = { mode, completedAt };
+          if (mode === 'focus') entry.focusDuration = focusDuration;
+          return PomodoroCore.validateSessionHistory([entry, ...entries]);
+        }
+
+        const validDate = '2026-11-12T10:30:00.000Z';
+        const history = [
+          { mode: 'focus', completedAt: validDate, focusDuration: 1500 },
+          { mode: 'shortBreak', completedAt: '2026-11-12T10:00:00.000Z' },
+          { mode: 'longBreak', completedAt: '2026-11-11T10:00:00.000Z' }
+        ];
+        const cases = [
+          ['focus', validDate, 1200],
+          ['shortBreak', validDate, 1200],
+          ['longBreak', validDate, 1200],
+          ['focus', 'invalid-date', 1200],
+          ['shortBreak', null, 1200],
+          ['focus', validDate, 0],
+          ['focus', validDate, Infinity],
+          ['unknown', validDate, 1200]
+        ];
+
+        for (const [mode, completedAt, focusDuration] of cases) {
+          assert.deepStrictEqual(
+            PomodoroCore.recordCompletedSession(history, mode, completedAt, focusDuration),
+            baselineRecordCompletedSession(history, mode, completedAt, focusDuration)
+          );
+        }
+
+        const fullHistory = Array.from({ length: 40 }, (_, index) => ({
+          mode: index % 3 === 0 ? 'focus' : 'shortBreak',
+          completedAt: validDate,
+          ...(index % 3 === 0 ? { focusDuration: 1500 } : {})
+        }));
+        assert.deepStrictEqual(
+          PomodoroCore.recordCompletedSession(fullHistory, 'focus', validDate, 1200),
+          baselineRecordCompletedSession(fullHistory, 'focus', validDate, 1200)
+        );
+
+        const originalValidator = PomodoroCore.validateSessionHistory;
+        let validationCalls = 0;
+        PomodoroCore.validateSessionHistory = (...args) => {
+          validationCalls++;
+          return originalValidator(...args);
+        };
+        try {
+          PomodoroCore.recordCompletedSession(history, 'focus', validDate, 1200);
+          assert.strictEqual(validationCalls, 1);
+        } finally {
+          PomodoroCore.validateSessionHistory = originalValidator;
+        }
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+
     def test_history_validation_stops_after_limit_and_matches_baseline(self):
         js_code = r"""
         const assert = require('assert');
