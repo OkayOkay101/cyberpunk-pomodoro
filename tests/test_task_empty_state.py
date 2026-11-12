@@ -1,5 +1,6 @@
 import unittest
 import subprocess
+import re
 from pathlib import Path
 
 
@@ -109,6 +110,14 @@ class TestTaskChecklistEmptyState(unittest.TestCase):
         self.assertIn(".task-item > span {", html)
         self.assertIn("min-width: 0;", html)
         self.assertIn("overflow-wrap: anywhere;", html)
+
+    def test_mission_input_explains_character_limit(self):
+        root = Path(__file__).resolve().parent.parent
+        html = (root / "index.html").read_text(encoding="utf-8")
+        match = re.search(r'<input[^>]*id="missionInput"[^>]*>', html)
+        self.assertIsNotNone(match)
+        self.assertIn('maxlength="80"', match.group(0))
+        self.assertIn("ไม่เกิน 80 ตัวอักษร", match.group(0))
 
 
 if __name__ == "__main__":
