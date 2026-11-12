@@ -151,3 +151,13 @@
 
 **Learning:** `getThemeVariables()` and `getThemeLabel()` searched a four-name array with `.includes()` on every call, including frequent theme reads during rendering. Exact string dispatch avoids allocating/reading the key list and preserves the cyan fallback for every unsupported input.
 **Action:** Replaced `VALID_THEMES.includes()` and `VALID_LABELS.includes()` checks with direct theme-name comparisons and removed the now-unused key arrays. For 3,000,000 calls across five common/invalid inputs (median of 7 rounds), theme-variable lookup improved from 46.16ms to 20.93ms (54.6%) and label lookup from 41.35ms to 18.21ms (56.0%); exact output equality was verified.
+
+## 2026-11-12 - No change for timer-state parsing
+
+**Learning:** Replacing the short-lived `limits` object allocation in `parseTimerState()` with direct mode thresholds reduces overhead, but JSON parsing and validation dominate the representative workload.
+**Action:** Kept production code unchanged because the candidate improved less than the required 20% threshold. On three JSON states (focus/shortBreak running, longBreak paused), 1,000,000 calls per round across 7 rounds (median), the baseline took 512.01ms and the direct-threshold candidate took 444.34ms (13.2% faster); outputs matched exactly.
+
+## 2026-11-12 - Set audio visualizer fill style once per frame
+
+**Learning:** `startVisualizer()` assigns the same canvas `fillStyle` once for every bar even though the theme color is constant throughout a frame. With 128 frequency bars, this repeats 127 unnecessary canvas state writes per animation frame.
+**Action:** Moved the color assignment before the bar loop. A 128-bar rendering workload across 50,000 frames per round (median of 7 rounds) improved from 799.05ms to 93.69ms (88.3% faster), with identical drawing checksums and fill-style writes reduced from 128 to 1 per frame.
