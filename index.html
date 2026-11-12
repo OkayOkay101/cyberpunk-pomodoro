@@ -1669,6 +1669,12 @@
     }
 
     if (fullscreenBtn) {
+      const updateFullscreenButton = () => {
+        const isFullscreen = Boolean(document.fullscreenElement);
+        fullscreenBtn.textContent = isFullscreen ? '⛶ EXIT FULL' : '⛶ FULL';
+        fullscreenBtn.setAttribute('aria-label', isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'โหมดเต็มจอ');
+      };
+      document.addEventListener('fullscreenchange', updateFullscreenButton);
       fullscreenBtn.addEventListener('click', () => {
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen().catch(() => {});
