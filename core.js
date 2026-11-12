@@ -155,6 +155,7 @@
   },
 
   clampVolume(vol) {
+    if (typeof vol === 'symbol') return 0.5;
     const num = typeof vol === 'number' ? vol : parseFloat(vol);
     if (isNaN(num)) return 0.5;
     return num < 0 ? 0 : (num > 1 ? 1 : num);
