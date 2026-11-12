@@ -493,6 +493,8 @@
     let d;
     if (date === undefined) {
       d = new Date();
+    } else if (typeof date === 'symbol' || typeof date === 'bigint') {
+      d = new Date();
     } else if (date instanceof Date) {
       d = isNaN(date.getTime()) ? new Date() : date;
     } else {
