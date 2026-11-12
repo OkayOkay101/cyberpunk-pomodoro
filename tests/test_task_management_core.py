@@ -281,6 +281,27 @@ class TestTaskManagementCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_remove_task_item_existing_missing_and_invalid_lists(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+        const original = [
+          { id: 1, text: 'Keep', done: false },
+          { id: 2, text: 'Remove', done: true }
+        ];
+        const remaining = PomodoroCore.removeTaskItem(original, 2);
+        if (remaining.length !== 1 || remaining[0].id !== 1) process.exit(1);
+        if (original.length !== 2) process.exit(2);
+
+        const missing = PomodoroCore.removeTaskItem(original, 99);
+        if (missing.length !== 2 || missing === original) process.exit(3);
+        if (PomodoroCore.removeTaskItem([], 1).length !== 0) process.exit(4);
+        if (PomodoroCore.removeTaskItem(null, 1).length !== 0) process.exit(5);
+        console.log('SUCCESS');
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

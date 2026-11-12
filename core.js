@@ -554,6 +554,11 @@
     return result;
   },
 
+  removeTaskItem(tasks, taskId) {
+    if (!Array.isArray(tasks)) return [];
+    return tasks.filter(task => !task || task.id !== taskId);
+  },
+
   renderTaskList(tasks) {
     const emptyState = '<div class="task-empty" role="status">ยังไม่มีภารกิจ — พิมพ์ด้านบนแล้วกด Enter เพื่อเพิ่ม</div>';
     if (!Array.isArray(tasks) || tasks.length === 0) {
@@ -571,6 +576,7 @@
         <div class="task-item ${doneClass}" data-id="${safeId}">
           <input type="checkbox" ${checked} aria-label="${safeText}">
           <span>${safeText}</span>
+          <button type="button" class="task-remove" aria-label="Remove task: ${safeText}">×</button>
         </div>
       `;
     }

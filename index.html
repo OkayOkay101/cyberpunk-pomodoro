@@ -571,12 +571,31 @@
       border: 1px solid var(--border);
     }
     .task-item > span {
+      flex: 1;
       min-width: 0;
       overflow-wrap: anywhere;
     }
     .task-item input[type="checkbox"] {
       accent-color: var(--accent);
       cursor: pointer;
+    }
+    .task-remove {
+      flex: 0 0 32px;
+      min-width: 32px;
+      min-height: 32px;
+      padding: 0;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font: inherit;
+      font-size: 16px;
+    }
+    .task-remove:hover,
+    .task-remove:focus-visible {
+      color: var(--accent);
+      border-color: var(--accent);
     }
     .task-item.done {
       text-decoration: line-through;
@@ -1336,6 +1355,17 @@
       if (!item) return;
       const id = parseInt(item.dataset.id, 10);
       tasks = PomodoroCore.toggleTaskItem(tasks, id, e.target.checked);
+      localStorage.setItem('cp_tasks', JSON.stringify(tasks));
+      renderTasks();
+    });
+    taskChecklist.addEventListener('click', (e) => {
+      const removeButton = e.target.closest('.task-remove');
+      if (!removeButton) return;
+      const item = removeButton.closest('.task-item');
+      if (!item) return;
+      const task = tasks.find(entry => entry && String(entry.id) === item.dataset.id);
+      if (!task) return;
+      tasks = PomodoroCore.removeTaskItem(tasks, task.id);
       localStorage.setItem('cp_tasks', JSON.stringify(tasks));
       renderTasks();
     });
