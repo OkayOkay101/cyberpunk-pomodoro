@@ -951,10 +951,10 @@
         let x = 0;
         const currentTheme = localStorage.getItem('cp_theme') || 'cyan';
         const primaryColor = PomodoroCore.getThemeVariables(currentTheme).primary;
+        ctx.fillStyle = primaryColor;
 
         for (let i = 0; i < bufferLength; i++) {
           const barHeight = (dataArray[i] / 255) * canvas.height;
-          ctx.fillStyle = primaryColor;
           ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
           x += barWidth;
         }
