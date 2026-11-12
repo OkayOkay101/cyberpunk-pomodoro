@@ -55,7 +55,7 @@ class TestGetLocalDateStringPerformance(unittest.TestCase):
 
         // Invalid dates fall back to the current date, so separate calls can
         // legitimately differ if the local date changes between them.
-        for (const input of [new Date('invalid'), 'invalid date input']) {
+        for (const input of [new Date('invalid'), 'invalid date input', Symbol('date'), 1n]) {
             const actual = PomodoroCore.getLocalDateString(input);
             if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(actual)) {
                 console.error('Invalid-date fallback has unexpected format: ' + actual);
