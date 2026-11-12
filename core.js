@@ -317,6 +317,7 @@
   },
 
   formatStreakBadge(currentStreak) {
+    if (typeof currentStreak === 'symbol') return STREAK_BADGES[1];
     if (typeof currentStreak === 'number') {
       if (currentStreak <= 1) return STREAK_BADGES[1];
       if (currentStreak <= 100) {
@@ -330,6 +331,7 @@
   },
 
   formatFocusTimeBadge(minutes) {
+    if (typeof minutes === 'symbol') return FOCUS_BADGES[0];
     if (typeof minutes === 'number') {
       if (minutes <= 0) return FOCUS_BADGES[0];
       if (minutes <= 1440) {
