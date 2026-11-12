@@ -290,8 +290,12 @@
 
   calculateDailyFocusMins(lastDateStr, todayStr, storedMins) {
     if (!lastDateStr || lastDateStr !== todayStr) return 0;
-    const parsed = parseInt(storedMins, 10);
-    return (!isNaN(parsed) && parsed > 0) ? parsed : 0;
+    if (typeof storedMins === 'number') {
+      return Number.isSafeInteger(storedMins) && storedMins > 0 ? storedMins : 0;
+    }
+    if (typeof storedMins !== 'string' || !/^\d+$/.test(storedMins)) return 0;
+    const parsed = Number(storedMins);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : 0;
   },
 
   refreshDailyStats(lastDateStr, todayStr, storedMins, storedStreak) {
