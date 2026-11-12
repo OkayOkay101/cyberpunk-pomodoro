@@ -70,6 +70,60 @@ class TestDataBackup(unittest.TestCase):
         }
         """)
 
+    def test_restore_replaces_all_supported_keys_so_no_mixed_state_remains(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const store = { cp_streak: '9', cp_focus_mins_today: '50', cp_last_date: '2026-11-11', unrelated_key: 'keep' };
+        const storage = {
+          getItem(key) { return Object.hasOwn(store, key) ? store[key] : null; },
+          setItem(key, value) { store[key] = String(value); },
+          removeItem(key) { delete store[key]; }
+        };
+        // backup ที่ไม่มี cp_streak / cp_focus_mins_today: ค่าเดิมต้องถูกลบ ไม่ปนกับวันที่ใหม่
+        const backup = { version: 1, data: { cp_last_date: '2026-11-12' } };
+        assert.strictEqual(PomodoroCore.restoreDataBackup(storage, JSON.stringify(backup), Date.now()), true);
+        assert.strictEqual(Object.hasOwn(store, 'cp_streak'), false);
+        assert.strictEqual(Object.hasOwn(store, 'cp_focus_mins_today'), false);
+        assert.strictEqual(store.cp_last_date, '2026-11-12');
+        assert.strictEqual(store.unrelated_key, 'keep');
+        """)
+
+    def test_restore_rolls_back_when_storage_write_fails(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const store = { cp_theme: 'cyan', cp_streak: '4' };
+        let writes = 0;
+        const storage = {
+          getItem(key) { return Object.hasOwn(store, key) ? store[key] : null; },
+          setItem(key, value) {
+            writes += 1;
+            if (writes === 3) throw new Error('QuotaExceededError');
+            store[key] = String(value);
+          },
+          removeItem(key) { delete store[key]; }
+        };
+        const before = JSON.stringify(store);
+        const backup = { version: 1, data: { cp_theme: 'green', cp_streak: '2', cp_volume: '0.5' } };
+        assert.strictEqual(PomodoroCore.restoreDataBackup(storage, JSON.stringify(backup), Date.now()), false);
+        assert.strictEqual(JSON.stringify(store), before, 'storage must be restored to the previous values');
+        """)
+
+    def test_import_rejects_duplicate_task_ids(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const dup = { version: 1, data: { cp_tasks: JSON.stringify([
+          { id: 1, text: 'A', done: false }, { id: '1', text: 'B', done: true }
+        ]) } };
+        assert.strictEqual(PomodoroCore.validateDataBackup(dup, Date.now()), null);
+        const unique = { version: 1, data: { cp_tasks: JSON.stringify([
+          { id: 1, text: 'A', done: false }, { id: 2, text: 'B', done: true }
+        ]) } };
+        assert.notStrictEqual(PomodoroCore.validateDataBackup(unique, Date.now()), null);
+        """)
+
     def test_settings_modal_exposes_export_and_import_controls(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 

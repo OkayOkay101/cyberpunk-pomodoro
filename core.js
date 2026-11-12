@@ -354,6 +354,7 @@
             Object.keys(task).some(field => field !== 'id' && field !== 'text' && field !== 'done') ||
             !((typeof task.id === 'string' && task.id.trim() !== '') || (typeof task.id === 'number' && Number.isFinite(task.id))) ||
             typeof task.text !== 'string' || task.text.length > 80 || typeof task.done !== 'boolean')) return null;
+        if (new Set(tasks.map(task => String(task.id))).size !== tasks.length) return null; // id ต้องไม่ซ้ำ
       }
       if (key === 'cp_mission' && value.length > 80) return null;
       if (key === 'cp_cycle' && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < 1)) return null;
@@ -379,13 +380,25 @@
     return { version: parsed.version, data: { ...data } };
   },
 
+  // แทนที่ข้อมูลทั้งชุด: key ที่ไม่มีในไฟล์สำรองจะถูกลบ (กลับเป็นค่าเริ่มต้น) เพื่อไม่ให้ state ปนกัน
+  // ถ้าเขียนไม่สำเร็จ (เช่น โควตาเต็ม) จะย้อนค่าเดิมกลับและคืน false
   restoreDataBackup(storage, backup, nowMs) {
     const validated = PomodoroCore.validateDataBackup(backup, nowMs);
     if (!validated) return false;
-    for (const key of Object.keys(validated.data)) {
-      const value = validated.data[key];
-      if (value === null) storage.removeItem(key);
-      else storage.setItem(key, value);
+    const previous = {};
+    for (const key of PomodoroCore.DATA_BACKUP_KEYS) previous[key] = storage.getItem(key);
+    try {
+      for (const key of PomodoroCore.DATA_BACKUP_KEYS) {
+        const value = validated.data[key] ?? null;
+        if (value === null) storage.removeItem(key);
+        else storage.setItem(key, value);
+      }
+    } catch (e) {
+      for (const key of PomodoroCore.DATA_BACKUP_KEYS) {
+        if (previous[key] === null || previous[key] === undefined) storage.removeItem(key);
+        else storage.setItem(key, previous[key]);
+      }
+      return false;
     }
     return true;
   },
@@ -555,9 +568,19 @@
     return result;
   },
 
+  // ลบเฉพาะรายการแรกที่ id ตรง (id ควรไม่ซ้ำ; ถ้าซ้ำจะไม่ลบรายการอื่นที่มองไม่เห็นไปด้วย)
   removeTaskItem(tasks, taskId) {
     if (!Array.isArray(tasks)) return [];
-    return tasks.filter(task => !task || task.id !== taskId);
+    const index = tasks.findIndex(task => task && task.id === taskId);
+    if (index === -1) return tasks.slice();
+    return [...tasks.slice(0, index), ...tasks.slice(index + 1)];
+  },
+
+  // แปลงปุ่มที่กดในหน้าตั้งค่าเป็นการกระทำ: 'close' | 'trap' | null
+  getSettingsModalKeyAction(key) {
+    if (key === 'Escape') return 'close';
+    if (key === 'Tab') return 'trap';
+    return null;
   },
 
   renderTaskList(tasks) {
