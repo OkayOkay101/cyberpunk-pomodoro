@@ -581,6 +581,7 @@
       total = Math.trunc(totalTabs);
       if (total <= 0) return -1;
     } else {
+      if (typeof totalTabs === 'symbol') return -1;
       total = parseInt(totalTabs, 10);
       if (isNaN(total) || total <= 0) return -1;
     }
@@ -591,6 +592,7 @@
       curr = Math.trunc(currentIndex);
       if (curr < 0 || curr >= total) return -1;
     } else {
+      if (typeof currentIndex === 'symbol') return -1;
       curr = parseInt(currentIndex, 10);
       if (isNaN(curr) || curr < 0 || curr >= total) return -1;
     }
