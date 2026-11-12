@@ -61,6 +61,14 @@ class TestToolbarButtonAccessibility(unittest.TestCase):
         self.assertIn("fullscreenBtn.title = label", html,
                       "Fullscreen button tooltip must follow fullscreen state")
 
+    def test_fullscreen_button_exposes_pressed_state(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        match = re.search(r'<button[^>]*id="fullscreenBtn"[^>]*>', html)
+
+        self.assertIsNotNone(match, "Fullscreen button not found")
+        self.assertIn("fullscreenBtn.setAttribute('aria-pressed', String(isFullscreen))", html)
+        self.assertIn("updateFullscreenButton();", html)
+
     def test_javascript_updates_aria_pressed_on_toggle(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
