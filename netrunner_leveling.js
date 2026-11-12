@@ -23,7 +23,8 @@ function calculateNetrunnerExp(completedCycles, totalFocusMins) {
     ? Math.floor(totalFocusMins)
     : 0;
 
-  return (safeCycles * EXP_PER_COMPLETED_SESSION) + (safeMins * EXP_PER_FOCUS_MINUTE);
+  const totalExp = (safeCycles * EXP_PER_COMPLETED_SESSION) + (safeMins * EXP_PER_FOCUS_MINUTE);
+  return Math.min(totalExp, Number.MAX_SAFE_INTEGER);
 }
 
 function getNetrunnerRank(exp) {

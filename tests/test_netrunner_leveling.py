@@ -31,6 +31,8 @@ class TestNetrunnerLeveling(unittest.TestCase):
         if (calculateNetrunnerExp(NaN, Infinity) !== 0) process.exit(4);
         if (calculateNetrunnerExp(2.9, 10.8) !== 60) process.exit(5);
         if (calculateNetrunnerExp('2', '10') !== 0) process.exit(6);
+        if (calculateNetrunnerExp(Number.MAX_VALUE, 0) !== Number.MAX_SAFE_INTEGER) process.exit(7);
+        if (calculateNetrunnerExp(0, Number.MAX_VALUE) !== Number.MAX_SAFE_INTEGER) process.exit(8);
 
         console.log('SUCCESS');
         """
