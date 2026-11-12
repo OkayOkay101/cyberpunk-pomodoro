@@ -118,6 +118,7 @@ class TestTaskChecklistEmptyState(unittest.TestCase):
         self.assertIsNotNone(match)
         self.assertIn('maxlength="80"', match.group(0))
         self.assertIn("ไม่เกิน 80 ตัวอักษร", match.group(0))
+        self.assertIn('enterkeyhint="done"', match.group(0))
 
     def test_mission_input_has_persistent_add_instruction(self):
         root = Path(__file__).resolve().parent.parent
