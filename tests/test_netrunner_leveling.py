@@ -180,6 +180,8 @@ class TestNetrunnerLeveling(unittest.TestCase):
         if (parseStoredExp(Infinity) !== 0) process.exit(16);
         if (parseStoredExp({ exp: 450 }) !== 0) process.exit(17);
         if (parseStoredExp('9'.repeat(400)) !== 0) process.exit(18);
+        if (parseStoredExp(String(Number.MAX_SAFE_INTEGER + 1)) !== 0) process.exit(19);
+        if (parseStoredExp(Number.MAX_SAFE_INTEGER + 1) !== 0) process.exit(20);
 
         console.log('SUCCESS');
         """
