@@ -62,7 +62,7 @@ class TestVolumeBehaviorAndEquality(unittest.TestCase):
         const invalidInputs = [
             NaN,
             'abc', '0.5px', '', '   ',
-            null, undefined, true, false,
+            null, undefined, true, false, Symbol('volume'),
             [], {}, function() {}
         ];
 
