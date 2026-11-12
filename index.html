@@ -523,6 +523,12 @@
       border-color: var(--accent);
       box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
     }
+    .mission-input-hint {
+      display: block;
+      margin: -4px 0 10px;
+      color: var(--text-dim);
+      font-size: 11px;
+    }
     .mission-input.saved {
       border-color: var(--green);
       box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
@@ -823,9 +829,10 @@
         <span style="font-size: 10px; color: var(--text-dim);">CHECKLIST PERSISTED</span>
       </div>
       <div class="mission-input-row">
-        <input type="text" class="mission-input" id="missionInput" maxlength="80" placeholder="ระบุภารกิจ (ไม่เกิน 80 ตัวอักษร) แล้วกด Enter เพื่อเพิ่ม" value="สร้างสรรค์โปรเจกต์ระดับเทพ" autocomplete="off" aria-label="ระบุภารกิจที่กำลังโฟกัส">
+        <input type="text" class="mission-input" id="missionInput" maxlength="80" placeholder="ระบุภารกิจ (ไม่เกิน 80 ตัวอักษร) แล้วกด Enter เพื่อเพิ่ม" value="สร้างสรรค์โปรเจกต์ระดับเทพ" autocomplete="off" aria-label="ระบุภารกิจที่กำลังโฟกัส" aria-describedby="missionInputHint">
         <button class="clear-mission-btn" id="clearMissionBtn" title="ล้างข้อความ" aria-label="ล้างข้อความภารกิจ">✕</button>
       </div>
+      <span class="mission-input-hint" id="missionInputHint">กด Enter เพื่อเพิ่มภารกิจ (ไม่เกิน 80 ตัวอักษร)</span>
       <div class="task-checklist" id="taskChecklist"></div>
     </section>
 
