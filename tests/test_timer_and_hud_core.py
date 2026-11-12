@@ -160,6 +160,29 @@ class TestTimerAndHUDCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_calculate_progress_offset_rejects_symbol_and_bigint_inputs(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+        const C = 691.15;
+        const invalidValues = [Symbol('invalid'), 1n];
+
+        for (const invalid of invalidValues) {
+            if (PomodoroCore.calculateProgressOffset(invalid, 1500, C) !== 0) process.exit(1);
+            if (PomodoroCore.calculateProgressOffset(750, invalid, C) !== 0) process.exit(2);
+            if (PomodoroCore.calculateProgressOffset(750, 1500, invalid) !== 0) process.exit(3);
+        }
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_get_next_mode_transitions(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
