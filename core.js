@@ -88,6 +88,17 @@
     });
   });
   const MS_PER_DAY = 86400000;
+  function isValidDateOnlyString(value) {
+    const match = typeof value === 'string' && /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
+    if (!match) return typeof value !== 'string' || !isNaN(Date.parse(value));
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (month < 1 || month > 12 || day < 1) return false;
+    const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return day <= daysInMonth[month - 1];
+  }
   const KEY_ACTIONS = Object.freeze(Object.assign(Object.create(null), {
     r: 'resetTimer',
     R: 'resetTimer',
@@ -171,7 +182,9 @@
     if (lastDateStr === todayStr) return validStreak;
     if (typeof todayStr === 'symbol') return 1;
     const todayTime = typeof todayStr === 'string' ? Date.parse(todayStr) : new Date(todayStr).getTime();
-    const diffTime = todayTime - Date.parse(lastDateStr);
+    const lastDateTime = Date.parse(lastDateStr);
+    if (!isValidDateOnlyString(lastDateStr) || !isValidDateOnlyString(todayStr)) return 1;
+    const diffTime = todayTime - lastDateTime;
     if (isNaN(diffTime)) return 1;
     const diffDays = Math.round(diffTime / MS_PER_DAY);
     if (diffDays === 1) return validStreak + 1;

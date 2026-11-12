@@ -6,6 +6,27 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestStreakEdgeCases(unittest.TestCase):
+    def test_corrupted_persisted_calendar_date_resets_streak(self):
+        js_code = """
+        const { PomodoroCore } = require('./core.js');
+
+        const streak = PomodoroCore.calculateStreak('2026-02-31', '2026-03-01', 4);
+        if (streak !== 1) {
+            console.error('FAIL: impossible persisted date should reset streak to 1, got ' + streak);
+            process.exit(1);
+        }
+
+        console.log('SUCCESS');
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
+
     def test_symbol_today_date_falls_back_to_one(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
