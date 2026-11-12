@@ -689,9 +689,13 @@
   recordCompletedSession(history, mode, completedAt, focusDuration) {
     const entries = PomodoroCore.validateSessionHistory(history);
     if (mode !== 'focus' && mode !== 'shortBreak' && mode !== 'longBreak') return entries;
+    if (typeof completedAt !== 'string' || !Number.isFinite(Date.parse(completedAt))) return entries;
+    if (mode === 'focus' && (typeof focusDuration !== 'number' || !Number.isFinite(focusDuration) || focusDuration <= 0)) return entries;
     const entry = { mode, completedAt };
     if (mode === 'focus') entry.focusDuration = focusDuration;
-    return PomodoroCore.validateSessionHistory([entry, ...entries]);
+    entries.length = Math.min(entries.length, PomodoroCore.SESSION_HISTORY_LIMIT - 1);
+    entries.unshift(entry);
+    return entries;
   },
 
   formatSessionHistoryEntry(entry) {
