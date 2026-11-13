@@ -366,10 +366,10 @@
         if (!Array.isArray(tasks) || tasks.some(task => !task || typeof task !== 'object' || Array.isArray(task) ||
             Object.keys(task).some(field => field !== 'id' && field !== 'text' && field !== 'done') ||
             !((typeof task.id === 'string' && task.id.trim() !== '') || (typeof task.id === 'number' && Number.isFinite(task.id))) ||
-            typeof task.text !== 'string' || Array.from(task.text).length > 80 || typeof task.done !== 'boolean')) return null;
+            typeof task.text !== 'string' || (task.text.length > 80 && Array.from(task.text).length > 80) || typeof task.done !== 'boolean')) return null;
         if (new Set(tasks.map(task => String(task.id))).size !== tasks.length) return null; // id ต้องไม่ซ้ำ
       }
-      if (key === 'cp_mission' && Array.from(value).length > 80) return null;
+      if (key === 'cp_mission' && value.length > 80 && Array.from(value).length > 80) return null;
       if (key === 'cp_cycle' && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < 1)) return null;
       if (key === 'cp_timer_state') {
         let timer;
