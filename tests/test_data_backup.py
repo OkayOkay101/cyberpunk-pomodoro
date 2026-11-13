@@ -154,6 +154,23 @@ class TestDataBackup(unittest.TestCase):
         }
         """)
 
+    def test_import_checks_ascii_mission_and_task_limits(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const backupFor = data => ({ version: 1, data });
+        for (const count of [79, 80]) {
+          assert.notStrictEqual(PomodoroCore.validateDataBackup(backupFor({ cp_mission: 'x'.repeat(count) })), null);
+          assert.notStrictEqual(PomodoroCore.validateDataBackup(backupFor({
+            cp_tasks: JSON.stringify([{ id: 1, text: 'x'.repeat(count), done: false }])
+          })), null);
+        }
+        assert.strictEqual(PomodoroCore.validateDataBackup(backupFor({ cp_mission: 'x'.repeat(81) })), null);
+        assert.strictEqual(PomodoroCore.validateDataBackup(backupFor({
+          cp_tasks: JSON.stringify([{ id: 1, text: 'x'.repeat(81), done: false }])
+        })), null);
+        """)
+
     def test_settings_modal_exposes_export_and_import_controls(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
