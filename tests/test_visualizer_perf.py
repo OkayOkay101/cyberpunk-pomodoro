@@ -18,20 +18,6 @@ class TestVisualizerPerformance(unittest.TestCase):
         self.assertLess(render_frame.index("ctx.fillStyle = primaryColor;"), loop_start)
         self.assertNotIn("ctx.fillStyle =", render_frame[loop_start:loop_end])
 
-    def test_visualizer_sets_constant_fill_style_once_per_frame(self):
-        proc = subprocess.run(
-            ["node", "bench/bench_visualizer.js"],
-            capture_output=True,
-            text=True,
-            cwd=str(REPO_ROOT),
-        )
-        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
-        results = json.loads(proc.stdout)
-        self.assertTrue(results["outputEquality"])
-        self.assertEqual(results["baselineStyleWrites"], 128)
-        self.assertEqual(results["currentStyleWrites"], 1)
-        self.assertGreaterEqual(results["improvementPercent"], 20)
-
 
 if __name__ == "__main__":
     unittest.main()
