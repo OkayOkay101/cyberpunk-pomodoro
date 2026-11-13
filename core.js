@@ -926,15 +926,16 @@
         const parsedDur = parseInt(duration, 10);
         addedFocusMins = (parsedDur > 0) ? Math.round(parsedDur / 60) : 25;
       }
+      if (!Number.isSafeInteger(addedFocusMins) || addedFocusMins <= 0) addedFocusMins = 25;
 
       let safeTotalMins;
       if (typeof totalMins === 'number') {
-        safeTotalMins = (totalMins >= 0 && Number.isFinite(totalMins)) ? Math.trunc(totalMins) : 0;
+        safeTotalMins = (Number.isSafeInteger(totalMins) && totalMins >= 0) ? totalMins : 0;
       } else {
         const parsedTotal = parseInt(totalMins, 10);
-        safeTotalMins = (!isNaN(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
+        safeTotalMins = (Number.isSafeInteger(parsedTotal) && parsedTotal >= 0) ? parsedTotal : 0;
       }
-      const nextTotalFocusMins = safeTotalMins + addedFocusMins;
+      const nextTotalFocusMins = Math.min(Number.MAX_SAFE_INTEGER, safeTotalMins + addedFocusMins);
 
       let safeStreak;
       if (typeof streak === 'number') {
