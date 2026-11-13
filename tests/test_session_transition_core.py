@@ -223,6 +223,28 @@ class TestSessionTransitionCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_calculate_completed_session_keeps_daily_total_within_safe_integer(self):
+        js_code = """
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+
+        const atLimit = PomodoroCore.calculateCompletedSession({
+          currentMode: 'focus', cycleCount: 1, focusDuration: 1500,
+          totalFocusMinsToday: Number.MAX_SAFE_INTEGER, todayStr: '2026-11-09'
+        });
+        assert.strictEqual(atLimit.nextTotalFocusMins, Number.MAX_SAFE_INTEGER);
+        assert.strictEqual(atLimit.storage.cp_focus_mins_today, String(Number.MAX_SAFE_INTEGER));
+
+        const unsafeStoredTotal = PomodoroCore.calculateCompletedSession({
+          currentMode: 'focus', cycleCount: 1, focusDuration: 1500,
+          totalFocusMinsToday: '9007199254740992', todayStr: '2026-11-09'
+        });
+        assert.strictEqual(unsafeStoredTotal.nextTotalFocusMins, 25);
+        assert.strictEqual(unsafeStoredTotal.storage.cp_focus_mins_today, '25');
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+
     def test_calculate_completed_session_positional_and_object_arguments(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
