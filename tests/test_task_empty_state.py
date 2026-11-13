@@ -127,6 +127,12 @@ class TestTaskChecklistEmptyState(unittest.TestCase):
         self.assertIn('aria-describedby="missionInputHint"', match.group(0))
         self.assertRegex(html, r'<span[^>]*id="missionInputHint"[^>]*>[^<]*กด Enter เพื่อเพิ่ม[^<]*</span>')
 
+    def test_mission_input_has_visible_keyboard_focus(self):
+        html = (Path(__file__).resolve().parent.parent / "index.html").read_text(encoding="utf-8")
+        focus_style = re.search(r"\.mission-input:focus-visible\s*\{([^}]*)\}", html)
+        self.assertIsNotNone(focus_style)
+        self.assertIn("outline: 2px solid var(--accent);", focus_style.group(1))
+
 
 if __name__ == "__main__":
     unittest.main()
