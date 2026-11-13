@@ -1,6 +1,7 @@
 import json
 import re
 import struct
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -14,6 +15,40 @@ class TestPwaAssets(unittest.TestCase):
 
         self.assertRegex(html, r'<link[^>]+rel="manifest"[^>]+href="manifest\.webmanifest"')
         self.assertIn("navigator.serviceWorker.register('./service-worker.js')", html)
+
+    def test_service_worker_registration_failure_logs_warning(self):
+        js_code = r"""
+        const fs = require('fs');
+        const vm = require('vm');
+        const html = fs.readFileSync('index.html', 'utf8');
+        const registration = html.match(/navigator\.serviceWorker\.register\('\.\/service-worker\.js'\)\.catch\([\s\S]*?\}\);/);
+        if (!registration) throw new Error('Service worker registration handler not found');
+
+        const error = new Error('registration denied');
+        const warnings = [];
+        const result = vm.runInNewContext(registration[0], {
+            navigator: { serviceWorker: { register: () => Promise.reject(error) } },
+            console: { warn: (...args) => warnings.push(args) }
+        });
+
+        result.then(() => {
+            if (warnings.length !== 1) throw new Error(`Expected one warning, got ${warnings.length}`);
+            if (warnings[0][0] !== 'Service Worker registration failed:') throw new Error(`Unexpected warning: ${warnings[0][0]}`);
+            if (warnings[0][1] !== error) throw new Error('Warning did not include the original registration error');
+            console.log('SUCCESS');
+        }).catch((failure) => {
+            console.error(failure);
+            process.exitCode = 1;
+        });
+        """
+        proc = subprocess.run(
+            ["node", "-e", js_code],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT)
+        )
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+        self.assertIn("SUCCESS", proc.stdout)
 
     def test_manifest_has_installable_metadata_and_app_icons(self):
         manifest = json.loads((REPO_ROOT / "manifest.webmanifest").read_text(encoding="utf-8"))
