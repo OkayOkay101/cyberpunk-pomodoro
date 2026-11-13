@@ -132,11 +132,6 @@
 **Learning:** `sanitizeMission()` converted every trimmed mission to a code-point array and joined it again, even though ordinary titles already fit within the 80-code-point limit. Checking the UTF-16 length first avoids the array allocation in this common case; over-limit strings still use code-point slicing to preserve surrogate pairs.
 **Action:** Return the trimmed string directly when its UTF-16 length is at most 80, retaining the existing `Array.from(...).slice(0, 80)` behavior for longer titles. On four representative titles across 250,000 calls × 5 rounds, median runtime improved from 139.72ms to 67.04ms (52.0%) with exact output equality.
 
-## 2026-11-12 - No change for document title formatting
-
-**Learning:** Combining the two `trim()` calls in `formatDocumentTitle()` did not improve the representative workload meaningfully; routine formatting performance was within benchmark noise and below the 20% acceptance threshold.
-**Action:** Kept production code unchanged after measuring 24.19ms baseline vs. 23.85ms for one million calls per round (5 representative inputs, median of 7 rounds); output checksums matched exactly.
-
 ## 2026-11-12 - Avoid duplicate session history validation
 
 **Learning:** `recordCompletedSession()` first validates and normalizes stored history, then prepends one session and runs the full validator again. The new record can be checked directly with the same date, mode, and focus-duration rules; because the existing array is already normalized and bounded, trimming it to 19 and prepending the valid entry preserves the exact output while avoiding a second scan and allocation pass.
@@ -152,20 +147,10 @@
 **Learning:** `getThemeVariables()` and `getThemeLabel()` searched a four-name array with `.includes()` on every call, including frequent theme reads during rendering. Exact string dispatch avoids allocating/reading the key list and preserves the cyan fallback for every unsupported input.
 **Action:** Replaced `VALID_THEMES.includes()` and `VALID_LABELS.includes()` checks with direct theme-name comparisons and removed the now-unused key arrays. For 3,000,000 calls across five common/invalid inputs (median of 7 rounds), theme-variable lookup improved from 46.16ms to 20.93ms (54.6%) and label lookup from 41.35ms to 18.21ms (56.0%); exact output equality was verified.
 
-## 2026-11-12 - No change for timer-state parsing
-
-**Learning:** Replacing the short-lived `limits` object allocation in `parseTimerState()` with direct mode thresholds reduces overhead, but JSON parsing and validation dominate the representative workload.
-**Action:** Kept production code unchanged because the candidate improved less than the required 20% threshold. On three JSON states (focus/shortBreak running, longBreak paused), 1,000,000 calls per round across 7 rounds (median), the baseline took 512.01ms and the direct-threshold candidate took 444.34ms (13.2% faster); outputs matched exactly.
-
 ## 2026-11-12 - Set audio visualizer fill style once per frame
 
 **Learning:** `startVisualizer()` assigns the same canvas `fillStyle` once for every bar even though the theme color is constant throughout a frame. With 128 frequency bars, this repeats 127 unnecessary canvas state writes per animation frame.
 **Action:** Moved the color assignment before the bar loop. A 128-bar rendering workload across 50,000 frames per round (median of 7 rounds) improved from 799.05ms to 93.69ms (88.3% faster), with identical drawing checksums and fill-style writes reduced from 128 to 1 per frame.
-
-## 2026-11-12 - No change without a new qualifying hotspot
-
-**Learning:** Recent Bolt work already covers the main core helpers and audio visualizer; without an unaddressed candidate and a representative benchmark, claiming a performance improvement would be speculative.
-**Action:** Kept production code unchanged. The requested result JSON path is outside the designated repository workspace, so it cannot be written under the workspace-only scope rule; verification passed (50/50 JS tests, Python syntax check for 64 files, and 225 Python unit tests).
 
 ## 2026-11-12 - Delegate task checkbox changes
 
