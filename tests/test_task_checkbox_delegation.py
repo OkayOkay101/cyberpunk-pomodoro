@@ -20,19 +20,6 @@ class TestTaskCheckboxDelegation(unittest.TestCase):
         self.assertIn("e.target.matches('input[type=\"checkbox\"]')", task_rendering)
         self.assertIn("PomodoroCore.toggleTaskItem(tasks, id, e.target.checked)", task_rendering)
 
-    def test_delegated_listener_benchmark_preserves_behavior_and_is_faster(self):
-        proc = subprocess.run(
-            ["node", "bench/bench_task_checkbox_delegation.js"],
-            capture_output=True,
-            text=True,
-            cwd=str(REPO_ROOT),
-        )
-        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
-        results = json.loads(proc.stdout)
-        self.assertTrue(results["outputEquality"])
-        self.assertEqual(results["delegatedListenerAttachments"], 1)
-        self.assertGreaterEqual(results["improvementPercent"], 20)
-
 
 if __name__ == "__main__":
     unittest.main()

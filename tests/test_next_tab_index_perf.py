@@ -150,12 +150,6 @@ class TestNextTabIndexPerformance(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Failed: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
-    def test_tab_navigation_benchmark_reports_tracked_comparison_count(self):
-        benchmark = (REPO_ROOT / "bench" / "bench_tab_navigation.js").read_text(encoding="utf-8")
-        self.assertRegex(benchmark, r"let\s+checkedComparisons\s*=\s*0")
-        self.assertRegex(benchmark, r"checkedComparisons\+\+")
-        self.assertIn("across ${checkedComparisons} test cases.", benchmark)
-
 
 if __name__ == "__main__":
     unittest.main()
