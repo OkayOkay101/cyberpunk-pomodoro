@@ -20,6 +20,8 @@ class TestSettingsInputAccessibility(unittest.TestCase):
             self.assertIsNotNone(match, f"Settings input #{input_id} not found in index.html")
             self.assertIn(f'aria-label="{expected_label}"', match.group(0),
                           f"Settings input #{input_id} missing aria-label='{expected_label}'")
+            self.assertRegex(html, rf'<label for="{input_id}">[^<]+</label>',
+                             f"Settings input #{input_id} needs a clickable visible label")
 
 
 if __name__ == "__main__":
