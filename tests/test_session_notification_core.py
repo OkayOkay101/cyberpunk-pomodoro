@@ -37,6 +37,10 @@ class TestSessionNotificationCore(unittest.TestCase):
         // Strings beyond the safe integer range must not round to a different cycle.
         if (PomodoroCore.parseCycleCount('9007199254740993') !== 1) process.exit(15);
 
+        // Numeric inputs must obey the same safe-integer limit.
+        if (PomodoroCore.parseCycleCount(Number.MAX_SAFE_INTEGER) !== Number.MAX_SAFE_INTEGER) process.exit(16);
+        if (PomodoroCore.parseCycleCount(Number.MAX_SAFE_INTEGER + 1) !== 1) process.exit(17);
+
         // Boundary fallbacks: 0, negative numbers, NaN, null, undefined, strings
         if (PomodoroCore.parseCycleCount(0) !== 1) process.exit(8);
         if (PomodoroCore.parseCycleCount(-3) !== 1) process.exit(9);
