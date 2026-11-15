@@ -316,6 +316,7 @@
   },
 
   DATA_BACKUP_VERSION: 1,
+  DATA_BACKUP_MAX_BYTES: 1024 * 1024,
   DATA_BACKUP_KEYS: Object.freeze([
     'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_theme', 'cp_volume', 'cp_muted',
     'cp_tick', 'cp_autostart', 'cp_tasks', 'cp_mission', 'cp_cycle', 'cp_timer_state',
@@ -333,6 +334,7 @@
   validateDataBackup(backup, nowMs) {
     let parsed = backup;
     if (typeof parsed === 'string') {
+      if (parsed.length > PomodoroCore.DATA_BACKUP_MAX_BYTES) return null;
       try {
         parsed = JSON.parse(parsed);
       } catch (e) {

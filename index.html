@@ -1877,6 +1877,11 @@
       importDataInput.addEventListener('change', async () => {
         const file = importDataInput.files && importDataInput.files[0];
         if (!file) return;
+        if (file.size > PomodoroCore.DATA_BACKUP_MAX_BYTES) {
+          if (dataBackupStatus) dataBackupStatus.textContent = 'ไม่สามารถนำเข้าได้: ไฟล์สำรองมีขนาดใหญ่เกินกำหนด';
+          importDataInput.value = '';
+          return;
+        }
         try {
           const backup = await file.text();
           if (!PomodoroCore.validateDataBackup(backup, Date.now())) {
