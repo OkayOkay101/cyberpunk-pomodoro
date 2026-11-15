@@ -223,6 +223,24 @@ class TestSessionTransitionCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_calculate_completed_session_does_not_increment_max_safe_cycle(self):
+        js_code = """
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+
+        for (const cycleCount of [Number.MAX_SAFE_INTEGER, String(Number.MAX_SAFE_INTEGER)]) {
+          const result = PomodoroCore.calculateCompletedSession({
+            currentMode: 'focus', cycleCount, focusDuration: 1500,
+            totalFocusMinsToday: 0, todayStr: '2026-11-09'
+          });
+          assert.strictEqual(result.nextCycleCount, 2);
+          assert.strictEqual(result.storage.cp_cycle, '2');
+          assert.strictEqual(Number.isSafeInteger(result.nextCycleCount), true);
+        }
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+
     def test_calculate_completed_session_keeps_daily_total_within_safe_integer(self):
         js_code = """
         const assert = require('assert');

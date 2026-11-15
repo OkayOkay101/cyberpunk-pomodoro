@@ -895,7 +895,8 @@
 
     let safeCycle;
     if (typeof cycle === 'number') {
-      safeCycle = (cycle >= 1 && Number.isFinite(cycle)) ? Math.trunc(cycle) : 1;
+      const truncatedCycle = Math.trunc(cycle);
+      safeCycle = (cycle >= 1 && Number.isFinite(cycle) && Number.isSafeInteger(truncatedCycle)) ? truncatedCycle : 1;
     } else {
       safeCycle = PomodoroCore.parseCycleCount(cycle);
     }
@@ -903,6 +904,7 @@
     const safeMode = (typeof mode === 'string') ? mode : 'focus';
 
     if (safeMode === 'focus') {
+      if (safeCycle >= Number.MAX_SAFE_INTEGER) safeCycle = 1;
       let nextMode;
       let toastMessage;
       let nextCycleCount;
