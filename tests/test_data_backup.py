@@ -70,6 +70,31 @@ class TestDataBackup(unittest.TestCase):
         }
         """)
 
+    def test_oversized_import_is_rejected_before_json_parsing(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const originalParse = JSON.parse;
+        let parseCalls = 0;
+        JSON.parse = (...args) => {
+          parseCalls += 1;
+          return originalParse(...args);
+        };
+        try {
+          const oversized = ' '.repeat(PomodoroCore.DATA_BACKUP_MAX_BYTES + 1);
+          assert.strictEqual(PomodoroCore.validateDataBackup(oversized), null);
+          assert.strictEqual(parseCalls, 0, 'oversized data must be rejected before parsing');
+        } finally {
+          JSON.parse = originalParse;
+        }
+        """)
+
+    def test_file_size_is_checked_before_import_content_is_read(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        size_check = html.index("file.size > PomodoroCore.DATA_BACKUP_MAX_BYTES")
+        content_read = html.index("await file.text()", size_check)
+        self.assertLess(size_check, content_read)
+
     def test_restore_replaces_all_supported_keys_so_no_mixed_state_remains(self):
         self.run_node(r"""
         const assert = require('assert');
