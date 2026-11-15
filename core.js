@@ -779,7 +779,8 @@
   parseCycleCount(cycleCount) {
     if (typeof cycleCount === 'number') {
       if (cycleCount >= 1 && Number.isFinite(cycleCount)) {
-        return Math.trunc(cycleCount);
+        const truncated = Math.trunc(cycleCount);
+        return Number.isSafeInteger(truncated) ? truncated : 1;
       }
       return 1;
     }
