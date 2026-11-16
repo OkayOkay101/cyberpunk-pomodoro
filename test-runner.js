@@ -769,6 +769,9 @@ function runUnitTests() {
       assertEqual(html.includes('aria-pressed="true"'), true, 'Active option is not exposed as pressed');
       assertEqual(html.includes('PomodoroCore.getThemeLabel(theme)'), true, 'Palette name is not kept in sync');
     });
+    test('weekly focus chart exposes each day to assistive technology', () => {
+      require('./tests/weekly-focus-accessibility.test.js')();
+    });
   }
 
   // 34. Audio Cue Configuration Decoupling
