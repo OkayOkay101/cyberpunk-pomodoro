@@ -31,7 +31,8 @@ class TestTaskDeleteAccessibility(unittest.TestCase):
         self.assertIn("taskChecklist.addEventListener('click'", task_rendering)
         self.assertIn("e.target.closest('.task-remove')", task_rendering)
         self.assertIn("PomodoroCore.removeTaskItem(tasks, task.id)", task_rendering)
-        self.assertIn("localStorage.setItem('cp_tasks', JSON.stringify(tasks))", task_rendering)
+        self.assertIn("persistMissionBoards();", task_rendering)
+        self.assertIn("localStorage.setItem('cp_tasks', JSON.stringify(tasks))", html)
         self.assertIn("renderTasks();", task_rendering)
 
 

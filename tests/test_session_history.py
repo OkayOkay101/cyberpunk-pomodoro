@@ -183,7 +183,7 @@ class TestSessionHistory(unittest.TestCase):
           { mode: 'focus', completedAt: '2026-11-12T10:30:00.000Z', focusDuration: -1 }
         ])), []);
 
-        const many = Array.from({ length: 60 }, (_, index) => ({
+        const many = Array.from({ length: PomodoroCore.SESSION_HISTORY_LIMIT + 40 }, (_, index) => ({
           mode: 'focus',
           completedAt: new Date(Date.UTC(2026, 0, 1, 0, index)).toISOString(),
           focusDuration: 1500

@@ -105,6 +105,36 @@ class TestSessionTransitionCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_calculate_completed_session_uses_validated_custom_long_break_cadence(self):
+        js_code = """
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const cadence = PomodoroCore.resolveLongBreakCadence('3');
+        assert.strictEqual(cadence, 3);
+        assert.strictEqual(PomodoroCore.resolveLongBreakCadence('0'), 4);
+        assert.strictEqual(PomodoroCore.resolveLongBreakCadence('13'), 4);
+        assert.strictEqual(PomodoroCore.resolveLongBreakCadence('3x'), 4);
+
+        const beforeBoundary = PomodoroCore.calculateCompletedSession({
+          currentMode: 'focus', cycleCount: 2, focusDuration: 1500,
+          totalFocusMinsToday: 50, longBreakCadence: cadence, todayStr: '2026-11-09'
+        });
+        assert.strictEqual(beforeBoundary.nextMode, 'shortBreak');
+        const boundary = PomodoroCore.calculateCompletedSession({
+          currentMode: 'focus', cycleCount: 3, focusDuration: 1500,
+          totalFocusMinsToday: 50, longBreakCadence: cadence, todayStr: '2026-11-09'
+        });
+        assert.strictEqual(boundary.nextMode, 'longBreak');
+        assert.strictEqual(boundary.nextCycleCount, 4);
+        const afterBoundary = PomodoroCore.calculateCompletedSession({
+          currentMode: 'focus', cycleCount: 4, focusDuration: 1500,
+          totalFocusMinsToday: 50, longBreakCadence: cadence, todayStr: '2026-11-09'
+        });
+        assert.strictEqual(afterBoundary.nextMode, 'shortBreak');
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+
     def test_calculate_completed_session_break_to_focus(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
