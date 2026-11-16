@@ -320,7 +320,7 @@
   DATA_BACKUP_KEYS: Object.freeze([
     'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_theme', 'cp_volume', 'cp_muted',
     'cp_tick', 'cp_autostart', 'cp_tasks', 'cp_mission', 'cp_cycle', 'cp_timer_state',
-    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_streak'
+    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_focus_mins_by_date', 'cp_streak'
   ]),
 
   createDataBackup(storage) {
@@ -350,8 +350,6 @@
     const data = parsed.data;
     const keys = Object.keys(data);
     if (keys.length === 0 || keys.some(key => !PomodoroCore.DATA_BACKUP_KEYS.includes(key))) return null;
-    const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-      Number.isFinite(Date.parse(value + 'T00:00:00.000Z')) && new Date(value + 'T00:00:00.000Z').toISOString().slice(0, 10) === value;
     for (const key of keys) {
       const value = data[key];
       if (value === null) continue;
@@ -388,7 +386,14 @@
               Object.keys(entry).some(field => field !== 'mode' && field !== 'completedAt' && field !== 'focusDuration') ||
               (entry.mode === 'focus' ? Object.keys(entry).length !== 3 : Object.keys(entry).length !== 2))) return null;
       }
-      if ((key === 'cp_last_date') && !validDate(value)) return null;
+      if (key === 'cp_focus_mins_by_date') {
+        let totals;
+        try { totals = JSON.parse(value); } catch (e) { return null; }
+        if (!totals || typeof totals !== 'object' || Array.isArray(totals)) return null;
+        const validatedTotals = PomodoroCore.validateDailyFocusTotals(totals);
+        if (Object.keys(totals).some(date => !Object.prototype.hasOwnProperty.call(validatedTotals, date))) return null;
+      }
+      if (key === 'cp_last_date' && !PomodoroCore.isValidDateString(value)) return null;
       if ((key === 'cp_focus_mins_today' || key === 'cp_streak') &&
           (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < (key === 'cp_streak' ? 1 : 0))) return null;
     }
@@ -426,6 +431,54 @@
     if (typeof storedMins !== 'string' || !/^\d+$/.test(storedMins)) return 0;
     const parsed = Number(storedMins);
     return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : 0;
+  },
+
+  validateDailyFocusTotals(totals) {
+    let parsed = totals;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch (e) { return {}; }
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const valid = {};
+    for (const date of Object.keys(parsed)) {
+      const minutes = parsed[date];
+      if (!PomodoroCore.isValidDateString(date) || !Number.isSafeInteger(minutes) || minutes < 0) continue;
+      valid[date] = minutes;
+    }
+    return valid;
+  },
+
+  isValidDateString(date) {
+    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+    const parsed = new Date(date + 'T00:00:00.000Z');
+    return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+  },
+
+  updateDailyFocusTotals(totals, date, addedMinutes) {
+    const validated = PomodoroCore.validateDailyFocusTotals(totals);
+    if (!PomodoroCore.isValidDateString(date) ||
+        !Number.isSafeInteger(addedMinutes) || addedMinutes <= 0) return validated;
+    validated[date] = Math.min(Number.MAX_SAFE_INTEGER, (validated[date] || 0) + addedMinutes);
+    return validated;
+  },
+
+  summarizeWeeklyFocus(totals, today) {
+    const validated = PomodoroCore.validateDailyFocusTotals(totals);
+    const todayDate = PomodoroCore.isValidDateString(today)
+      ? new Date(today + 'T00:00:00.000Z') : new Date();
+    const start = new Date(todayDate);
+    start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+    const days = [];
+    let totalMinutes = 0;
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(start);
+      date.setUTCDate(start.getUTCDate() + i);
+      const dateString = date.toISOString().slice(0, 10);
+      const minutes = validated[dateString] || 0;
+      days.push({ date: dateString, minutes });
+      totalMinutes = Math.min(Number.MAX_SAFE_INTEGER, totalMinutes + minutes);
+    }
+    return { days, totalMinutes };
   },
 
   refreshDailyStats(lastDateStr, todayStr, storedMins, storedStreak) {

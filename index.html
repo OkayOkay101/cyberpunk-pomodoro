@@ -139,6 +139,21 @@
       padding: 10px 12px;
       border-radius: 4px;
     }
+    .weekly-focus-chart {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      align-items: end;
+      min-height: 92px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+    .weekly-focus-day { display: grid; gap: 5px; justify-items: center; font-size: 10px; color: var(--text-dim); }
+    .weekly-focus-bar { width: min(100%, 24px); height: max(3px, var(--focus-height)); background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .weekly-focus-minutes { color: var(--text); font-size: 9px; }
+    .weekly-focus-summary { margin: 10px 0 0; color: var(--text); font-size: 12px; }
     .hud-tools {
       display: flex;
       gap: 6px;
@@ -872,6 +887,13 @@
       </div>
       <ul class="session-history-list" id="sessionHistory" aria-live="polite" aria-relevant="additions text"></ul>
     </section>
+    <section class="deck-section" aria-labelledby="weeklyFocusHeading">
+      <div class="deck-title">
+        <h2 id="weeklyFocusHeading">📊 WEEKLY FOCUS</h2>
+      </div>
+      <div class="weekly-focus-chart" id="weeklyFocusChart" role="img" aria-label="Weekly focus analytics"></div>
+      <p class="weekly-focus-summary" id="weeklyFocusSummary" aria-live="polite"></p>
+    </section>
   </main>
 
   <!-- HUD Settings Modal -->
@@ -1311,6 +1333,8 @@
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const taskChecklist = document.getElementById('taskChecklist');
     const sessionHistoryElement = document.getElementById('sessionHistory');
+    const weeklyFocusChart = document.getElementById('weeklyFocusChart');
+    const weeklyFocusSummary = document.getElementById('weeklyFocusSummary');
 
     progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
 
@@ -1326,6 +1350,36 @@
       if (focusTimeBadge) focusTimeBadge.textContent = PomodoroCore.formatFocusTimeBadge(totalFocusMinsToday);
     }
     updateStatsBadges();
+
+    let focusMinsByDate = PomodoroCore.validateDailyFocusTotals(localStorage.getItem('cp_focus_mins_by_date'));
+    if (!localStorage.getItem('cp_focus_mins_by_date') && totalFocusMinsToday > 0) {
+      focusMinsByDate = PomodoroCore.updateDailyFocusTotals(focusMinsByDate, todayStr, totalFocusMinsToday);
+      localStorage.setItem('cp_focus_mins_by_date', JSON.stringify(focusMinsByDate));
+    }
+    function renderWeeklyFocus() {
+      if (!weeklyFocusChart || !weeklyFocusSummary) return;
+      const summary = PomodoroCore.summarizeWeeklyFocus(focusMinsByDate, PomodoroCore.getLocalDateString());
+      const maxMinutes = Math.max(1, ...summary.days.map(day => day.minutes));
+      weeklyFocusChart.textContent = '';
+      summary.days.forEach(day => {
+        const item = document.createElement('div');
+        item.className = 'weekly-focus-day';
+        const bar = document.createElement('span');
+        bar.className = 'weekly-focus-bar';
+        bar.style.setProperty('--focus-height', `${Math.max(3, Math.round(day.minutes / maxMinutes * 52))}px`);
+        bar.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('span');
+        label.textContent = new Date(`${day.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' });
+        const minutes = document.createElement('span');
+        minutes.className = 'weekly-focus-minutes';
+        minutes.textContent = `${day.minutes} min`;
+        item.append(bar, label, minutes);
+        weeklyFocusChart.appendChild(item);
+      });
+      weeklyFocusSummary.textContent = `สัปดาห์นี้โฟกัสรวม ${summary.totalMinutes} นาที`;
+      weeklyFocusChart.setAttribute('aria-label', `Weekly focus analytics: ${summary.days.map(day => `${day.date}, ${day.minutes} minutes`).join('; ')}. Total ${summary.totalMinutes} minutes.`);
+    }
+    renderWeeklyFocus();
 
     let sessionHistory = PomodoroCore.validateSessionHistory(localStorage.getItem('cp_session_history'));
     function renderSessionHistory() {
@@ -1576,9 +1630,12 @@
         localStorage.setItem('cp_focus_mins_today', transition.storage.cp_focus_mins_today);
         localStorage.setItem('cp_last_date', transition.storage.cp_last_date);
         localStorage.setItem('cp_streak', transition.storage.cp_streak);
+        focusMinsByDate = PomodoroCore.updateDailyFocusTotals(focusMinsByDate, completionDate, transition.addedFocusMins);
+        localStorage.setItem('cp_focus_mins_by_date', JSON.stringify(focusMinsByDate));
         lastActiveDate = transition.storage.cp_last_date;
         statsDate = transition.storage.cp_last_date;
         updateStatsBadges();
+        renderWeeklyFocus();
 
         cycleCount = transition.nextCycleCount;
         localStorage.setItem('cp_cycle', transition.storage.cp_cycle);
