@@ -9,7 +9,7 @@ class TestSettingsInputAccessibility(unittest.TestCase):
     def test_settings_duration_inputs_have_accessible_labels(self):
         html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
 
-        inputs = ['cfgFocusMin', 'cfgShortMin', 'cfgLongMin']
+        inputs = ['cfgFocusMin', 'cfgShortMin', 'cfgLongMin', 'cfgDailyFocusGoal']
 
         for input_id in inputs:
             match = re.search(rf'<input[^>]*id="{input_id}"[^>]*>', html)

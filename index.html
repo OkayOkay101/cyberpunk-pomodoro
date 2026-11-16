@@ -843,7 +843,7 @@
       <div id="modeToast" class="mode-toast" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="stats-streak">
         <span class="stat-badge" id="streakBadge" aria-live="polite" aria-atomic="true">⚡ STREAK: 1 DAY</span>
-        <span class="stat-badge" id="focusTimeBadge" aria-live="polite" aria-atomic="true">🎯 0 MINS TODAY</span>
+        <span class="stat-badge" id="focusTimeBadge" aria-live="polite" aria-atomic="true">🎯 0 / 120 MINS TODAY · 0%</span>
       </div>
 <div class="hud-tools">
       <button class="tool-btn" id="tickToggleBtn" title="เปิด/ปิดเสียงเดินของเวลา (Tick)" aria-label="เปิด/ปิดเสียงเดินของเวลา (Tick)" aria-pressed="false">⏱️ TICK: OFF</button>
@@ -1000,6 +1000,8 @@
         <input type="number" class="settings-input" id="cfgLongMin" min="1" max="60" value="15">
       </div>
       <div class="settings-row">
+        <label for="cfgDailyFocusGoal">Daily Focus Goal (นาที):</label>
+        <input type="number" class="settings-input" id="cfgDailyFocusGoal" min="1" max="1440" value="120">
         <label for="cfgLongBreakCadence">Focus sessions before long break:</label>
         <input type="number" class="settings-input" id="cfgLongBreakCadence" min="1" max="12" value="4">
       </div>
@@ -1441,11 +1443,12 @@
     const todayStr = PomodoroCore.getLocalDateString();
     let statsDate = todayStr;
     let totalFocusMinsToday = PomodoroCore.calculateDailyFocusMins(lastActiveDate, todayStr, localStorage.getItem('cp_focus_mins_today'));
+    let dailyFocusGoal = PomodoroCore.resolveDailyFocusGoal(localStorage.getItem('cp_daily_focus_goal')).minutes;
     let currentStreak = PomodoroCore.calculateStreak(lastActiveDate, todayStr, parseInt(localStorage.getItem('cp_streak') || '1', 10));
 
     function updateStatsBadges() {
       if (streakBadge) streakBadge.textContent = PomodoroCore.formatStreakBadge(currentStreak);
-      if (focusTimeBadge) focusTimeBadge.textContent = PomodoroCore.formatFocusTimeBadge(totalFocusMinsToday);
+      if (focusTimeBadge) focusTimeBadge.textContent = PomodoroCore.formatFocusTimeBadge(totalFocusMinsToday, dailyFocusGoal);
     }
     updateStatsBadges();
 
@@ -1986,6 +1989,7 @@
     const cfgFocusMin = document.getElementById('cfgFocusMin');
     const cfgShortMin = document.getElementById('cfgShortMin');
     const cfgLongMin = document.getElementById('cfgLongMin');
+    const cfgDailyFocusGoal = document.getElementById('cfgDailyFocusGoal');
     const cfgLongBreakCadence = document.getElementById('cfgLongBreakCadence');
     const themeBtns = document.querySelectorAll('.theme-btn');
     let lastFocusedElement = null;
@@ -2015,6 +2019,7 @@
       cfgFocusMin.value = (configDurations.minutes && configDurations.minutes.focus) || Math.round(configDurations.focus / 60);
       cfgShortMin.value = (configDurations.minutes && configDurations.minutes.shortBreak) || Math.round(configDurations.shortBreak / 60);
       cfgLongMin.value = (configDurations.minutes && configDurations.minutes.longBreak) || Math.round(configDurations.longBreak / 60);
+      cfgDailyFocusGoal.value = dailyFocusGoal;
       cfgLongBreakCadence.value = longBreakCadence;
       settingsModal.classList.add('open');
       cfgFocusMin.focus();
@@ -2066,6 +2071,7 @@
       const focusMin = parseInt(cfgFocusMin.value, 10);
       const shortMin = parseInt(cfgShortMin.value, 10);
       const longMin = parseInt(cfgLongMin.value, 10);
+      const newDailyFocusGoal = PomodoroCore.resolveDailyFocusGoal(cfgDailyFocusGoal.value);
       const newLongBreakCadence = PomodoroCore.resolveLongBreakCadence(cfgLongBreakCadence.value);
 
       const newDurations = PomodoroCore.resolveDurations({
@@ -2078,10 +2084,13 @@
       localStorage.setItem('cp_cfg_focus', newDurations.storage.cp_cfg_focus);
       localStorage.setItem('cp_cfg_short', newDurations.storage.cp_cfg_short);
       localStorage.setItem('cp_cfg_long', newDurations.storage.cp_cfg_long);
+      dailyFocusGoal = newDailyFocusGoal.minutes;
+      localStorage.setItem('cp_daily_focus_goal', newDailyFocusGoal.storage.cp_daily_focus_goal);
       longBreakCadence = newLongBreakCadence;
       localStorage.setItem('cp_cfg_cadence', String(longBreakCadence));
       refreshTabLabels();
       setMode(currentMode, configDurations[currentMode]);
+      updateStatsBadges();
       closeSettingsModal();
     }
 
