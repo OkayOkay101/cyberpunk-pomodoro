@@ -812,7 +812,7 @@
     return BREAK_NOTIFICATION;
   },
 
-  SESSION_HISTORY_LIMIT: 20,
+  SESSION_HISTORY_LIMIT: 500,
 
   validateSessionHistory(history) {
     let entries = history;
@@ -860,6 +860,40 @@
     const duration = entry.mode === 'focus' ? ` · ${Math.round(entry.focusDuration / 60)} MIN` : '';
     const timestamp = new Date(entry.completedAt).toLocaleString();
     return `${modeLabel}${duration} · ${timestamp}`;
+  },
+
+  getWeeklyFocusSummary(history, referenceDate) {
+    const reference = referenceDate === undefined ? new Date() : new Date(referenceDate);
+    const today = Number.isNaN(reference.getTime()) ? new Date() : reference;
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+      return {
+        date: PomodoroCore.getLocalDateString(date),
+        dayLabel: date.toLocaleDateString(undefined, { weekday: 'short' }),
+        focusSeconds: 0
+      };
+    });
+    const entries = PomodoroCore.validateSessionHistory(history);
+    for (const entry of entries) {
+      if (entry.mode !== 'focus') continue;
+      const completed = new Date(entry.completedAt);
+      if (!Number.isFinite(completed.getTime())) continue;
+      const date = PomodoroCore.getLocalDateString(completed);
+      const day = days.find(item => item.date === date);
+      if (day) day.focusSeconds += entry.focusDuration;
+    }
+    for (const day of days) {
+      day.focusMins = Math.round(day.focusSeconds / 60);
+      delete day.focusSeconds;
+    }
+    return {
+      startDate: days[0].date,
+      endDate: days[6].date,
+      totalFocusMins: days.reduce((total, day) => total + day.focusMins, 0),
+      days
+    };
   },
 
   calculateCompletedSession(modeOrParams, cycleCount, focusDuration, totalFocusMinsToday, currentStreak, todayStr) {

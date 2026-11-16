@@ -139,6 +139,42 @@
       padding: 10px 12px;
       border-radius: 4px;
     }
+    .weekly-focus-chart {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      align-items: end;
+      gap: 8px;
+      min-height: 150px;
+    }
+    .weekly-focus-day {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 6px;
+      min-width: 0;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+    .weekly-focus-bar-track {
+      display: flex;
+      align-items: end;
+      height: 100px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 240, 255, 0.04);
+    }
+    .weekly-focus-bar {
+      width: 100%;
+      min-height: 0;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .weekly-focus-empty {
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      padding: 12px;
+      text-align: center;
+    }
     .hud-tools {
       display: flex;
       gap: 6px;
@@ -872,6 +908,13 @@
       </div>
       <ul class="session-history-list" id="sessionHistory" aria-live="polite" aria-relevant="additions text"></ul>
     </section>
+
+    <section class="deck-section" aria-labelledby="weeklyFocusHeading">
+      <div class="deck-title">
+        <h2 id="weeklyFocusHeading">📊 WEEKLY FOCUS REPORT</h2>
+      </div>
+      <div id="weeklyFocusReport" aria-live="polite" aria-atomic="true"></div>
+    </section>
   </main>
 
   <!-- HUD Settings Modal -->
@@ -1311,6 +1354,7 @@
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const taskChecklist = document.getElementById('taskChecklist');
     const sessionHistoryElement = document.getElementById('sessionHistory');
+    const weeklyFocusReportElement = document.getElementById('weeklyFocusReport');
 
     progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
 
@@ -1328,6 +1372,20 @@
     updateStatsBadges();
 
     let sessionHistory = PomodoroCore.validateSessionHistory(localStorage.getItem('cp_session_history'));
+    function renderWeeklyFocusReport() {
+      if (!weeklyFocusReportElement) return;
+      const summary = PomodoroCore.getWeeklyFocusSummary(sessionHistory);
+      if (summary.totalFocusMins === 0) {
+        weeklyFocusReportElement.innerHTML = '<div class="weekly-focus-empty" role="status">ยังไม่มีข้อมูลโฟกัสในสัปดาห์นี้</div>';
+        return;
+      }
+      const maxMins = Math.max(...summary.days.map(day => day.focusMins));
+      const bars = summary.days.map(day => {
+        const height = day.focusMins === 0 ? 0 : Math.max(4, Math.round(day.focusMins / maxMins * 100));
+        return `<div class="weekly-focus-day" role="group" aria-label="${day.date}: ${day.focusMins} นาที"><span>${day.focusMins} MIN</span><div class="weekly-focus-bar-track" aria-hidden="true"><div class="weekly-focus-bar" style="height: ${height}%"></div></div><span>${day.dayLabel}</span></div>`;
+      }).join('');
+      weeklyFocusReportElement.innerHTML = `<div class="weekly-focus-chart" role="group" aria-label="เวลารวมโฟกัส ${summary.totalFocusMins} นาที ตั้งแต่ ${summary.startDate} ถึง ${summary.endDate}">${bars}</div>`;
+    }
     function renderSessionHistory() {
       if (!sessionHistoryElement) return;
       sessionHistoryElement.textContent = '';
@@ -1346,6 +1404,7 @@
       });
     }
     renderSessionHistory();
+    renderWeeklyFocusReport();
 
     // Mission & Checklist
     let tasks = PomodoroCore.deserializeConfig(localStorage.getItem('cp_tasks'), [
@@ -1548,6 +1607,7 @@
       );
       localStorage.setItem('cp_session_history', JSON.stringify(sessionHistory));
       renderSessionHistory();
+      renderWeeklyFocusReport();
 
       const completionDate = PomodoroCore.getLocalDateString();
       if (currentMode === 'focus' && statsDate !== completionDate) {
