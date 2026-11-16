@@ -22,6 +22,7 @@ class TestDataBackup(unittest.TestCase):
         const values = {
           cp_cfg_focus: '40', cp_cfg_short: '7', cp_cfg_long: '20', cp_theme: 'pink',
           cp_volume: '0.7', cp_muted: 'false', cp_tick: 'true', cp_autostart: 'false',
+          cp_daily_focus_goal: '90',
           cp_tasks: JSON.stringify([{ id: 7, text: 'Ship feature', done: true }]),
           cp_mission: 'Ship feature', cp_cycle: '3',
           cp_timer_state: JSON.stringify({ mode: 'focus', duration: 2400, timeLeft: 1200,
@@ -32,6 +33,7 @@ class TestDataBackup(unittest.TestCase):
         assert.strictEqual(backup.version, PomodoroCore.DATA_BACKUP_VERSION);
         assert.strictEqual(backup.data.cp_cfg_focus, '40');
         assert.strictEqual(backup.data.cp_theme, 'pink');
+        assert.strictEqual(backup.data.cp_daily_focus_goal, '90');
         assert.deepStrictEqual(JSON.parse(backup.data.cp_tasks), JSON.parse(values.cp_tasks));
         assert.deepStrictEqual(JSON.parse(backup.data.cp_timer_state), JSON.parse(values.cp_timer_state));
         assert.deepStrictEqual(JSON.parse(backup.data.cp_session_history), JSON.parse(values.cp_session_history));
@@ -62,12 +64,36 @@ class TestDataBackup(unittest.TestCase):
           JSON.stringify({ version: 1, data: { cp_theme: 'ultraviolet' } }),
           JSON.stringify({ version: 1, data: { cp_tasks: '{"bad":true}' } }),
           JSON.stringify({ version: 1, data: { cp_cfg_focus: '999' } }),
+          JSON.stringify({ version: 1, data: { cp_daily_focus_goal: '1441' } }),
           JSON.stringify({ version: 1, data: { cp_not_supported: 'value' } })
         ]) {
           const before = JSON.stringify(initial);
           assert.strictEqual(PomodoroCore.restoreDataBackup(storage, invalid, Date.now()), false);
           assert.strictEqual(JSON.stringify(initial), before);
         }
+        """)
+
+    def test_daily_focus_goal_backup_round_trip_and_validation(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const values = { cp_daily_focus_goal: '240' };
+        const storage = {
+          getItem(key) { return Object.hasOwn(values, key) ? values[key] : null; },
+          setItem(key, value) { values[key] = String(value); },
+          removeItem(key) { delete values[key]; }
+        };
+        const backup = PomodoroCore.createDataBackup(storage);
+        assert.strictEqual(backup.data.cp_daily_focus_goal, '240');
+        values.cp_daily_focus_goal = '60';
+        assert.strictEqual(PomodoroCore.restoreDataBackup(storage, backup, Date.now()), true);
+        assert.strictEqual(values.cp_daily_focus_goal, '240');
+        assert.notStrictEqual(PomodoroCore.validateDataBackup({
+          version: 1, data: { cp_daily_focus_goal: '1' }
+        }), null);
+        assert.strictEqual(PomodoroCore.validateDataBackup({
+          version: 1, data: { cp_daily_focus_goal: '0' }
+        }), null);
         """)
 
     def test_oversized_import_is_rejected_before_json_parsing(self):
