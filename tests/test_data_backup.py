@@ -30,7 +30,8 @@ class TestDataBackup(unittest.TestCase):
           cp_mission: 'Ship feature', cp_cycle: '3',
           cp_timer_state: JSON.stringify({ mode: 'focus', duration: 2400, timeLeft: 1200,
             isRunning: false, targetEndTime: null, cycleCount: 3 }),
-          cp_session_history: JSON.stringify([{ mode: 'focus', completedAt: '2026-11-12T10:30:00.000Z', focusDuration: 2400 }])
+          cp_session_history: JSON.stringify([{ mode: 'focus', completedAt: '2026-11-12T10:30:00.000Z', focusDuration: 2400 }]),
+          cp_focus_mins_by_date: JSON.stringify({ '2026-11-12': 40 })
         };
         const backup = PomodoroCore.createDataBackup({ getItem: key => values[key] ?? null });
         assert.strictEqual(backup.version, PomodoroCore.DATA_BACKUP_VERSION);
@@ -42,6 +43,7 @@ class TestDataBackup(unittest.TestCase):
         assert.deepStrictEqual(JSON.parse(backup.data.cp_mission_boards), JSON.parse(values.cp_mission_boards));
         assert.deepStrictEqual(JSON.parse(backup.data.cp_timer_state), JSON.parse(values.cp_timer_state));
         assert.deepStrictEqual(JSON.parse(backup.data.cp_session_history), JSON.parse(values.cp_session_history));
+        assert.deepStrictEqual(JSON.parse(backup.data.cp_focus_mins_by_date), { '2026-11-12': 40 });
         assert.strictEqual(Object.hasOwn(backup.data, 'unrelated_key'), false);
         """)
 
@@ -77,6 +79,32 @@ class TestDataBackup(unittest.TestCase):
           const before = JSON.stringify(initial);
           assert.strictEqual(PomodoroCore.restoreDataBackup(storage, invalid, Date.now()), false);
           assert.strictEqual(JSON.stringify(initial), before);
+        }
+        """)
+
+    def test_weekly_focus_totals_are_validated_and_restored(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const store = {};
+        const storage = {
+          getItem(key) { return Object.hasOwn(store, key) ? store[key] : null; },
+          setItem(key, value) { store[key] = String(value); },
+          removeItem(key) { delete store[key]; }
+        };
+        const totals = JSON.stringify({ '2026-11-16': 65, '2026-11-15': 15 });
+        const backup = { version: 1, data: { cp_focus_mins_by_date: totals } };
+        assert.strictEqual(PomodoroCore.restoreDataBackup(storage, backup), true);
+        assert.strictEqual(store.cp_focus_mins_by_date, totals);
+        for (const invalidTotals of [
+          '{broken', JSON.stringify({ '2026-02-30': 10 }),
+          JSON.stringify({ '2026-11-16': -1 }),
+          JSON.stringify({ '2026-11-16': Number.MAX_SAFE_INTEGER + 1 })
+        ]) {
+          assert.strictEqual(PomodoroCore.restoreDataBackup(storage, {
+            version: 1, data: { cp_focus_mins_by_date: invalidTotals }
+          }), false);
+          assert.strictEqual(store.cp_focus_mins_by_date, totals);
         }
         """)
 
