@@ -158,11 +158,11 @@
     return circumference - (clamped / duration) * circumference;
   },
 
-  getNextMode(currentMode, cycleCount) {
+  getNextMode(currentMode, cycleCount, longBreakCadence) {
     if (currentMode === 'focus') {
       if (typeof cycleCount === 'symbol') return 'shortBreak';
       const validCycle = parseInt(cycleCount, 10);
-      return (!isNaN(validCycle) && validCycle > 0 && validCycle % 4 === 0) ? 'longBreak' : 'shortBreak';
+      return (!isNaN(validCycle) && validCycle > 0 && validCycle % PomodoroCore.resolveLongBreakCadence(longBreakCadence) === 0) ? 'longBreak' : 'shortBreak';
     }
     return 'focus';
   },
@@ -238,6 +238,10 @@
     if (!/^[+-]?\d+$/.test(trimmed)) return defaultVal;
     const num = parseInt(trimmed, 10);
     return num >= min && num <= max ? num : defaultVal;
+  },
+
+  resolveLongBreakCadence(value) {
+    return PomodoroCore.validateCustomDuration(value, 1, 12, 4);
   },
 
   resolveDurations(inputs) {
@@ -318,7 +322,7 @@
   DATA_BACKUP_VERSION: 1,
   DATA_BACKUP_MAX_BYTES: 1024 * 1024,
   DATA_BACKUP_KEYS: Object.freeze([
-    'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_theme', 'cp_volume', 'cp_muted',
+    'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_cfg_cadence', 'cp_theme', 'cp_volume', 'cp_muted',
     'cp_tick', 'cp_autostart', 'cp_tasks', 'cp_mission', 'cp_cycle', 'cp_timer_state',
     'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_streak'
   ]),
@@ -359,6 +363,7 @@
       if (key === 'cp_cfg_focus' && PomodoroCore.validateCustomDuration(value, 1, 90, null) === null) return null;
       if (key === 'cp_cfg_short' && PomodoroCore.validateCustomDuration(value, 1, 30, null) === null) return null;
       if (key === 'cp_cfg_long' && PomodoroCore.validateCustomDuration(value, 1, 60, null) === null) return null;
+      if (key === 'cp_cfg_cadence' && PomodoroCore.validateCustomDuration(value, 1, 12, null) === null) return null;
       if (key === 'cp_theme' && !['cyan', 'pink', 'yellow', 'green'].includes(value)) return null;
       if (key === 'cp_volume' && (!/^(?:0(?:\.\d+)?|1(?:\.0+)?)$/.test(value) || Number(value) < 0 || Number(value) > 1)) return null;
       if ((key === 'cp_muted' || key === 'cp_tick' || key === 'cp_autostart') && value !== 'true' && value !== 'false') return null;
@@ -869,6 +874,7 @@
     let totalMins;
     let streak;
     let today;
+    let longBreakCadence;
 
     if (typeof modeOrParams === 'string') {
       mode = modeOrParams;
@@ -877,6 +883,7 @@
       totalMins = totalFocusMinsToday;
       streak = currentStreak;
       today = todayStr;
+      longBreakCadence = arguments[6];
     } else if (modeOrParams && typeof modeOrParams === 'object') {
       mode = modeOrParams.currentMode || modeOrParams.mode;
       cycle = modeOrParams.cycleCount;
@@ -884,6 +891,7 @@
       totalMins = modeOrParams.totalFocusMinsToday;
       streak = modeOrParams.currentStreak;
       today = modeOrParams.todayStr || modeOrParams.today;
+      longBreakCadence = modeOrParams.longBreakCadence;
     } else {
       mode = modeOrParams;
       cycle = cycleCount;
@@ -891,6 +899,7 @@
       totalMins = totalFocusMinsToday;
       streak = currentStreak;
       today = todayStr;
+      longBreakCadence = arguments[6];
     }
 
     let safeCycle;
@@ -902,6 +911,7 @@
     }
 
     const safeMode = (typeof mode === 'string') ? mode : 'focus';
+    const safeCadence = PomodoroCore.resolveLongBreakCadence(longBreakCadence);
 
     if (safeMode === 'focus') {
       if (safeCycle >= Number.MAX_SAFE_INTEGER) safeCycle = 1;
@@ -910,14 +920,14 @@
       let nextCycleCount;
       let cycleStr;
 
-      if (safeCycle <= 100) {
+      if (safeCadence === 4 && safeCycle <= 100) {
         const lookup = FOCUS_SESSION_LOOKUP[safeCycle];
         nextMode = lookup.nextMode;
         toastMessage = lookup.toastMessage;
         nextCycleCount = lookup.nextCycleCount;
         cycleStr = lookup.cycleStr;
       } else {
-        const isLong = (safeCycle % 4 === 0);
+        const isLong = (safeCycle % safeCadence === 0);
         nextMode = isLong ? 'longBreak' : 'shortBreak';
         toastMessage = isLong ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
         nextCycleCount = safeCycle + 1;
@@ -1000,8 +1010,8 @@
     return 'FOCUS MODE';
   },
 
-  calculateSkipTransition(modeOrParams, cycleCount) {
-    if (typeof modeOrParams === 'string' && typeof cycleCount === 'number') {
+  calculateSkipTransition(modeOrParams, cycleCount, longBreakCadence) {
+    if (typeof modeOrParams === 'string' && typeof cycleCount === 'number' && longBreakCadence === undefined) {
       if (cycleCount >= 1 && cycleCount <= 100 && (cycleCount | 0) === cycleCount) {
         if (modeOrParams === 'focus') {
           return FOCUS_SKIP_LOOKUP[cycleCount];
@@ -1012,19 +1022,22 @@
 
     let mode = modeOrParams;
     let cycle = cycleCount;
+    let cadence = longBreakCadence;
 
     if (modeOrParams && typeof modeOrParams === 'object') {
       mode = modeOrParams.currentMode || modeOrParams.mode;
       cycle = modeOrParams.cycleCount;
+      cadence = modeOrParams.longBreakCadence;
     }
 
     const safeCycle = PomodoroCore.parseCycleCount(cycle);
+    const safeCadence = PomodoroCore.resolveLongBreakCadence(cadence);
 
     if (mode === 'focus') {
-      if (safeCycle <= 100) {
+      if (safeCadence === 4 && safeCycle <= 100) {
         return FOCUS_SKIP_LOOKUP[safeCycle];
       }
-      const isLong = (safeCycle % 4 === 0);
+      const isLong = (safeCycle % safeCadence === 0);
       return {
         nextMode: isLong ? 'longBreak' : 'shortBreak',
         toastMessage: isLong ? 'LONG BREAK' : 'SHORT BREAK',
