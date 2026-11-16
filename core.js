@@ -88,6 +88,22 @@
     });
   });
   const MS_PER_DAY = 86400000;
+  const MISSION_BOARD_DEFAULT_ID = 'default';
+  const MISSION_BOARD_DEFAULT_NAME = 'Main Board';
+  const MISSION_BOARD_NAME_LIMIT = 40;
+  function isValidTaskList(tasks) {
+    if (!Array.isArray(tasks) || tasks.some(task => !task || typeof task !== 'object' || Array.isArray(task) ||
+        Object.keys(task).some(field => field !== 'id' && field !== 'text' && field !== 'done') ||
+        !((typeof task.id === 'string' && task.id.trim() !== '') || (typeof task.id === 'number' && Number.isFinite(task.id))) ||
+        typeof task.text !== 'string' || (task.text.length > 80 && Array.from(task.text).length > 80) || typeof task.done !== 'boolean')) return false;
+    return new Set(tasks.map(task => String(task.id))).size === tasks.length;
+  }
+  function normalizeMissionBoardName(name) {
+    if (typeof name !== 'string') return '';
+    const trimmed = name.trim();
+    if (!trimmed || Array.from(trimmed).length > MISSION_BOARD_NAME_LIMIT) return '';
+    return trimmed;
+  }
   function isValidDateOnlyString(value) {
     const match = typeof value === 'string' && /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
     if (!match) return typeof value !== 'string' || !isNaN(Date.parse(value));
@@ -158,11 +174,11 @@
     return circumference - (clamped / duration) * circumference;
   },
 
-  getNextMode(currentMode, cycleCount) {
+  getNextMode(currentMode, cycleCount, longBreakCadence) {
     if (currentMode === 'focus') {
       if (typeof cycleCount === 'symbol') return 'shortBreak';
       const validCycle = parseInt(cycleCount, 10);
-      return (!isNaN(validCycle) && validCycle > 0 && validCycle % 4 === 0) ? 'longBreak' : 'shortBreak';
+      return (!isNaN(validCycle) && validCycle > 0 && validCycle % PomodoroCore.resolveLongBreakCadence(longBreakCadence) === 0) ? 'longBreak' : 'shortBreak';
     }
     return 'focus';
   },
@@ -238,6 +254,10 @@
     if (!/^[+-]?\d+$/.test(trimmed)) return defaultVal;
     const num = parseInt(trimmed, 10);
     return num >= min && num <= max ? num : defaultVal;
+  },
+
+  resolveLongBreakCadence(value) {
+    return PomodoroCore.validateCustomDuration(value, 1, 12, 4);
   },
 
   resolveDurations(inputs) {
@@ -318,10 +338,105 @@
   DATA_BACKUP_VERSION: 1,
   DATA_BACKUP_MAX_BYTES: 1024 * 1024,
   DATA_BACKUP_KEYS: Object.freeze([
-    'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_theme', 'cp_volume', 'cp_muted',
+    'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_cfg_cadence', 'cp_theme', 'cp_volume', 'cp_muted',
     'cp_tick', 'cp_autostart', 'cp_tasks', 'cp_mission', 'cp_cycle', 'cp_timer_state',
-    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_focus_mins_by_date', 'cp_streak'
+    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_focus_mins_by_date', 'cp_streak', 'cp_mission_boards'
   ]),
+
+  validateMissionBoards(value) {
+    let parsed = value;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch (e) { return null; }
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) ||
+        Object.keys(parsed).some(key => key !== 'selectedBoardId' && key !== 'boards') ||
+        typeof parsed.selectedBoardId !== 'string' || !Array.isArray(parsed.boards) || parsed.boards.length === 0) return null;
+    const ids = new Set();
+    const boards = [];
+    for (const board of parsed.boards) {
+      if (!board || typeof board !== 'object' || Array.isArray(board) ||
+          Object.keys(board).some(key => key !== 'id' && key !== 'name' && key !== 'tasks') ||
+          typeof board.id !== 'string' || !board.id.trim() || ids.has(board.id) ||
+          typeof board.name !== 'string' || normalizeMissionBoardName(board.name) !== board.name ||
+          !isValidTaskList(board.tasks)) return null;
+      ids.add(board.id);
+      boards.push({ id: board.id, name: board.name, tasks: board.tasks.map(task => ({ ...task })) });
+    }
+    if (!ids.has(parsed.selectedBoardId)) return null;
+    return { selectedBoardId: parsed.selectedBoardId, boards };
+  },
+
+  loadMissionBoards(savedBoards, legacyTasks) {
+    const valid = PomodoroCore.validateMissionBoards(savedBoards);
+    if (valid) {
+      let parsedTasks;
+      try { parsedTasks = typeof legacyTasks === 'string' ? JSON.parse(legacyTasks) : legacyTasks; } catch (e) { parsedTasks = null; }
+      if (isValidTaskList(parsedTasks)) {
+        const boards = valid.boards.map(board => board.id === valid.selectedBoardId &&
+          JSON.stringify(board.tasks) !== JSON.stringify(parsedTasks)
+          ? { ...board, tasks: parsedTasks.map(task => ({ ...task })) } : board);
+        return { selectedBoardId: valid.selectedBoardId, boards };
+      }
+      return valid;
+    }
+    let tasks = [];
+    try {
+      const parsedTasks = typeof legacyTasks === 'string' ? JSON.parse(legacyTasks) : legacyTasks;
+      if (isValidTaskList(parsedTasks)) tasks = parsedTasks.map(task => ({ ...task }));
+    } catch (e) {
+      tasks = [];
+    }
+    return { selectedBoardId: MISSION_BOARD_DEFAULT_ID, boards: [
+      { id: MISSION_BOARD_DEFAULT_ID, name: MISSION_BOARD_DEFAULT_NAME, tasks }
+    ] };
+  },
+
+  createMissionBoard(state, name, id) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    const safeName = normalizeMissionBoardName(name);
+    if (!current || !safeName) return null;
+    let safeId = typeof id === 'string' ? id.trim() : '';
+    if (!safeId) {
+      do { safeId = 'board-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8); }
+      while (current.boards.some(board => board.id === safeId));
+    }
+    if (current.boards.some(board => board.id === safeId)) return null;
+    return {
+      selectedBoardId: safeId,
+      boards: [...current.boards, { id: safeId, name: safeName, tasks: [] }]
+    };
+  },
+
+  renameMissionBoard(state, id, name) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    const safeName = normalizeMissionBoardName(name);
+    if (!current || !safeName || !current.boards.some(board => board.id === id)) return null;
+    return { ...current, boards: current.boards.map(board =>
+      board.id === id ? { ...board, name: safeName } : board
+    ) };
+  },
+
+  deleteMissionBoard(state, id) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    if (!current || current.boards.length <= 1 || !current.boards.some(board => board.id === id)) return null;
+    const boards = current.boards.filter(board => board.id !== id);
+    const selectedBoardId = current.selectedBoardId === id ? boards[0].id : current.selectedBoardId;
+    return { selectedBoardId, boards };
+  },
+
+  selectMissionBoard(state, id) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    if (!current || !current.boards.some(board => board.id === id)) return null;
+    return { ...current, selectedBoardId: id };
+  },
+
+  updateMissionBoardTasks(state, id, tasks) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    if (!current || !isValidTaskList(tasks) || !current.boards.some(board => board.id === id)) return null;
+    return { ...current, boards: current.boards.map(board => board.id === id
+      ? { ...board, tasks: tasks.map(task => ({ ...task })) } : board
+    ) };
+  },
 
   createDataBackup(storage) {
     const data = {};
@@ -357,18 +472,16 @@
       if (key === 'cp_cfg_focus' && PomodoroCore.validateCustomDuration(value, 1, 90, null) === null) return null;
       if (key === 'cp_cfg_short' && PomodoroCore.validateCustomDuration(value, 1, 30, null) === null) return null;
       if (key === 'cp_cfg_long' && PomodoroCore.validateCustomDuration(value, 1, 60, null) === null) return null;
+      if (key === 'cp_cfg_cadence' && PomodoroCore.validateCustomDuration(value, 1, 12, null) === null) return null;
       if (key === 'cp_theme' && !['cyan', 'pink', 'yellow', 'green'].includes(value)) return null;
       if (key === 'cp_volume' && (!/^(?:0(?:\.\d+)?|1(?:\.0+)?)$/.test(value) || Number(value) < 0 || Number(value) > 1)) return null;
       if ((key === 'cp_muted' || key === 'cp_tick' || key === 'cp_autostart') && value !== 'true' && value !== 'false') return null;
       if (key === 'cp_tasks') {
         let tasks;
         try { tasks = JSON.parse(value); } catch (e) { return null; }
-        if (!Array.isArray(tasks) || tasks.some(task => !task || typeof task !== 'object' || Array.isArray(task) ||
-            Object.keys(task).some(field => field !== 'id' && field !== 'text' && field !== 'done') ||
-            !((typeof task.id === 'string' && task.id.trim() !== '') || (typeof task.id === 'number' && Number.isFinite(task.id))) ||
-            typeof task.text !== 'string' || (task.text.length > 80 && Array.from(task.text).length > 80) || typeof task.done !== 'boolean')) return null;
-        if (new Set(tasks.map(task => String(task.id))).size !== tasks.length) return null; // id ต้องไม่ซ้ำ
+        if (!isValidTaskList(tasks)) return null;
       }
+      if (key === 'cp_mission_boards' && !PomodoroCore.validateMissionBoards(value)) return null;
       if (key === 'cp_mission' && value.length > 80 && Array.from(value).length > 80) return null;
       if (key === 'cp_cycle' && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < 1)) return null;
       if (key === 'cp_timer_state') {
@@ -865,7 +978,7 @@
     return BREAK_NOTIFICATION;
   },
 
-  SESSION_HISTORY_LIMIT: 20,
+  SESSION_HISTORY_LIMIT: 500,
 
   validateSessionHistory(history) {
     let entries = history;
@@ -915,6 +1028,40 @@
     return `${modeLabel}${duration} · ${timestamp}`;
   },
 
+  getWeeklyFocusSummary(history, referenceDate) {
+    const reference = referenceDate === undefined ? new Date() : new Date(referenceDate);
+    const today = Number.isNaN(reference.getTime()) ? new Date() : reference;
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+      return {
+        date: PomodoroCore.getLocalDateString(date),
+        dayLabel: date.toLocaleDateString(undefined, { weekday: 'short' }),
+        focusSeconds: 0
+      };
+    });
+    const entries = PomodoroCore.validateSessionHistory(history);
+    for (const entry of entries) {
+      if (entry.mode !== 'focus') continue;
+      const completed = new Date(entry.completedAt);
+      if (!Number.isFinite(completed.getTime())) continue;
+      const date = PomodoroCore.getLocalDateString(completed);
+      const day = days.find(item => item.date === date);
+      if (day) day.focusSeconds += entry.focusDuration;
+    }
+    for (const day of days) {
+      day.focusMins = Math.round(day.focusSeconds / 60);
+      delete day.focusSeconds;
+    }
+    return {
+      startDate: days[0].date,
+      endDate: days[6].date,
+      totalFocusMins: days.reduce((total, day) => total + day.focusMins, 0),
+      days
+    };
+  },
+
   calculateCompletedSession(modeOrParams, cycleCount, focusDuration, totalFocusMinsToday, currentStreak, todayStr) {
     let mode;
     let cycle;
@@ -922,6 +1069,7 @@
     let totalMins;
     let streak;
     let today;
+    let longBreakCadence;
 
     if (typeof modeOrParams === 'string') {
       mode = modeOrParams;
@@ -930,6 +1078,7 @@
       totalMins = totalFocusMinsToday;
       streak = currentStreak;
       today = todayStr;
+      longBreakCadence = arguments[6];
     } else if (modeOrParams && typeof modeOrParams === 'object') {
       mode = modeOrParams.currentMode || modeOrParams.mode;
       cycle = modeOrParams.cycleCount;
@@ -937,6 +1086,7 @@
       totalMins = modeOrParams.totalFocusMinsToday;
       streak = modeOrParams.currentStreak;
       today = modeOrParams.todayStr || modeOrParams.today;
+      longBreakCadence = modeOrParams.longBreakCadence;
     } else {
       mode = modeOrParams;
       cycle = cycleCount;
@@ -944,6 +1094,7 @@
       totalMins = totalFocusMinsToday;
       streak = currentStreak;
       today = todayStr;
+      longBreakCadence = arguments[6];
     }
 
     let safeCycle;
@@ -955,6 +1106,7 @@
     }
 
     const safeMode = (typeof mode === 'string') ? mode : 'focus';
+    const safeCadence = PomodoroCore.resolveLongBreakCadence(longBreakCadence);
 
     if (safeMode === 'focus') {
       if (safeCycle >= Number.MAX_SAFE_INTEGER) safeCycle = 1;
@@ -963,14 +1115,14 @@
       let nextCycleCount;
       let cycleStr;
 
-      if (safeCycle <= 100) {
+      if (safeCadence === 4 && safeCycle <= 100) {
         const lookup = FOCUS_SESSION_LOOKUP[safeCycle];
         nextMode = lookup.nextMode;
         toastMessage = lookup.toastMessage;
         nextCycleCount = lookup.nextCycleCount;
         cycleStr = lookup.cycleStr;
       } else {
-        const isLong = (safeCycle % 4 === 0);
+        const isLong = (safeCycle % safeCadence === 0);
         nextMode = isLong ? 'longBreak' : 'shortBreak';
         toastMessage = isLong ? 'LONG BREAK STARTED' : 'SHORT BREAK STARTED';
         nextCycleCount = safeCycle + 1;
@@ -1053,8 +1205,8 @@
     return 'FOCUS MODE';
   },
 
-  calculateSkipTransition(modeOrParams, cycleCount) {
-    if (typeof modeOrParams === 'string' && typeof cycleCount === 'number') {
+  calculateSkipTransition(modeOrParams, cycleCount, longBreakCadence) {
+    if (typeof modeOrParams === 'string' && typeof cycleCount === 'number' && longBreakCadence === undefined) {
       if (cycleCount >= 1 && cycleCount <= 100 && (cycleCount | 0) === cycleCount) {
         if (modeOrParams === 'focus') {
           return FOCUS_SKIP_LOOKUP[cycleCount];
@@ -1065,19 +1217,22 @@
 
     let mode = modeOrParams;
     let cycle = cycleCount;
+    let cadence = longBreakCadence;
 
     if (modeOrParams && typeof modeOrParams === 'object') {
       mode = modeOrParams.currentMode || modeOrParams.mode;
       cycle = modeOrParams.cycleCount;
+      cadence = modeOrParams.longBreakCadence;
     }
 
     const safeCycle = PomodoroCore.parseCycleCount(cycle);
+    const safeCadence = PomodoroCore.resolveLongBreakCadence(cadence);
 
     if (mode === 'focus') {
-      if (safeCycle <= 100) {
+      if (safeCadence === 4 && safeCycle <= 100) {
         return FOCUS_SKIP_LOOKUP[safeCycle];
       }
-      const isLong = (safeCycle % 4 === 0);
+      const isLong = (safeCycle % safeCadence === 0);
       return {
         nextMode: isLong ? 'longBreak' : 'shortBreak',
         toastMessage: isLong ? 'LONG BREAK' : 'SHORT BREAK',

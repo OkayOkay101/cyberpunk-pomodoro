@@ -15,14 +15,17 @@ class TestDataBackup(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
 
-    def test_export_contains_versioned_supported_preferences_tasks_timer_and_history(self):
+    def test_export_contains_versioned_supported_preferences_tasks_boards_timer_and_history(self):
         self.run_node(r"""
         const assert = require('assert');
         const { PomodoroCore } = require('./core.js');
         const values = {
-          cp_cfg_focus: '40', cp_cfg_short: '7', cp_cfg_long: '20', cp_theme: 'pink',
+          cp_cfg_focus: '40', cp_cfg_short: '7', cp_cfg_long: '20', cp_cfg_cadence: '3', cp_theme: 'pink',
           cp_volume: '0.7', cp_muted: 'false', cp_tick: 'true', cp_autostart: 'false',
           cp_tasks: JSON.stringify([{ id: 7, text: 'Ship feature', done: true }]),
+          cp_mission_boards: JSON.stringify({ selectedBoardId: 'work', boards: [
+            { id: 'work', name: 'Work', tasks: [{ id: 7, text: 'Ship feature', done: true }] }
+          ] }),
           cp_mission: 'Ship feature', cp_cycle: '3',
           cp_timer_state: JSON.stringify({ mode: 'focus', duration: 2400, timeLeft: 1200,
             isRunning: false, targetEndTime: null, cycleCount: 3 }),
@@ -32,8 +35,10 @@ class TestDataBackup(unittest.TestCase):
         const backup = PomodoroCore.createDataBackup({ getItem: key => values[key] ?? null });
         assert.strictEqual(backup.version, PomodoroCore.DATA_BACKUP_VERSION);
         assert.strictEqual(backup.data.cp_cfg_focus, '40');
+        assert.strictEqual(backup.data.cp_cfg_cadence, '3');
         assert.strictEqual(backup.data.cp_theme, 'pink');
         assert.deepStrictEqual(JSON.parse(backup.data.cp_tasks), JSON.parse(values.cp_tasks));
+        assert.deepStrictEqual(JSON.parse(backup.data.cp_mission_boards), JSON.parse(values.cp_mission_boards));
         assert.deepStrictEqual(JSON.parse(backup.data.cp_timer_state), JSON.parse(values.cp_timer_state));
         assert.deepStrictEqual(JSON.parse(backup.data.cp_session_history), JSON.parse(values.cp_session_history));
         assert.deepStrictEqual(JSON.parse(backup.data.cp_focus_mins_by_date), { '2026-11-12': 40 });
@@ -50,10 +55,11 @@ class TestDataBackup(unittest.TestCase):
           setItem(key, value) { initial[key] = String(value); },
           removeItem(key) { delete initial[key]; }
         };
-        const valid = { version: 1, data: { cp_theme: 'green', cp_cfg_focus: '45', cp_tasks: '[]' } };
+        const valid = { version: 1, data: { cp_theme: 'green', cp_cfg_focus: '45', cp_cfg_cadence: '3', cp_tasks: '[]' } };
         assert.strictEqual(PomodoroCore.restoreDataBackup(storage, JSON.stringify(valid), Date.now()), true);
         assert.strictEqual(initial.cp_theme, 'green');
         assert.strictEqual(initial.cp_cfg_focus, '45');
+        assert.strictEqual(initial.cp_cfg_cadence, '3');
         assert.strictEqual(initial.cp_tasks, '[]');
         assert.strictEqual(Object.hasOwn(initial, 'cp_cfg_short'), false);
         assert.strictEqual(initial.unrelated_key, 'keep');
@@ -64,6 +70,7 @@ class TestDataBackup(unittest.TestCase):
           JSON.stringify({ version: 1, data: { cp_theme: 'ultraviolet' } }),
           JSON.stringify({ version: 1, data: { cp_tasks: '{"bad":true}' } }),
           JSON.stringify({ version: 1, data: { cp_cfg_focus: '999' } }),
+          JSON.stringify({ version: 1, data: { cp_cfg_cadence: '13' } }),
           JSON.stringify({ version: 1, data: { cp_not_supported: 'value' } })
         ]) {
           const before = JSON.stringify(initial);
@@ -177,6 +184,35 @@ class TestDataBackup(unittest.TestCase):
         assert.notStrictEqual(PomodoroCore.validateDataBackup(unique, Date.now()), null);
         """)
 
+    def test_board_backup_validation_and_legacy_task_backup_compatibility(self):
+        self.run_node(r"""
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const boardData = { selectedBoardId: 'work', boards: [
+          { id: 'work', name: 'Work', tasks: [{ id: 1, text: 'Ship', done: false }] }
+        ] };
+        const storage = { values: {}, getItem(key) { return this.values[key] ?? null; },
+          setItem(key, value) { this.values[key] = String(value); }, removeItem(key) { delete this.values[key]; } };
+        const valid = { version: 1, data: { cp_mission_boards: JSON.stringify(boardData) } };
+        assert.notStrictEqual(PomodoroCore.validateDataBackup(valid), null);
+        assert.strictEqual(PomodoroCore.restoreDataBackup(storage, valid), true);
+        assert.deepStrictEqual(JSON.parse(storage.values.cp_mission_boards), boardData);
+        for (const boards of [
+          { selectedBoardId: 'missing', boards: boardData.boards },
+          { selectedBoardId: 'work', boards: [{ ...boardData.boards[0], name: ' ' }] },
+          { selectedBoardId: 'work', boards: [boardData.boards[0], { ...boardData.boards[0] }] }
+        ]) {
+          assert.strictEqual(PomodoroCore.validateDataBackup({ version: 1, data: {
+            cp_mission_boards: JSON.stringify(boards)
+          } }), null);
+        }
+        const legacy = { version: 1, data: { cp_tasks: '[{"id":9,"text":"Old task","done":true}]' } };
+        assert.notStrictEqual(PomodoroCore.validateDataBackup(legacy), null);
+        assert.strictEqual(PomodoroCore.restoreDataBackup(storage, legacy), true);
+        assert.strictEqual(storage.values.cp_tasks, legacy.data.cp_tasks);
+        assert.strictEqual(Object.hasOwn(storage.values, 'cp_mission_boards'), false);
+        """)
+
     def test_import_counts_emoji_code_points_for_mission_and_tasks(self):
         self.run_node(r"""
         const assert = require('assert');
@@ -231,6 +267,11 @@ class TestDataBackup(unittest.TestCase):
         self.assertIn('id="importDataInput"', html)
         self.assertIn("PomodoroCore.createDataBackup(localStorage)", html)
         self.assertIn("PomodoroCore.restoreDataBackup(localStorage", html)
+
+    def test_settings_modal_exposes_long_break_cadence(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="cfgLongBreakCadence" min="1" max="12" value="4"', html)
+        self.assertIn("localStorage.setItem('cp_cfg_cadence'", html)
 
 
 if __name__ == "__main__":

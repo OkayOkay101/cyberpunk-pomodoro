@@ -18,7 +18,7 @@ class TestTaskCheckboxDelegation(unittest.TestCase):
         self.assertNotIn("querySelectorAll('input[type=\"checkbox\"]')", task_list_render)
         self.assertIn("taskChecklist.addEventListener('change'", task_rendering)
         self.assertIn("e.target.matches('input[type=\"checkbox\"]')", task_rendering)
-        self.assertIn("PomodoroCore.toggleTaskItem(tasks, id, e.target.checked)", task_rendering)
+        self.assertIn("PomodoroCore.toggleTaskItem(tasks, task.id, e.target.checked)", task_rendering)
 
 
 if __name__ == "__main__":
