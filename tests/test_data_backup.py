@@ -106,6 +106,8 @@ class TestDataBackup(unittest.TestCase):
           }), false);
           assert.strictEqual(store.cp_focus_mins_by_date, totals);
         }
+        """)
+
     def test_daily_focus_goal_backup_round_trip_and_validation(self):
         self.run_node(r"""
         const assert = require('assert');
