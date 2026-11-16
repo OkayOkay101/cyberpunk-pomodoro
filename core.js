@@ -278,6 +278,25 @@
     };
   },
 
+  resolveDailyFocusGoal(value) {
+    const minutes = PomodoroCore.validateCustomDuration(value, 1, 1440, 120);
+    return {
+      minutes,
+      storage: { cp_daily_focus_goal: String(minutes) }
+    };
+  },
+
+  getDailyFocusGoalProgress(totalFocusMinsToday, dailyFocusGoal) {
+    const total = Number.isSafeInteger(totalFocusMinsToday) && totalFocusMinsToday > 0
+      ? totalFocusMinsToday
+      : 0;
+    const goal = PomodoroCore.resolveDailyFocusGoal(dailyFocusGoal).minutes;
+    return {
+      percent: Math.min(100, Math.floor((total / goal) * 100)),
+      completed: total >= goal
+    };
+  },
+
   getThemeVariables(themeName) {
     if (typeof themeName === 'string') {
       if (themeName === 'cyan') return THEMES.cyan;
@@ -340,7 +359,7 @@
   DATA_BACKUP_KEYS: Object.freeze([
     'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_cfg_cadence', 'cp_theme', 'cp_volume', 'cp_muted',
     'cp_tick', 'cp_autostart', 'cp_tasks', 'cp_mission', 'cp_cycle', 'cp_timer_state',
-    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_streak', 'cp_mission_boards'
+    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_streak', 'cp_mission_boards', 'cp_daily_focus_goal'
   ]),
 
   validateMissionBoards(value) {
@@ -474,6 +493,7 @@
       if (key === 'cp_cfg_focus' && PomodoroCore.validateCustomDuration(value, 1, 90, null) === null) return null;
       if (key === 'cp_cfg_short' && PomodoroCore.validateCustomDuration(value, 1, 30, null) === null) return null;
       if (key === 'cp_cfg_long' && PomodoroCore.validateCustomDuration(value, 1, 60, null) === null) return null;
+      if (key === 'cp_daily_focus_goal' && PomodoroCore.validateCustomDuration(value, 1, 1440, null) === null) return null;
       if (key === 'cp_cfg_cadence' && PomodoroCore.validateCustomDuration(value, 1, 12, null) === null) return null;
       if (key === 'cp_theme' && !['cyan', 'pink', 'yellow', 'green'].includes(value)) return null;
       if (key === 'cp_volume' && (!/^(?:0(?:\.\d+)?|1(?:\.0+)?)$/.test(value) || Number(value) < 0 || Number(value) > 1)) return null;
@@ -563,7 +583,15 @@
     return valid <= 100 ? STREAK_BADGES[valid] : '⚡ STREAK: ' + valid + ' DAYS';
   },
 
-  formatFocusTimeBadge(minutes) {
+  formatFocusTimeBadge(minutes, dailyFocusGoal) {
+    if (dailyFocusGoal !== undefined) {
+      const validMinutes = typeof minutes === 'number' && Number.isSafeInteger(minutes) && minutes > 0 ? minutes : 0;
+      const goal = PomodoroCore.resolveDailyFocusGoal(dailyFocusGoal).minutes;
+      const progress = PomodoroCore.getDailyFocusGoalProgress(validMinutes, goal);
+      return progress.completed
+        ? '🎯 ' + validMinutes + ' / ' + goal + ' MINS TODAY · GOAL COMPLETE'
+        : '🎯 ' + validMinutes + ' / ' + goal + ' MINS TODAY · ' + progress.percent + '%';
+    }
     if (typeof minutes === 'symbol') return FOCUS_BADGES[0];
     if (typeof minutes === 'number') {
       if (minutes <= 0) return FOCUS_BADGES[0];
