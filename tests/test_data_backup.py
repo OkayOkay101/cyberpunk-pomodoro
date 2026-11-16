@@ -20,7 +20,7 @@ class TestDataBackup(unittest.TestCase):
         const assert = require('assert');
         const { PomodoroCore } = require('./core.js');
         const values = {
-          cp_cfg_focus: '40', cp_cfg_short: '7', cp_cfg_long: '20', cp_theme: 'pink',
+          cp_cfg_focus: '40', cp_cfg_short: '7', cp_cfg_long: '20', cp_cfg_cadence: '3', cp_theme: 'pink',
           cp_volume: '0.7', cp_muted: 'false', cp_tick: 'true', cp_autostart: 'false',
           cp_tasks: JSON.stringify([{ id: 7, text: 'Ship feature', done: true }]),
           cp_mission: 'Ship feature', cp_cycle: '3',
@@ -31,6 +31,7 @@ class TestDataBackup(unittest.TestCase):
         const backup = PomodoroCore.createDataBackup({ getItem: key => values[key] ?? null });
         assert.strictEqual(backup.version, PomodoroCore.DATA_BACKUP_VERSION);
         assert.strictEqual(backup.data.cp_cfg_focus, '40');
+        assert.strictEqual(backup.data.cp_cfg_cadence, '3');
         assert.strictEqual(backup.data.cp_theme, 'pink');
         assert.deepStrictEqual(JSON.parse(backup.data.cp_tasks), JSON.parse(values.cp_tasks));
         assert.deepStrictEqual(JSON.parse(backup.data.cp_timer_state), JSON.parse(values.cp_timer_state));
@@ -48,10 +49,11 @@ class TestDataBackup(unittest.TestCase):
           setItem(key, value) { initial[key] = String(value); },
           removeItem(key) { delete initial[key]; }
         };
-        const valid = { version: 1, data: { cp_theme: 'green', cp_cfg_focus: '45', cp_tasks: '[]' } };
+        const valid = { version: 1, data: { cp_theme: 'green', cp_cfg_focus: '45', cp_cfg_cadence: '3', cp_tasks: '[]' } };
         assert.strictEqual(PomodoroCore.restoreDataBackup(storage, JSON.stringify(valid), Date.now()), true);
         assert.strictEqual(initial.cp_theme, 'green');
         assert.strictEqual(initial.cp_cfg_focus, '45');
+        assert.strictEqual(initial.cp_cfg_cadence, '3');
         assert.strictEqual(initial.cp_tasks, '[]');
         assert.strictEqual(Object.hasOwn(initial, 'cp_cfg_short'), false);
         assert.strictEqual(initial.unrelated_key, 'keep');
@@ -62,6 +64,7 @@ class TestDataBackup(unittest.TestCase):
           JSON.stringify({ version: 1, data: { cp_theme: 'ultraviolet' } }),
           JSON.stringify({ version: 1, data: { cp_tasks: '{"bad":true}' } }),
           JSON.stringify({ version: 1, data: { cp_cfg_focus: '999' } }),
+          JSON.stringify({ version: 1, data: { cp_cfg_cadence: '13' } }),
           JSON.stringify({ version: 1, data: { cp_not_supported: 'value' } })
         ]) {
           const before = JSON.stringify(initial);
@@ -203,6 +206,11 @@ class TestDataBackup(unittest.TestCase):
         self.assertIn('id="importDataInput"', html)
         self.assertIn("PomodoroCore.createDataBackup(localStorage)", html)
         self.assertIn("PomodoroCore.restoreDataBackup(localStorage", html)
+
+    def test_settings_modal_exposes_long_break_cadence(self):
+        html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="cfgLongBreakCadence" min="1" max="12" value="4"', html)
+        self.assertIn("localStorage.setItem('cp_cfg_cadence'", html)
 
 
 if __name__ == "__main__":

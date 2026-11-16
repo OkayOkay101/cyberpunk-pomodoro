@@ -59,6 +59,27 @@ class TestSkipTransitionCore(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
         self.assertIn("SUCCESS", proc.stdout)
 
+    def test_calculate_skip_transition_uses_custom_long_break_cadence(self):
+        js_code = """
+        const assert = require('assert');
+        const { PomodoroCore } = require('./core.js');
+        const beforeBoundary = PomodoroCore.calculateSkipTransition({
+          currentMode: 'focus', cycleCount: 2, longBreakCadence: 3
+        });
+        assert.strictEqual(beforeBoundary.nextMode, 'shortBreak');
+        const boundary = PomodoroCore.calculateSkipTransition({
+          currentMode: 'focus', cycleCount: 3, longBreakCadence: 3
+        });
+        assert.strictEqual(boundary.nextMode, 'longBreak');
+        assert.strictEqual(boundary.toastMessage, 'LONG BREAK');
+        const invalid = PomodoroCore.calculateSkipTransition({
+          currentMode: 'focus', cycleCount: 4, longBreakCadence: 'invalid'
+        });
+        assert.strictEqual(invalid.nextMode, 'longBreak');
+        """
+        proc = self._run_node(js_code)
+        self.assertEqual(proc.returncode, 0, f"Error: {proc.stderr or proc.stdout}")
+
     def test_calculate_skip_transition_from_break_modes(self):
         js_code = """
         const { PomodoroCore } = require('./core.js');
