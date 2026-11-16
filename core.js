@@ -88,6 +88,22 @@
     });
   });
   const MS_PER_DAY = 86400000;
+  const MISSION_BOARD_DEFAULT_ID = 'default';
+  const MISSION_BOARD_DEFAULT_NAME = 'Main Board';
+  const MISSION_BOARD_NAME_LIMIT = 40;
+  function isValidTaskList(tasks) {
+    if (!Array.isArray(tasks) || tasks.some(task => !task || typeof task !== 'object' || Array.isArray(task) ||
+        Object.keys(task).some(field => field !== 'id' && field !== 'text' && field !== 'done') ||
+        !((typeof task.id === 'string' && task.id.trim() !== '') || (typeof task.id === 'number' && Number.isFinite(task.id))) ||
+        typeof task.text !== 'string' || (task.text.length > 80 && Array.from(task.text).length > 80) || typeof task.done !== 'boolean')) return false;
+    return new Set(tasks.map(task => String(task.id))).size === tasks.length;
+  }
+  function normalizeMissionBoardName(name) {
+    if (typeof name !== 'string') return '';
+    const trimmed = name.trim();
+    if (!trimmed || Array.from(trimmed).length > MISSION_BOARD_NAME_LIMIT) return '';
+    return trimmed;
+  }
   function isValidDateOnlyString(value) {
     const match = typeof value === 'string' && /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
     if (!match) return typeof value !== 'string' || !isNaN(Date.parse(value));
@@ -320,8 +336,103 @@
   DATA_BACKUP_KEYS: Object.freeze([
     'cp_cfg_focus', 'cp_cfg_short', 'cp_cfg_long', 'cp_theme', 'cp_volume', 'cp_muted',
     'cp_tick', 'cp_autostart', 'cp_tasks', 'cp_mission', 'cp_cycle', 'cp_timer_state',
-    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_streak'
+    'cp_session_history', 'cp_last_date', 'cp_focus_mins_today', 'cp_streak', 'cp_mission_boards'
   ]),
+
+  validateMissionBoards(value) {
+    let parsed = value;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch (e) { return null; }
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) ||
+        Object.keys(parsed).some(key => key !== 'selectedBoardId' && key !== 'boards') ||
+        typeof parsed.selectedBoardId !== 'string' || !Array.isArray(parsed.boards) || parsed.boards.length === 0) return null;
+    const ids = new Set();
+    const boards = [];
+    for (const board of parsed.boards) {
+      if (!board || typeof board !== 'object' || Array.isArray(board) ||
+          Object.keys(board).some(key => key !== 'id' && key !== 'name' && key !== 'tasks') ||
+          typeof board.id !== 'string' || !board.id.trim() || ids.has(board.id) ||
+          typeof board.name !== 'string' || normalizeMissionBoardName(board.name) !== board.name ||
+          !isValidTaskList(board.tasks)) return null;
+      ids.add(board.id);
+      boards.push({ id: board.id, name: board.name, tasks: board.tasks.map(task => ({ ...task })) });
+    }
+    if (!ids.has(parsed.selectedBoardId)) return null;
+    return { selectedBoardId: parsed.selectedBoardId, boards };
+  },
+
+  loadMissionBoards(savedBoards, legacyTasks) {
+    const valid = PomodoroCore.validateMissionBoards(savedBoards);
+    if (valid) {
+      let parsedTasks;
+      try { parsedTasks = typeof legacyTasks === 'string' ? JSON.parse(legacyTasks) : legacyTasks; } catch (e) { parsedTasks = null; }
+      if (isValidTaskList(parsedTasks)) {
+        const boards = valid.boards.map(board => board.id === valid.selectedBoardId &&
+          JSON.stringify(board.tasks) !== JSON.stringify(parsedTasks)
+          ? { ...board, tasks: parsedTasks.map(task => ({ ...task })) } : board);
+        return { selectedBoardId: valid.selectedBoardId, boards };
+      }
+      return valid;
+    }
+    let tasks = [];
+    try {
+      const parsedTasks = typeof legacyTasks === 'string' ? JSON.parse(legacyTasks) : legacyTasks;
+      if (isValidTaskList(parsedTasks)) tasks = parsedTasks.map(task => ({ ...task }));
+    } catch (e) {
+      tasks = [];
+    }
+    return { selectedBoardId: MISSION_BOARD_DEFAULT_ID, boards: [
+      { id: MISSION_BOARD_DEFAULT_ID, name: MISSION_BOARD_DEFAULT_NAME, tasks }
+    ] };
+  },
+
+  createMissionBoard(state, name, id) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    const safeName = normalizeMissionBoardName(name);
+    if (!current || !safeName) return null;
+    let safeId = typeof id === 'string' ? id.trim() : '';
+    if (!safeId) {
+      do { safeId = 'board-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8); }
+      while (current.boards.some(board => board.id === safeId));
+    }
+    if (current.boards.some(board => board.id === safeId)) return null;
+    return {
+      selectedBoardId: safeId,
+      boards: [...current.boards, { id: safeId, name: safeName, tasks: [] }]
+    };
+  },
+
+  renameMissionBoard(state, id, name) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    const safeName = normalizeMissionBoardName(name);
+    if (!current || !safeName || !current.boards.some(board => board.id === id)) return null;
+    return { ...current, boards: current.boards.map(board =>
+      board.id === id ? { ...board, name: safeName } : board
+    ) };
+  },
+
+  deleteMissionBoard(state, id) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    if (!current || current.boards.length <= 1 || !current.boards.some(board => board.id === id)) return null;
+    const boards = current.boards.filter(board => board.id !== id);
+    const selectedBoardId = current.selectedBoardId === id ? boards[0].id : current.selectedBoardId;
+    return { selectedBoardId, boards };
+  },
+
+  selectMissionBoard(state, id) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    if (!current || !current.boards.some(board => board.id === id)) return null;
+    return { ...current, selectedBoardId: id };
+  },
+
+  updateMissionBoardTasks(state, id, tasks) {
+    const current = PomodoroCore.validateMissionBoards(state);
+    if (!current || !isValidTaskList(tasks) || !current.boards.some(board => board.id === id)) return null;
+    return { ...current, boards: current.boards.map(board => board.id === id
+      ? { ...board, tasks: tasks.map(task => ({ ...task })) } : board
+    ) };
+  },
 
   createDataBackup(storage) {
     const data = {};
@@ -365,12 +476,9 @@
       if (key === 'cp_tasks') {
         let tasks;
         try { tasks = JSON.parse(value); } catch (e) { return null; }
-        if (!Array.isArray(tasks) || tasks.some(task => !task || typeof task !== 'object' || Array.isArray(task) ||
-            Object.keys(task).some(field => field !== 'id' && field !== 'text' && field !== 'done') ||
-            !((typeof task.id === 'string' && task.id.trim() !== '') || (typeof task.id === 'number' && Number.isFinite(task.id))) ||
-            typeof task.text !== 'string' || (task.text.length > 80 && Array.from(task.text).length > 80) || typeof task.done !== 'boolean')) return null;
-        if (new Set(tasks.map(task => String(task.id))).size !== tasks.length) return null; // id ต้องไม่ซ้ำ
+        if (!isValidTaskList(tasks)) return null;
       }
+      if (key === 'cp_mission_boards' && !PomodoroCore.validateMissionBoards(value)) return null;
       if (key === 'cp_mission' && value.length > 80 && Array.from(value).length > 80) return null;
       if (key === 'cp_cycle' && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < 1)) return null;
       if (key === 'cp_timer_state') {

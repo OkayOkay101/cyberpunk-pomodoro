@@ -539,6 +539,45 @@
       color: var(--text-dim);
       font-size: 11px;
     }
+    .mission-board-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .mission-board-controls select,
+    .mission-board-controls input {
+      min-width: 0;
+      flex: 1 1 140px;
+      background: #090d1a;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      padding: 7px 8px;
+      font: inherit;
+    }
+    .mission-board-controls button {
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: rgba(9, 13, 26, 0.8);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      font-size: 11px;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
     .mission-input.saved {
       border-color: var(--green);
       box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
@@ -857,6 +896,15 @@
       <div class="deck-title">
         <h2 id="missionHeading">🎯 MISSION OBJECTIVES & TASKS</h2>
         <span style="font-size: 10px; color: var(--text-dim);">CHECKLIST PERSISTED</span>
+      </div>
+      <div class="mission-board-controls" role="group" aria-label="จัดการบอร์ดภารกิจ">
+        <label class="sr-only" for="missionBoardSelect">เลือกบอร์ดภารกิจ</label>
+        <select id="missionBoardSelect" aria-label="เลือกบอร์ดภารกิจ"></select>
+        <label class="sr-only" for="missionBoardName">ชื่อบอร์ดภารกิจ</label>
+        <input type="text" id="missionBoardName" maxlength="40" placeholder="ชื่อบอร์ด" aria-label="ชื่อบอร์ดภารกิจ">
+        <button type="button" id="createMissionBoardBtn">สร้างบอร์ด</button>
+        <button type="button" id="renameMissionBoardBtn">เปลี่ยนชื่อ</button>
+        <button type="button" id="deleteMissionBoardBtn">ลบบอร์ด</button>
       </div>
       <div class="mission-input-row">
         <input type="text" class="mission-input" id="missionInput" maxlength="80" enterkeyhint="done" placeholder="ระบุภารกิจ (ไม่เกิน 80 ตัวอักษร) แล้วกด Enter เพื่อเพิ่ม" value="สร้างสรรค์โปรเจกต์ระดับเทพ" autocomplete="off" aria-label="ระบุภารกิจที่กำลังโฟกัส" aria-describedby="missionInputHint">
@@ -1310,6 +1358,11 @@
     const autoStartBtn = document.getElementById('autoStartBtn');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const taskChecklist = document.getElementById('taskChecklist');
+    const missionBoardSelect = document.getElementById('missionBoardSelect');
+    const missionBoardName = document.getElementById('missionBoardName');
+    const createMissionBoardBtn = document.getElementById('createMissionBoardBtn');
+    const renameMissionBoardBtn = document.getElementById('renameMissionBoardBtn');
+    const deleteMissionBoardBtn = document.getElementById('deleteMissionBoardBtn');
     const sessionHistoryElement = document.getElementById('sessionHistory');
 
     progressFill.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
@@ -1348,10 +1401,43 @@
     renderSessionHistory();
 
     // Mission & Checklist
-    let tasks = PomodoroCore.deserializeConfig(localStorage.getItem('cp_tasks'), [
+    const defaultTasks = PomodoroCore.deserializeConfig(localStorage.getItem('cp_tasks'), [
       { id: 1, text: 'เข้าสู่ Matrix & กำหนดเป้าหมายแรก', done: true },
       { id: 2, text: 'โฟกัส 25 นาทีแบบ Deep Work', done: false }
     ]);
+    let missionBoards = PomodoroCore.loadMissionBoards(localStorage.getItem('cp_mission_boards'),
+      localStorage.getItem('cp_tasks') === null ? defaultTasks : localStorage.getItem('cp_tasks'));
+    let tasks = missionBoards.boards.find(board => board.id === missionBoards.selectedBoardId).tasks;
+
+    function persistMissionBoards() {
+      localStorage.setItem('cp_mission_boards', JSON.stringify(missionBoards));
+      localStorage.setItem('cp_tasks', JSON.stringify(tasks));
+    }
+
+    function renderMissionBoards() {
+      if (!missionBoardSelect) return;
+      missionBoardSelect.textContent = '';
+      missionBoards.boards.forEach(board => {
+        const option = document.createElement('option');
+        option.value = board.id;
+        option.textContent = board.name;
+        option.selected = board.id === missionBoards.selectedBoardId;
+        missionBoardSelect.appendChild(option);
+      });
+      const activeBoard = missionBoards.boards.find(board => board.id === missionBoards.selectedBoardId);
+      missionBoardName.value = activeBoard ? activeBoard.name : '';
+      deleteMissionBoardBtn.disabled = missionBoards.boards.length <= 1;
+    }
+
+    function applyMissionBoards(nextBoards) {
+      if (!nextBoards) return;
+      missionBoards = nextBoards;
+      tasks = missionBoards.boards.find(board => board.id === missionBoards.selectedBoardId).tasks;
+      persistMissionBoards();
+      localStorage.setItem('cp_tasks', JSON.stringify(tasks));
+      renderMissionBoards();
+      renderTasks();
+    }
 
     function renderTasks() {
       if (!taskChecklist) return;
@@ -1361,8 +1447,11 @@
       if (!e.target.matches('input[type="checkbox"]')) return;
       const item = e.target.closest('.task-item');
       if (!item) return;
-      const id = parseInt(item.dataset.id, 10);
-      tasks = PomodoroCore.toggleTaskItem(tasks, id, e.target.checked);
+      const task = tasks.find(entry => entry && String(entry.id) === item.dataset.id);
+      if (!task) return;
+      tasks = PomodoroCore.toggleTaskItem(tasks, task.id, e.target.checked);
+      missionBoards = PomodoroCore.updateMissionBoardTasks(missionBoards, missionBoards.selectedBoardId, tasks);
+      persistMissionBoards();
       localStorage.setItem('cp_tasks', JSON.stringify(tasks));
       renderTasks();
     });
@@ -1374,10 +1463,26 @@
       const task = tasks.find(entry => entry && String(entry.id) === item.dataset.id);
       if (!task) return;
       tasks = PomodoroCore.removeTaskItem(tasks, task.id);
+      missionBoards = PomodoroCore.updateMissionBoardTasks(missionBoards, missionBoards.selectedBoardId, tasks);
+      persistMissionBoards();
       localStorage.setItem('cp_tasks', JSON.stringify(tasks));
       renderTasks();
     });
     renderTasks();
+    renderMissionBoards();
+    persistMissionBoards();
+    missionBoardSelect.addEventListener('change', () => {
+      applyMissionBoards(PomodoroCore.selectMissionBoard(missionBoards, missionBoardSelect.value));
+    });
+    createMissionBoardBtn.addEventListener('click', () => {
+      applyMissionBoards(PomodoroCore.createMissionBoard(missionBoards, missionBoardName.value));
+    });
+    renameMissionBoardBtn.addEventListener('click', () => {
+      applyMissionBoards(PomodoroCore.renameMissionBoard(missionBoards, missionBoards.selectedBoardId, missionBoardName.value));
+    });
+    deleteMissionBoardBtn.addEventListener('click', () => {
+      applyMissionBoards(PomodoroCore.deleteMissionBoard(missionBoards, missionBoards.selectedBoardId));
+    });
 
     let savedMission = localStorage.getItem('cp_mission');
     if (savedMission !== null) missionInput.value = savedMission;
@@ -1389,6 +1494,8 @@
         const newTask = PomodoroCore.createTaskItem(missionInput.value);
         if (newTask) {
           tasks.unshift(newTask);
+          missionBoards = PomodoroCore.updateMissionBoardTasks(missionBoards, missionBoards.selectedBoardId, tasks);
+          persistMissionBoards();
           localStorage.setItem('cp_tasks', JSON.stringify(tasks));
           renderTasks();
         }
