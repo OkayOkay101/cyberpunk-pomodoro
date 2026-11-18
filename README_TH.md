@@ -2,18 +2,28 @@
 
 ตัวจับเวลา Pomodoro ธีม Cyberpunk พร้อมเครื่องสังเคราะห์เสียงบรรยากาศในตัว ทำงานในเบราว์เซอร์ ไม่ต้อง build และไม่มี dependency ภายนอก
 
-เดโมออนไลน์: https://okayokay101.github.io/cyberpunk-pomodoro/ · หน้าทดสอบ: https://okayokay101.github.io/cyberpunk-pomodoro/test.html
+[เดโมออนไลน์](https://okayokay101.github.io/cyberpunk-pomodoro/) · [หน้าทดสอบ](https://okayokay101.github.io/cyberpunk-pomodoro/test.html)
+
+![ภาพหน้าจอ Cyberpunk Focus](docs/screenshot.png)
 
 [English](README.md) · **ภาษาไทย**
 
 ## ฟีเจอร์
-- **ตัวจับเวลา Pomodoro:** มีช่วงโฟกัส พักสั้น และพักยาว โดยพักยาวจะมาหลังจากโฟกัสครบจำนวนรอบที่กำหนด
-- **เสียงบรรยากาศ:** มีเสียงสร้างจาก Web Audio API 5 แบบ (Cyber Rain, Deep Space Hum, 40Hz Focus Wave, Server Fan, Cyber Storm) ไม่มีการดาวน์โหลดไฟล์เสียง
+
+### ตัวจับเวลา
+- **ตัวจับเวลา Pomodoro:** มีช่วงโฟกัส พักสั้น และพักยาว เข้าสู่ช่วงพักยาวอัตโนมัติหลังโฟกัสครบตามจำนวนรอบที่ตั้งไว้
+
+### เสียง
+- **เสียงบรรยากาศ:** เครื่องสังเคราะห์เสียง 5 รูปแบบผ่าน Web Audio API (Cyber Rain, Deep Space Hum, 40Hz Focus Wave, Server Fan, Cyber Storm) ไม่มีการดาวน์โหลดไฟล์เสียง
 - **ภาพคลื่นเสียง:** วาดสเปกตรัมเสียงแบบเรียลไทม์บน canvas
-- **ติดตามการโฟกัสรายวัน:** มีตัวนับ streak และนาทีที่โฟกัสในวันนี้
-- **รายการภารกิจ:** เพิ่มงาน ติ๊กเมื่อทำเสร็จ และมีหลายบอร์ดได้
+
+### การติดตามและภารกิจ
+- **ติดตามการโฟกัสรายวัน:** ระบบนับ Streak ต่อเนื่อง และบันทึกเวลาโฟกัสของวันนี้เป็นนาที
+- **รายการภารกิจ:** ระบบจัดการภารกิจ เพิ่มงาน ติ๊กสถานะเมื่อสำเร็จ และรองรับการแยกหลายบอร์ด
+- **ส่งออกและนำเข้าข้อมูล:** EXPORT DATA บันทึกไฟล์สำรอง (`cyberpunk-pomodoro-backup.json`) และ IMPORT DATA กู้คืนจากไฟล์สำรอง
+
+### ลุค
 - **ธีมนีออน 4 แบบ:** Cyan Matrix, Neon Pink, Night City Yellow, Emerald Hacker
-- **ส่งออกข้อมูล:** ปุ่มส่งออกจะบันทึกข้อมูลของคุณเป็นไฟล์สำรอง
 
 ## ความต้องการของระบบ
 - เบราว์เซอร์รุ่นใหม่ที่รองรับ Web Audio และ `localStorage`
@@ -23,8 +33,9 @@
 ```bash
 git clone https://github.com/OkayOkay101/cyberpunk-pomodoro.git
 cd cyberpunk-pomodoro
+python -m http.server 8000
 ```
-เปิดไฟล์ `index.html` ในเบราว์เซอร์ ไม่ต้องติดตั้งอะไรเพิ่ม
+แล้วเปิด http://localhost:8000 ในเบราว์เซอร์ ไม่ต้องติดตั้งอะไรเพิ่ม การเปิดไฟล์ `index.html` ตรง ๆ จากดิสก์ อาจทำให้แคชออฟไลน์ (Service Worker) ใช้งานไม่ได้
 
 ## วิธีใช้งาน
 | ปุ่ม | การทำงาน |
@@ -41,6 +52,7 @@ cd cyberpunk-pomodoro
 ## การทดสอบ
 ```bash
 node test-runner.js
+python -m venv .venv    # สร้างแล้วเปิดใช้งานก่อน
 python -m pip install -r requirements-dev.txt
 python -m playwright install --with-deps chromium
 python -m unittest discover -s tests -p "test_*.py"

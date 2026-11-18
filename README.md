@@ -2,18 +2,28 @@
 
 A neon sci-fi Pomodoro timer with a built-in ambient sound synthesizer. It runs in the browser with no build step and no external dependencies.
 
-Live demo: https://okayokay101.github.io/cyberpunk-pomodoro/ · Test dashboard: https://okayokay101.github.io/cyberpunk-pomodoro/test.html
+[Live demo](https://okayokay101.github.io/cyberpunk-pomodoro/) · [Test dashboard](https://okayokay101.github.io/cyberpunk-pomodoro/test.html)
+
+![Cyberpunk Focus app screenshot](docs/screenshot.png)
 
 [ภาษาไทย](README_TH.md) · **English**
 
 ## Features
+
+### Timer
 - **Pomodoro timer:** focus, short break, and long break. A long break comes after a set number of focus sessions.
+
+### Sound
 - **Ambient sounds:** five sounds generated with the Web Audio API (Cyber Rain, Deep Space Hum, 40Hz Focus Wave, Server Fan, Cyber Storm). No audio files are downloaded.
 - **Spectrum visualizer:** draws the live audio spectrum on a canvas.
+
+### Tracking and tasks
 - **Daily focus tracking:** a streak counter and today's focused minutes.
 - **Mission list:** add tasks, tick them off, and keep several boards.
+- **Data export and import:** EXPORT DATA saves a backup file (`cyberpunk-pomodoro-backup.json`). IMPORT DATA restores from a backup file.
+
+### Look
 - **Four neon themes:** Cyan Matrix, Neon Pink, Night City Yellow, Emerald Hacker.
-- **Data export:** an export button saves your data as a backup.
 
 ## Requirements
 - A current desktop or mobile browser with Web Audio and `localStorage` support.
@@ -23,8 +33,9 @@ Live demo: https://okayokay101.github.io/cyberpunk-pomodoro/ · Test dashboard: 
 ```bash
 git clone https://github.com/OkayOkay101/cyberpunk-pomodoro.git
 cd cyberpunk-pomodoro
+python -m http.server 8000
 ```
-Open `index.html` in your browser. No install step is needed.
+Then open http://localhost:8000 in your browser. No install step is needed. Opening `index.html` directly from disk may stop the offline cache (Service Worker) from working.
 
 ## Usage
 | Key | Action |
@@ -41,6 +52,7 @@ Set focus, break, and daily-goal durations in the Settings panel. All values and
 ## Tests
 ```bash
 node test-runner.js
+python -m venv .venv    # create and activate it first
 python -m pip install -r requirements-dev.txt
 python -m playwright install --with-deps chromium
 python -m unittest discover -s tests -p "test_*.py"
